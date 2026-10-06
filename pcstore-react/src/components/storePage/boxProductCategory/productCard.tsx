@@ -1,0 +1,177 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { Check } from "lucide-react";
+import defaultPcImg from "../../../assets/images/products/pc.jpg";
+
+export interface PromotionInfo {
+    prefix?: string;
+    highlight?: string;
+    suffix?: string;
+    prefixColor?: "red" | "black" | "gray";
+    highlightColor?: "red" | "blue" | "black";
+}
+
+export interface ProductCardProps {
+    id?: string | number;
+    title: string;
+    image?: string;
+    price: string;
+    marketPrice?: string;
+    discountPercent?: string;
+    badge?: "HOT" | "NEW" | string;
+    banner?: {
+        type: "hot" | "sale" | string;
+        title: string;
+        badgeText?: string;
+    };
+    promotion?: string | PromotionInfo;
+    inStock?: boolean;
+    link?: string;
+}
+
+
+export const ProductCard: React.FC<ProductCardProps> = ({
+    id,
+    title,
+    image = defaultPcImg,
+    price,
+    marketPrice,
+    discountPercent,
+    badge,
+    banner,
+    promotion,
+    inStock = true,
+    link,
+}) => {
+    const targetLink = link && link !== "#" ? link : `/product/${id || "pc-miku-ryzen7"}`;
+
+    return (
+        <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-3 border border-gray-200 hover:shadow-lg transition-all duration-300 w-full h-full">
+            {/* Top Right Ribbon Badge */}
+            {badge && (
+                <div className="absolute top-0 right-3 z-20">
+                    <div
+                        className="bg-[#be1f2d] text-white text-[10px] font-extrabold pt-1 pb-2.5 px-1.5 shadow-sm flex flex-col items-center justify-start min-w-[26px] tracking-wider uppercase"
+                        style={{
+                            clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%)",
+                        }}
+                    >
+                        <span>{badge}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Product Image Box */}
+            <div className="relative w-full pt-[85%] mb-3 bg-white rounded-lg overflow-hidden flex items-center justify-center">
+
+                <Link to={targetLink} className="absolute inset-0 flex items-center justify-center p-2">
+                    <img
+                        src={image || defaultPcImg}
+                        alt={title}
+                        onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = defaultPcImg;
+                        }}
+                        className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/card:scale-105"
+                    />
+                </Link>
+
+                {/* Bottom Overlay Banner Badge */}
+                {banner && (
+                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-[94%] z-10 pointer-events-none">
+                        {banner.type === "hot" ? (
+                            <div className="bg-gradient-to-r from-[#0052cc] via-[#0066ff] to-[#0040b3] text-white rounded-full px-1.5 py-0.5 flex items-center shadow-md border border-white/60">
+                                <div className="w-6 h-6 rounded-full bg-[#003d99] border-2 border-[#ffeb3b] flex items-center justify-center text-[9px] font-black italic text-[#ffeb3b] transform -rotate-12 shadow-sm shrink-0">
+                                    {banner.badgeText || "HOT"}
+                                </div>
+                                <span className="text-[#ffeb3b] font-extrabold text-[11px] sm:text-[12px] tracking-wide uppercase mx-auto drop-shadow-sm truncate pl-0.5">
+                                    {banner.title}
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="bg-gradient-to-r from-[#d32f2f] via-[#f44336] to-[#ff9800] text-white rounded-full px-1.5 py-0.5 flex items-center shadow-md border border-white/60">
+                                <div className="w-6 h-6 rounded-full bg-[#b71c1c] border-2 border-[#ffeb3b] flex items-center justify-center text-[9px] font-black italic text-[#ffeb3b] transform -rotate-12 shadow-sm shrink-0">
+                                    {banner.badgeText || "GIÁ"}
+                                </div>
+                                <span className="text-[#ffeb3b] font-extrabold text-[11px] sm:text-[12px] tracking-wide uppercase mx-auto drop-shadow-sm truncate pl-0.5">
+                                    {banner.title}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Product Info */}
+            <div className="flex flex-col flex-1 justify-between mt-1">
+                <div>
+                    <Link to={targetLink} className="block group/title">
+                        <h3 className="text-[#333333] font-medium text-[13px] leading-snug line-clamp-2 min-h-[36px] group-hover/title:text-red-600 transition-colors">
+                            {title}
+                        </h3>
+                    </Link>
+
+                    {/* Price & Discount */}
+                    <div className="mt-2">
+                        <div className="flex items-center gap-1.5 min-h-[20px]">
+                            {marketPrice && marketPrice !== price && (
+                                <span className="text-xs text-gray-400 line-through font-normal">
+                                    {marketPrice}
+                                </span>
+                            )}
+                            {discountPercent && (
+                                <span className="bg-[#be1f2d] text-white text-[10px] font-bold px-1.5 py-0.5 rounded text-center leading-none">
+                                    {discountPercent}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-[#d02c2c] text-lg font-bold tracking-tight mt-0.5">
+                            {price}
+                        </div>
+                    </div>
+
+                    {/* Promotion detail */}
+                    <div className="mt-1.5 text-[12px] text-gray-600 leading-snug line-clamp-2 min-h-[34px]">
+                        {typeof promotion === "string" ? (
+                            promotion
+                        ) : promotion ? (
+                            <>
+                                <span
+                                    className={
+                                        promotion.prefixColor === "red"
+                                            ? "text-red-600 font-semibold"
+                                            : promotion.prefixColor === "black"
+                                                ? "text-gray-900 font-semibold"
+                                                : "text-gray-600"
+                                    }
+                                >
+                                    {promotion.prefix}
+                                </span>
+                                <span
+                                    className={
+                                        promotion.highlightColor === "blue"
+                                            ? "text-blue-600 font-bold hover:underline cursor-pointer"
+                                            : promotion.highlightColor === "red"
+                                                ? "text-red-600 font-bold hover:underline cursor-pointer"
+                                                : "text-gray-900 font-bold"
+                                    }
+                                >
+                                    {promotion.highlight}
+                                </span>
+                                <span>{promotion.suffix}</span>
+                            </>
+                        ) : null}
+                    </div>
+                </div>
+
+                {/* Stock Status */}
+                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1 text-[12px] font-medium text-emerald-600">
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{inStock ? "Còn hàng" : "Hết hàng"}</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ProductCard;

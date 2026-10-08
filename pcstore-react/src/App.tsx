@@ -13,6 +13,9 @@ import ForgotPassword from './pages/auth/forgotPassword';
 import NotFound from './pages/storePage/notFound/notFound';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import AdminDashboard from './pages/admin/dashboard';
+import AdminLayout from './layouts/adminLayout';
+import UserList from './pages/admin/user/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -45,6 +48,12 @@ function App() {
               <Route path="account" element={<Account />} />
               <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="*" element={<NotFound />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="admin" element={<AdminDashboard />} />
+              <Route path="users" element={<UserList />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FolderTree,
     Plus,
@@ -7,44 +7,50 @@ import {
     Eye,
     EyeOff,
     CheckCircle2,
-    XCircle,
     Download,
     Calendar,
     Check,
     Package,
-    Upload,
     Camera,
     Copy,
-    ExternalLink,
     Sparkles,
     Globe,
-    FileText,
-    TrendingUp,
     Layers,
-    ArrowUpRight,
-    Search,
-    Info,
-    RefreshCw
+    RefreshCw,
+    AlertCircle,
+    Loader2
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
 import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
+import { adminCategoryService } from '../../../services/adminCategoryService';
+import type {
+    CategoryResponse,
+    CategoryCreateRequest,
+    CategoryUpdateRequest
+} from '../../../types/adminCategory';
 
 export interface CategoryItem {
     id: string;
+    numericId: number;
     name: string;
     slug: string;
     description: string;
     parentId: string | null;
+    parentNumericId: number | null;
     parentName: string;
     image: string;
     order: number;
     productsCount: number;
     status: 'ACTIVE' | 'HIDDEN';
+    statusNumber: number; // 1 = ACTIVE, 0 = INACTIVE
     isFeatured: boolean;
     showOnMenu: boolean;
     createdAt: string;
+    createdDateRaw?: string | null;
+    lastModifiedDate?: string | null;
     metaTitle?: string;
     metaDescription?: string;
     metaKeywords?: string;
@@ -63,341 +69,116 @@ const generateSlug = (str: string) => {
         .replace(/^-+|-+$/g, '');
 };
 
-// Initial Mock Categories
-const INITIAL_CATEGORIES: CategoryItem[] = [
-    {
-        id: 'cat-1',
-        name: 'PC Nguyên Bộ',
-        slug: 'pc-nguyen-bo',
-        description: 'Các dàn máy tính PC nguyên bộ tối ưu sẵn cho game thủ, văn phòng và đồ họa.',
-        parentId: null,
-        parentName: 'Danh mục gốc',
-        image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        order: 1,
-        productsCount: 156,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-10',
-        metaTitle: 'PC Nguyên Bộ Chính Hãng - Giá Rẻ, Trả Góp 0% | PCStore',
-        metaDescription: 'Mua PC nguyên bộ chính hãng cấu hình khủng, tối ưu cho Gaming, Đồ họa và Văn phòng. Bảo hành 36 tháng 1 đổi 1.',
-        metaKeywords: 'pc nguyen bo, pc dong bo, pc rap san, may tinh ban',
-    },
-    {
-        id: 'cat-2',
-        name: 'PC Gaming',
-        slug: 'pc-gaming',
-        description: 'Dàn máy chiến mượt mọi tựa game AAA, Esport với card đồ họa RTX mới nhất.',
-        parentId: 'cat-1',
-        parentName: 'PC Nguyên Bộ',
-        image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=400&q=80',
-        order: 2,
-        productsCount: 68,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-12',
-        metaTitle: 'PC Gaming Chiến Game Đỉnh Cao | PCStore',
-        metaDescription: 'Máy tính chơi game cấu hình cao, bảo hành tận nơi, hỗ trợ trả góp 0%.',
-        metaKeywords: 'pc gaming, pc choi game, may tinh choi game',
-    },
-    {
-        id: 'cat-3',
-        name: 'PC Đồ Họa & Render',
-        slug: 'pc-do-hoa',
-        description: 'Chuyên dụng cho xử lý đồ họa 3D, dựng phim Premiere, After Effect, AutoCAD.',
-        parentId: 'cat-1',
-        parentName: 'PC Nguyên Bộ',
-        image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80',
-        order: 3,
-        productsCount: 42,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-15',
-        metaTitle: 'PC Đồ Họa, Kiến Trúc, Render 3D Chuyên Nghiệp | PCStore',
-        metaDescription: 'Máy trạm PC đồ họa cấu hình mạnh mẽ với CPU Intel Core i7/i9 và AMD Ryzen 9.',
-        metaKeywords: 'pc do hoa, pc render, pc kien truc',
-    },
-    {
-        id: 'cat-4',
-        name: 'PC Văn Phòng',
-        slug: 'pc-van-phong',
-        description: 'Máy tính để bàn vận hành êm ái, bền bỉ, tiết kiệm điện năng cho văn phòng doanh nghiệp.',
-        parentId: 'cat-1',
-        parentName: 'PC Nguyên Bộ',
-        image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80',
-        order: 4,
-        productsCount: 34,
-        status: 'ACTIVE',
+// Curated Category Image Mapper
+export const getCategoryImage = (name: string = '', slug: string = ''): string => {
+    const s = `${slug} ${name}`.toLowerCase();
+    if (s.includes('cpu') || s.includes('vi xu ly') || s.includes('chip') || s.includes('intel') || s.includes('amd')) {
+        return 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('vga') || s.includes('card') || s.includes('do hoa') || s.includes('rtx') || s.includes('geforce')) {
+        return 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('main') || s.includes('bo mach') || s.includes('motherboard') || s.includes('asus') || s.includes('msi')) {
+        return 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('ram') || s.includes('bo nho') || s.includes('ddr')) {
+        return 'https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('ssd') || s.includes('hdd') || s.includes('o cung') || s.includes('nvme') || s.includes('storage')) {
+        return 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('psu') || s.includes('nguon') || s.includes('power')) {
+        return 'https://images.unsplash.com/photo-1600861194942-f883de0dfe96?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('case') || s.includes('vo may') || s.includes('thung may')) {
+        return 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('tan') || s.includes('cooling') || s.includes('fan') || s.includes('cooler') || s.includes('aio')) {
+        return 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('man hinh') || s.includes('monitor') || s.includes('display')) {
+        return 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('phim') || s.includes('chuot') || s.includes('keyboard') || s.includes('mouse')) {
+        return 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('gaming') || s.includes('game')) {
+        return 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('van phong') || s.includes('office')) {
+        return 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('workstation') || s.includes('ai') || s.includes('server')) {
+        return 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('ngoai vi') || s.includes('tai nghe') || s.includes('loa') || s.includes('gear') || s.includes('audio')) {
+        return 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=400&q=80';
+    }
+    if (s.includes('linh kien') || s.includes('phu kien')) {
+        return 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+};
+
+// Backend Response Mapper
+export const mapBackendCategoryToItem = (c: CategoryResponse): CategoryItem => {
+    let formattedDate = 'Chưa cập nhật';
+    if (c.createdDate) {
+        try {
+            formattedDate = new Date(c.createdDate).toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+            });
+        } catch {
+            formattedDate = c.createdDate.split('T')[0] || 'Chưa cập nhật';
+        }
+    }
+
+    const isStatusActive = c.status === 1;
+
+    return {
+        id: String(c.id),
+        numericId: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || 'Chưa có mô tả chi tiết.',
+        parentId: c.parentId !== null && c.parentId !== undefined ? String(c.parentId) : null,
+        parentNumericId: c.parentId ?? null,
+        parentName: c.parentName || 'Danh mục gốc',
+        image: getCategoryImage(c.name, c.slug),
+        order: c.id,
+        productsCount: 0,
+        status: isStatusActive ? 'ACTIVE' : 'HIDDEN',
+        statusNumber: c.status,
         isFeatured: false,
         showOnMenu: true,
-        createdAt: '2024-01-18',
-        metaTitle: 'PC Văn Phòng Bền Bỉ, Giá Rẻ Nhất Thị Trường | PCStore',
-        metaDescription: 'Cung cấp máy tính văn phòng giá sỉ cho công ty, trường học với dịch vụ cài đặt miễn phí.',
-        metaKeywords: 'pc van phong, may tinh van phong, pc gia re',
-    },
-    {
-        id: 'cat-5',
-        name: 'PC AI Workstation',
-        slug: 'pc-ai',
-        description: 'Máy tính trạm chuyên dụng huấn luyện mô hình Deep Learning, Large Language Model.',
-        parentId: 'cat-1',
-        parentName: 'PC Nguyên Bộ',
-        image: 'https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=400&q=80',
-        order: 5,
-        productsCount: 12,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-02-01',
-        metaTitle: 'PC AI & Deep Learning Workstation Hàng Đầu | PCStore',
-        metaDescription: 'Máy trạm Workstation chuyên dụng cho trí tuệ nhân tạo, hỗ trợ nhiều card đồ họa RTX song song.',
-        metaKeywords: 'pc ai, pc workstation, deep learning pc',
-    },
-    {
-        id: 'cat-6',
-        name: 'Linh Kiện Máy Tính',
-        slug: 'linh-kien-may-tinh',
-        description: 'Kho linh kiện phần cứng máy tính chính hãng đầy đủ CPU, VGA, RAM, Mainboard, SSD.',
-        parentId: null,
-        parentName: 'Danh mục gốc',
-        image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&w=400&q=80',
-        order: 6,
-        productsCount: 420,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-05',
-        metaTitle: 'Linh Kiện Máy Tính Chính Hãng Giá Tốt Nhất | PCStore',
-        metaDescription: 'Tổng đại lý linh kiện máy tính uy tín: CPU, VGA, Mainboard, RAM, SSD từ ASUS, MSI, Gigabyte.',
-        metaKeywords: 'linh kien may tinh, phan cung pc, linh kien chinh hang',
-    },
-    {
-        id: 'cat-7',
-        name: 'CPU - Bo Vi Xử Lý',
-        slug: 'cpu-bo-vi-xu-ly',
-        description: 'Bộ vi xử lý trung tâm Intel Core Gen 13/14 và AMD Ryzen 7000/9000 Series.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=400&q=80',
-        order: 7,
-        productsCount: 86,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-08',
-        metaTitle: 'CPU Máy Tính - Chip Vi Xử Lý Intel & AMD | PCStore',
-        metaDescription: 'Bảng giá CPU Intel và AMD mới nhất, đầy đủ các dòng Core i5, i7, i9, Ryzen 5, 7, 9.',
-        metaKeywords: 'cpu intel, cpu amd, bo vi xu ly',
-    },
-    {
-        id: 'cat-8',
-        name: 'VGA - Card Đồ Họa',
-        slug: 'vga-card-do-hoa',
-        description: 'Card màn hình đồ họa NVIDIA GeForce RTX 40 Series, RTX 50 Series và AMD Radeon RX.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=400&q=80',
-        order: 8,
-        productsCount: 110,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-09',
-        metaTitle: 'VGA - Card Đồ Họa Rời NVIDIA & AMD Chính Hãng | PCStore',
-        metaDescription: 'Card màn hình gaming và đồ họa chuyên nghiệp giá cạnh tranh, tặng kèm quà tặng hấp dẫn.',
-        metaKeywords: 'vga rtx, card do hoa, card man hinh',
-    },
-    {
-        id: 'cat-9',
-        name: 'Mainboard - Bo Mạch Chủ',
-        slug: 'mainboard-bo-mach-chu',
-        description: 'Bo mạch chủ socket LGA1700, AM5 từ các thương hiệu ROG, TUF, MAG, AORUS.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80',
-        order: 9,
-        productsCount: 74,
-        status: 'ACTIVE',
-        isFeatured: false,
-        showOnMenu: true,
-        createdAt: '2024-01-11',
-        metaTitle: 'Mainboard Bo Mạch Chủ Hỗ Trợ Intel & AMD | PCStore',
-        metaDescription: 'Bo mạch chủ Z790, B760, X670, B650 chính hãng bảo hành 36 tháng.',
-        metaKeywords: 'mainboard, bo mach chu, main z790',
-    },
-    {
-        id: 'cat-10',
-        name: 'RAM - Bộ Nhớ Trong',
-        slug: 'ram-bo-nho-trong',
-        description: 'Bộ nhớ RAM DDR4, DDR5 tốc độ bus cao với tản nhiệt nhôm và LED RGB rực rỡ.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1562976540-1502c2145186?auto=format&fit=crop&w=400&q=80',
-        order: 10,
-        productsCount: 95,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-13',
-        metaTitle: 'RAM Máy Tính DDR4 & DDR5 Chính Hãng | PCStore',
-        metaDescription: 'RAM PC Corsair, Kingston, G.Skill tốc độ cao, độ ổn định tuyệt đối.',
-        metaKeywords: 'ram pc, ram ddr5, ram ddr4',
-    },
-    {
-        id: 'cat-11',
-        name: 'Ổ Cứng SSD / HDD',
-        slug: 'o-cung-hdd-ssd',
-        description: 'Ổ cứng thể rắn SSD NVMe PCIe Gen 4/5 và ổ cứng lưu trữ HDD dung lượng lớn.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=400&q=80',
-        order: 11,
-        productsCount: 55,
-        status: 'ACTIVE',
-        isFeatured: false,
-        showOnMenu: true,
-        createdAt: '2024-01-14',
-        metaTitle: 'Ổ Cứng SSD M.2 NVMe Tốc Độ Siêu Nhanh | PCStore',
-        metaDescription: 'SSD Samsung 990 Pro, Kingston KC3000 tốc độ đọc ghi lên tới 7500MB/s.',
-        metaKeywords: 'ssd nvme, o cung ssd, o cung hdd',
-    },
-    {
-        id: 'cat-12',
-        name: 'Nguồn Máy Tính (PSU)',
-        slug: 'nguon-may-tinh-psu',
-        description: 'Nguồn công suất thực chuẩn 80 Plus Bronze, Gold, Platinum chuẩn ATX 3.0.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1600861194942-f883de0dfe96?auto=format&fit=crop&w=400&q=80',
-        order: 12,
-        productsCount: 38,
-        status: 'ACTIVE',
-        isFeatured: false,
-        showOnMenu: false,
-        createdAt: '2024-01-16',
-        metaTitle: 'Nguồn Máy Tính PSU Chuẩn 80 Plus | PCStore',
-        metaDescription: 'Bộ nguồn máy tính an toàn, bảo vệ quá dòng, quá áp từ Corsair, Cooler Master.',
-        metaKeywords: 'nguon may tinh, psu pc, nguon 80 plus',
-    },
-    {
-        id: 'cat-13',
-        name: 'Vỏ Case Máy Tính',
-        slug: 'case-vo-may-tinh',
-        description: 'Vỏ case bể cá, case lưới thoáng khí Airflow, hỗ trợ tản nhiệt nước Custom.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        order: 13,
-        productsCount: 48,
-        status: 'ACTIVE',
-        isFeatured: false,
-        showOnMenu: false,
-        createdAt: '2024-01-20',
-        metaTitle: 'Vỏ Case Máy Tính Đẹp - Bể Cá, Airflow Đỉnh Cao | PCStore',
-        metaDescription: 'Case máy tính đa dạng kích thước ATX, M-ATX, ITX kính cường lực cao cấp.',
-        metaKeywords: 'case may tinh, vo case, case be ca',
-    },
-    {
-        id: 'cat-14',
-        name: 'Tản Nhiệt CPU',
-        slug: 'tan-nhiet-cpu',
-        description: 'Tản nhiệt nước AIO 240/360 màn hình LCD và tản nhiệt tháp khí hiệu năng cao.',
-        parentId: 'cat-6',
-        parentName: 'Linh Kiện Máy Tính',
-        image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80',
-        order: 14,
-        productsCount: 32,
-        status: 'HIDDEN',
-        isFeatured: false,
-        showOnMenu: false,
-        createdAt: '2024-01-22',
-        metaTitle: 'Tản Nhiệt Khí & Tản Nước AIO Làm Mát CPU | PCStore',
-        metaDescription: 'Hệ thống làm mát CPU giảm nhiệt độ tối đa, vận hành êm ái, bảo hành chính hãng.',
-        metaKeywords: 'tan nhiet cpu, tan nuoc aio, tan nhiet khi',
-    },
-    {
-        id: 'cat-15',
-        name: 'Thiết Bị Ngoại Vi',
-        slug: 'thiet-bi-ngoai-vi',
-        description: 'Các phụ kiện màn hình, bàn phím cơ, chuột gaming, tai nghe và bàn ghế gaming.',
-        parentId: null,
-        parentName: 'Danh mục gốc',
-        image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=400&q=80',
-        order: 15,
-        productsCount: 165,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-05',
-        metaTitle: 'Thiết Bị Ngoại Vi & Gaming Gear Đỉnh Cao | PCStore',
-        metaDescription: 'Phụ kiện máy tính, bàn phím cơ, chuột không dây, màn hình chất lượng cao.',
-        metaKeywords: 'thiet bi ngoai vi, gaming gear, ban phim chuot',
-    },
-    {
-        id: 'cat-16',
-        name: 'Màn Hình Máy Tính',
-        slug: 'man-hinh-may-tinh',
-        description: 'Màn hình Gaming 144Hz - 240Hz, màn hình đồ họa chuẩn màu 4K IPS, OLED.',
-        parentId: 'cat-15',
-        parentName: 'Thiết Bị Ngoại Vi',
-        image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80',
-        order: 16,
-        productsCount: 65,
-        status: 'ACTIVE',
-        isFeatured: true,
-        showOnMenu: true,
-        createdAt: '2024-01-12',
-        metaTitle: 'Màn Hình Máy Tính 2K 4K Gaming & Đồ Họa | PCStore',
-        metaDescription: 'Màn hình LG, Dell UltraSharp, ASUS ROG tần số quét cao, màu sắc trung thực.',
-        metaKeywords: 'man hinh may tinh, man hinh 2k, man hinh 4k',
-    },
-    {
-        id: 'cat-17',
-        name: 'Bàn Phím Cơ & Chuột',
-        slug: 'ban-phim-chuot',
-        description: 'Bàn phím cơ Custom Hotswap và chuột gaming cảm biến quang học chuẩn thi đấu.',
-        parentId: 'cat-15',
-        parentName: 'Thiết Bị Ngoại Vi',
-        image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=400&q=80',
-        order: 17,
-        productsCount: 78,
-        status: 'ACTIVE',
-        isFeatured: false,
-        showOnMenu: true,
-        createdAt: '2024-01-15',
-        metaTitle: 'Bàn Phím Cơ & Chuột Gaming Cao Cấp | PCStore',
-        metaDescription: 'Bàn phím cơ không dây, chuột công thái học từ Razer, Logitech, Akko.',
-        metaKeywords: 'ban phim co, chuot gaming, ban phim hotswap',
-    },
-    {
-        id: 'cat-18',
-        name: 'Tai Nghe & Âm Thanh',
-        slug: 'tai-nghe-loa',
-        description: 'Tai nghe gaming vòm 7.1, mic lọc ồn và loa máy tính chất âm sống động.',
-        parentId: 'cat-15',
-        parentName: 'Thiết Bị Ngoại Vi',
-        image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=400&q=80',
-        order: 18,
-        productsCount: 22,
-        status: 'HIDDEN',
-        isFeatured: false,
-        showOnMenu: false,
-        createdAt: '2024-01-25',
-        metaTitle: 'Tai Nghe Gaming & Loa Máy Tính Âm Thanh Vòm | PCStore',
-        metaDescription: 'Tai nghe chụp tai có dây và bluetooth chất lượng cao cho game thủ.',
-        metaKeywords: 'tai nghe gaming, loa may tinh, tai nghe 7.1',
-    },
-];
+        createdAt: formattedDate,
+        createdDateRaw: c.createdDate,
+        lastModifiedDate: c.lastModifiedDate,
+        metaTitle: `${c.name} Chính Hãng - Giá Rẻ | PCStore`,
+        metaDescription: c.description || `Mua ${c.name} chính hãng chất lượng cao tại PCStore.`,
+        metaKeywords: `${c.slug}, ${c.name.toLowerCase()}`,
+    };
+};
 
 export const CategoryList: React.FC = () => {
     const { toast } = useToast();
-    const [categories, setCategories] = useState<CategoryItem[]>(INITIAL_CATEGORIES);
+
+    // Data states
+    const [categories, setCategories] = useState<CategoryItem[]>([]);
+    const [allParentOptions, setAllParentOptions] = useState<CategoryItem[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Search, Filter & Pagination states
     const [searchQuery, setSearchQuery] = useState('');
     const [filterValues, setFilterValues] = useState<Record<string, any>>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [totalElements, setTotalElements] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Modal States
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -407,6 +188,17 @@ export const CategoryList: React.FC = () => {
     const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
+    // Modal Confirmation States
+    const [deleteTargetCategory, setDeleteTargetCategory] = useState<CategoryItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
+    const [statusTargetCategory, setStatusTargetCategory] = useState<CategoryItem | null>(null);
+    const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    // Products in category detail tab
+    const [categoryProducts, setCategoryProducts] = useState<any[]>([]);
+    const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(false);
+
     // Form state for Add
     const [formData, setFormData] = useState({
         name: '',
@@ -414,7 +206,6 @@ export const CategoryList: React.FC = () => {
         description: '',
         parentId: '' as string | null,
         image: '',
-        order: 1,
         status: 'ACTIVE' as CategoryItem['status'],
         isFeatured: false,
         showOnMenu: true,
@@ -430,7 +221,6 @@ export const CategoryList: React.FC = () => {
         description: '',
         parentId: '' as string | null,
         image: '',
-        order: 1,
         status: 'ACTIVE' as CategoryItem['status'],
         isFeatured: false,
         showOnMenu: true,
@@ -439,13 +229,110 @@ export const CategoryList: React.FC = () => {
         metaKeywords: '',
     });
 
-    // Avatar / Image upload states & refs
+    // Image upload refs
     const imageInputRef = useRef<HTMLInputElement>(null);
     const editImageInputRef = useRef<HTMLInputElement>(null);
     const [isDraggingImage, setIsDraggingImage] = useState(false);
     const [isDraggingEditImage, setIsDraggingEditImage] = useState(false);
 
-    // Copy to clipboard helper with toast
+    // Load Categories from Backend API
+    const loadCategories = useCallback(async (isSilent = false) => {
+        if (!isSilent) {
+            setIsLoading(true);
+        } else {
+            setIsRefreshing(true);
+        }
+        setError(null);
+
+        try {
+            let statusParam: number | string | undefined = undefined;
+            if (filterValues.status === 'ACTIVE') {
+                statusParam = 1;
+            } else if (filterValues.status === 'HIDDEN') {
+                statusParam = 0;
+            }
+
+            let parentIdParam: number | string | undefined = undefined;
+            if (filterValues.parent && filterValues.parent !== 'ROOT') {
+                parentIdParam = filterValues.parent;
+            }
+
+            const pageIndex = Math.max(0, currentPage - 1);
+            const response = await adminCategoryService.getAllCategories({
+                keyword: searchQuery.trim() || undefined,
+                status: statusParam,
+                parentId: parentIdParam,
+                page: pageIndex,
+                size: pageSize,
+                sort: ['id,DESC'],
+            });
+
+            let items = (response.content || []).map(mapBackendCategoryToItem);
+
+            // Client-side filter for 'ROOT' categories if parent filter is set to ROOT
+            if (filterValues.parent === 'ROOT') {
+                items = items.filter((item) => item.parentId === null);
+            }
+
+            setCategories(items);
+            setTotalElements(response.totalElements || items.length);
+            setTotalPages(Math.max(1, response.totalPages || 1));
+        } catch (err: any) {
+            console.error('Error fetching categories:', err);
+            setError(err.message || 'Không thể tải danh sách danh mục từ máy chủ.');
+            toast.error(err.message || 'Không thể tải danh sách danh mục từ máy chủ.', 'Lỗi tải dữ liệu');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [currentPage, pageSize, searchQuery, filterValues.status, filterValues.parent, toast]);
+
+    // Load all categories for Parent dropdown choices
+    const loadParentOptions = useCallback(async () => {
+        try {
+            const res = await adminCategoryService.getAllCategories({
+                page: 0,
+                size: 100,
+                sort: ['name,ASC'],
+            });
+            const items = (res.content || []).map(mapBackendCategoryToItem);
+            setAllParentOptions(items);
+        } catch (err) {
+            console.warn('Could not load parent options:', err);
+        }
+    }, []);
+
+    // Initial load
+    useEffect(() => {
+        loadCategories();
+    }, [loadCategories]);
+
+    useEffect(() => {
+        loadParentOptions();
+    }, [loadParentOptions]);
+
+    // Load category products when detail modal opens
+    useEffect(() => {
+        if (isDetailModalOpen && detailCategory) {
+            setIsLoadingProducts(true);
+            adminCategoryService
+                .getProductsByCategory(detailCategory.numericId, 0, 10)
+                .then((res) => {
+                    const list = res?.content || [];
+                    setCategoryProducts(list);
+                })
+                .catch(() => {
+                    setCategoryProducts([]);
+                })
+                .finally(() => {
+                    setIsLoadingProducts(false);
+                });
+        } else {
+            setCategoryProducts([]);
+        }
+    }, [isDetailModalOpen, detailCategory]);
+
+    // Copy to clipboard helper
     const handleCopyText = (text: string, fieldKey: string, label: string = 'thông tin') => {
         if (!text) return;
         navigator.clipboard.writeText(text);
@@ -471,7 +358,6 @@ export const CategoryList: React.FC = () => {
             description: category.description,
             parentId: category.parentId || '',
             image: category.image,
-            order: category.order,
             status: category.status,
             isFeatured: category.isFeatured,
             showOnMenu: category.showOnMenu,
@@ -485,42 +371,86 @@ export const CategoryList: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
-    // Toggle active status
-    const handleToggleStatus = (id: string) => {
-        const target = categories.find((c) => c.id === id);
-        const willBeActive = target?.status !== 'ACTIVE';
-        setCategories(
-            categories.map((c) => {
-                if (c.id === id) {
-                    const updated: CategoryItem = {
-                        ...c,
-                        status: willBeActive ? 'ACTIVE' : 'HIDDEN',
-                    };
-                    if (detailCategory?.id === id) {
-                        setDetailCategory(updated);
-                    }
-                    return updated;
-                }
-                return c;
-            })
-        );
-        if (willBeActive) {
-            toast.success(`Danh mục "${target?.name}" đã được hiển thị trên hệ thống.`, 'Hiển thị danh mục');
-        } else {
-            toast.warning(`Danh mục "${target?.name}" đã được tạm ẩn khỏi giao diện khách hàng.`, 'Tạm ẩn danh mục');
+    // Open Toggle Status confirmation modal
+    const handleOpenToggleStatusModal = (category: CategoryItem) => {
+        setStatusTargetCategory(category);
+    };
+
+    // Confirm Toggle status (ACTIVE <-> INACTIVE) via Real API
+    const handleConfirmToggleStatus = async () => {
+        if (!statusTargetCategory) return;
+
+        setIsTogglingStatus(true);
+        const target = statusTargetCategory;
+        const willBeActive = target.statusNumber !== 1;
+        const nextStatusNumber = willBeActive ? 1 : 0;
+
+        try {
+            await adminCategoryService.updateCategoryStatus(target.numericId, nextStatusNumber);
+
+            if (willBeActive) {
+                toast.success(`Danh mục "${target.name}" đã được hiển thị trên hệ thống.`, 'Hiển thị danh mục');
+            } else {
+                toast.warning(`Danh mục "${target.name}" đã được tạm ẩn khỏi giao diện khách hàng.`, 'Tạm ẩn danh mục');
+            }
+
+            // Update in-memory categories state
+            setCategories((prev) =>
+                prev.map((c) =>
+                    c.id === target.id
+                        ? {
+                            ...c,
+                            status: willBeActive ? 'ACTIVE' : 'HIDDEN',
+                            statusNumber: nextStatusNumber,
+                        }
+                        : c
+                )
+            );
+
+            if (detailCategory && detailCategory.id === target.id) {
+                setDetailCategory({
+                    ...detailCategory,
+                    status: willBeActive ? 'ACTIVE' : 'HIDDEN',
+                    statusNumber: nextStatusNumber,
+                });
+            }
+
+            setStatusTargetCategory(null);
+        } catch (err: any) {
+            toast.error(err.message || 'Không thể thay đổi trạng thái danh mục.', 'Lỗi cập nhật');
+        } finally {
+            setIsTogglingStatus(false);
         }
     };
 
-    // Delete category
-    const handleDeleteCategory = (id: string) => {
-        const target = categories.find((c) => c.id === id);
-        if (window.confirm(`Bạn có chắc chắn muốn xóa danh mục "${target?.name || ''}"?`)) {
-            setCategories(categories.filter((c) => c.id !== id));
-            if (detailCategory?.id === id) {
+    // Open Delete confirmation modal
+    const handleOpenDeleteModal = (category: CategoryItem) => {
+        setDeleteTargetCategory(category);
+    };
+
+    // Confirm Delete category via Real API
+    const handleConfirmDelete = async () => {
+        if (!deleteTargetCategory) return;
+
+        setIsDeleting(true);
+        const target = deleteTargetCategory;
+
+        try {
+            await adminCategoryService.deleteCategory(target.numericId);
+            toast.success(`Đã xóa danh mục "${target.name}" thành công!`, 'Xóa danh mục');
+
+            if (detailCategory && detailCategory.id === target.id) {
                 setIsDetailModalOpen(false);
                 setDetailCategory(null);
             }
-            toast.error(`Đã xóa danh mục "${target?.name || ''}" thành công!`, 'Xóa danh mục');
+
+            setDeleteTargetCategory(null);
+            loadCategories(true);
+            loadParentOptions();
+        } catch (err: any) {
+            toast.error(err.message || 'Không thể xóa danh mục này.', 'Lỗi xóa danh mục');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -539,7 +469,7 @@ export const CategoryList: React.FC = () => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 setFormData((prev) => ({ ...prev, image: event.target?.result as string }));
-                toast.success('Đã tải hình ảnh danh mục lên thành công!', 'Ảnh hợp lệ');
+                toast.success('Đã chọn hình ảnh danh mục thành công!', 'Ảnh hợp lệ');
             };
             reader.readAsDataURL(file);
         }
@@ -626,62 +556,121 @@ export const CategoryList: React.FC = () => {
         toast.info('Đã xóa hình ảnh danh mục.', 'Xóa ảnh');
     };
 
-    // Submit Add
-    const handleAddCategory = (e: React.FormEvent) => {
+    // Submit Add Category via Real API
+    const handleAddCategory = async (e: React.FormEvent) => {
         e.preventDefault();
-        const parent = categories.find((c) => c.id === formData.parentId);
-        const newCat: CategoryItem = {
-            id: `cat-${Date.now()}`,
-            name: formData.name,
-            slug: formData.slug || generateSlug(formData.name),
-            description: formData.description || 'Chưa có mô tả chi tiết.',
-            parentId: formData.parentId || null,
-            parentName: parent ? parent.name : 'Danh mục gốc',
-            image: formData.image || 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-            order: Number(formData.order) || categories.length + 1,
-            productsCount: 0,
-            status: formData.status,
-            isFeatured: formData.isFeatured,
-            showOnMenu: formData.showOnMenu,
-            createdAt: new Date().toISOString().split('T')[0],
-            metaTitle: formData.metaTitle || `${formData.name} Chính Hãng - Giá Rẻ | PCStore`,
-            metaDescription: formData.metaDescription || formData.description,
-            metaKeywords: formData.metaKeywords || formData.slug,
-        };
-        setCategories([newCat, ...categories]);
-        setIsAddModalOpen(false);
-        toast.success(`Đã thêm mới danh mục "${newCat.name}" thành công!`, 'Thêm danh mục');
+        if (!formData.name.trim()) {
+            toast.error('Vui lòng nhập tên danh mục.', 'Thiếu thông tin');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const payload: CategoryCreateRequest = {
+                name: formData.name.trim(),
+                slug: formData.slug.trim() || generateSlug(formData.name),
+                description: formData.description.trim() || undefined,
+                status: formData.status === 'ACTIVE' ? 1 : 0,
+                parentId: formData.parentId ? Number(formData.parentId) : null,
+            };
+
+            const created = await adminCategoryService.createCategory(payload);
+            toast.success(`Đã thêm mới danh mục "${created.name}" thành công!`, 'Thêm danh mục');
+
+            setIsAddModalOpen(false);
+            setFormData({
+                name: '',
+                slug: '',
+                description: '',
+                parentId: '',
+                image: '',
+                status: 'ACTIVE',
+                isFeatured: false,
+                showOnMenu: true,
+                metaTitle: '',
+                metaDescription: '',
+                metaKeywords: '',
+            });
+
+            loadCategories(true);
+            loadParentOptions();
+        } catch (err: any) {
+            toast.error(err.message || 'Không thể tạo danh mục.', 'Lỗi tạo danh mục');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    // Submit Edit
-    const handleUpdateCategory = (e: React.FormEvent) => {
+    // Submit Edit Category via Real API
+    const handleUpdateCategory = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingCategory) return;
-        const parent = categories.find((c) => c.id === editFormData.parentId);
-        const updatedCategory: CategoryItem = {
-            ...editingCategory,
-            name: editFormData.name,
-            slug: editFormData.slug || generateSlug(editFormData.name),
-            description: editFormData.description,
-            parentId: editFormData.parentId || null,
-            parentName: parent ? parent.name : 'Danh mục gốc',
-            image: editFormData.image || editingCategory.image,
-            order: Number(editFormData.order),
-            status: editFormData.status,
-            isFeatured: editFormData.isFeatured,
-            showOnMenu: editFormData.showOnMenu,
-            metaTitle: editFormData.metaTitle,
-            metaDescription: editFormData.metaDescription,
-            metaKeywords: editFormData.metaKeywords,
-        };
-        setCategories(
-            categories.map((c) => (c.id === editingCategory.id ? updatedCategory : c))
-        );
-        if (detailCategory?.id === editingCategory.id) {
-            setDetailCategory(updatedCategory);
+        if (!editFormData.name.trim()) {
+            toast.error('Vui lòng nhập tên danh mục.', 'Thiếu thông tin');
+            return;
         }
-        setIsEditModalOpen(false);
-        toast.success(`Đã cập nhật thông tin danh mục "${updatedCategory.name}" thành công!`, 'Cập nhật thành công');
+
+        setIsSubmitting(true);
+        try {
+            const payload: CategoryUpdateRequest = {
+                name: editFormData.name.trim(),
+                slug: editFormData.slug.trim() || generateSlug(editFormData.name),
+                description: editFormData.description.trim() || undefined,
+                status: editFormData.status === 'ACTIVE' ? 1 : 0,
+                parentId: editFormData.parentId ? Number(editFormData.parentId) : null,
+            };
+
+            const updated = await adminCategoryService.updateCategory(editingCategory.numericId, payload);
+            toast.success(`Đã cập nhật danh mục "${updated.name}" thành công!`, 'Cập nhật thành công');
+
+            const mappedItem = mapBackendCategoryToItem(updated);
+
+            if (detailCategory && detailCategory.id === editingCategory.id) {
+                setDetailCategory(mappedItem);
+            }
+
+            setIsEditModalOpen(false);
+            setEditingCategory(null);
+
+            loadCategories(true);
+            loadParentOptions();
+        } catch (err: any) {
+            toast.error(err.message || 'Không thể cập nhật danh mục.', 'Lỗi cập nhật');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Export Categories to CSV
+    const handleExportCSV = () => {
+        if (!categories || categories.length === 0) {
+            toast.warning('Không có dữ liệu danh mục để xuất file.', 'Thông báo');
+            return;
+        }
+
+        const headers = ['ID', 'Tên danh mục', 'Slug', 'Danh mục cha', 'Trạng thái', 'Ngày tạo', 'Mô tả'];
+        const rows = categories.map((c) => [
+            c.id,
+            `"${(c.name || '').replace(/"/g, '""')}"`,
+            `"${(c.slug || '').replace(/"/g, '""')}"`,
+            `"${(c.parentName || 'Danh mục gốc').replace(/"/g, '""')}"`,
+            c.status === 'ACTIVE' ? 'Đang hiển thị' : 'Tạm ẩn',
+            c.createdAt,
+            `"${(c.description || '').replace(/"/g, '""')}"`,
+        ]);
+
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `danh_muc_pcstore_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success('Danh sách danh mục sản phẩm đã được xuất ra file CSV thành công!', 'Xuất file thành công');
     };
 
     // Modal Tabs Definition
@@ -690,11 +679,6 @@ export const CategoryList: React.FC = () => {
             id: 'basic',
             label: 'Thông tin cơ bản',
             icon: FolderTree,
-        },
-        {
-            id: 'seo',
-            label: 'Mô tả & Tối ưu SEO',
-            icon: Globe,
         },
         {
             id: 'display',
@@ -714,12 +698,7 @@ export const CategoryList: React.FC = () => {
             id: 'products',
             label: 'Sản phẩm thuộc nhóm',
             icon: Package,
-            badge: detailCategory?.productsCount || 0,
-        },
-        {
-            id: 'seo',
-            label: 'Nội dung & SEO',
-            icon: Globe,
+            badge: categoryProducts.length,
         },
         {
             id: 'status',
@@ -728,9 +707,10 @@ export const CategoryList: React.FC = () => {
         },
     ];
 
-    // Filter Fields Definition
-    const rootCategories = categories.filter((c) => c.parentId === null);
+    // Root categories for filters
+    const rootCategories = allParentOptions.filter((c) => c.parentId === null);
 
+    // Filter Fields Definition
     const filterFields: FilterField[] = [
         {
             id: 'parent',
@@ -757,67 +737,9 @@ export const CategoryList: React.FC = () => {
                 { label: 'Tạm ẩn (HIDDEN)', value: 'HIDDEN' },
             ],
         },
-        {
-            id: 'featured',
-            label: 'Nổi bật trang chủ',
-            placeholder: 'Tất cả',
-            icon: Sparkles,
-            options: [
-                { label: 'Tất cả danh mục', value: '' },
-                { label: '⭐ Danh mục nổi bật', value: 'FEATURED' },
-                { label: 'Tiêu chuẩn', value: 'NORMAL' },
-            ],
-        },
-        {
-            id: 'createdDate',
-            label: 'Ngày tạo',
-            type: 'date',
-            icon: Calendar,
-        },
     ];
 
-    // Filter Logic
-    const filteredCategories = categories.filter((c) => {
-        // Search
-        const matchesSearch =
-            !searchQuery ||
-            c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.parentName.toLowerCase().includes(searchQuery.toLowerCase());
-
-        // Parent filter
-        let matchesParent = true;
-        if (filterValues.parent === 'ROOT') {
-            matchesParent = c.parentId === null;
-        } else if (filterValues.parent) {
-            matchesParent = c.parentId === filterValues.parent;
-        }
-
-        // Status filter
-        const matchesStatus = !filterValues.status || c.status === filterValues.status;
-
-        // Featured filter
-        let matchesFeatured = true;
-        if (filterValues.featured === 'FEATURED') {
-            matchesFeatured = c.isFeatured;
-        } else if (filterValues.featured === 'NORMAL') {
-            matchesFeatured = !c.isFeatured;
-        }
-
-        // Date filter
-        const matchesDate = !filterValues.createdDate || c.createdAt === filterValues.createdDate;
-
-        return matchesSearch && matchesParent && matchesStatus && matchesFeatured && matchesDate;
-    });
-
-    const totalPages = Math.ceil(filteredCategories.length / pageSize) || 1;
-    const paginatedCategories = filteredCategories.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-
-    // Table Columns
+    // Table Columns Definition
     const categoryTableColumns: Column<CategoryItem>[] = [
         {
             key: 'category',
@@ -827,18 +749,20 @@ export const CategoryList: React.FC = () => {
                     <img
                         src={cat.image}
                         alt={cat.name}
-                        className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0"
+                        className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0 bg-gray-50"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+                        }}
                     />
                     <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-gray-900 text-xs truncate max-w-[200px]">
                                 {cat.name}
                             </span>
-                            {cat.isFeatured && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                    <Sparkles className="w-2.5 h-2.5 text-amber-500" /> Nổi bật
-                                </span>
-                            )}
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono text-gray-500 bg-gray-100 border border-gray-200">
+                                ID: {cat.id}
+                            </span>
                         </div>
                         <p className="text-[11px] text-gray-400 font-mono mt-0.5 truncate max-w-[220px]">
                             /{cat.slug}
@@ -862,28 +786,12 @@ export const CategoryList: React.FC = () => {
                 ),
         },
         {
-            key: 'productsCount',
-            header: 'Số lượng sản phẩm',
+            key: 'description',
+            header: 'Mô tả',
             render: (cat) => (
-                <div>
-                    <span className="font-bold text-gray-900 text-xs flex items-center gap-1">
-                        <Package className="w-3.5 h-3.5 text-blue-600" />
-                        <span>{cat.productsCount} sản phẩm</span>
-                    </span>
-                    <span className="text-[11px] text-gray-400 block mt-0.5">
-                        {cat.showOnMenu ? 'Hiển thị trên menu' : 'Không ghim menu'}
-                    </span>
-                </div>
-            ),
-        },
-        {
-            key: 'order',
-            header: 'Thứ tự',
-            align: 'center',
-            render: (cat) => (
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
-                    {cat.order}
-                </span>
+                <p className="text-xs text-gray-600 line-clamp-2 max-w-[280px]">
+                    {cat.description || <span className="italic text-gray-400">Chưa có mô tả</span>}
+                </p>
             ),
         },
         {
@@ -904,7 +812,7 @@ export const CategoryList: React.FC = () => {
             key: 'createdAt',
             header: 'Ngày tạo',
             accessorKey: 'createdAt',
-            className: 'font-medium text-gray-600',
+            className: 'font-medium text-gray-600 text-xs',
         },
         {
             key: 'actions',
@@ -932,7 +840,7 @@ export const CategoryList: React.FC = () => {
 
                     <button
                         type="button"
-                        onClick={() => handleToggleStatus(cat.id)}
+                        onClick={() => handleOpenToggleStatusModal(cat)}
                         className={`p-1.5 rounded-lg transition-colors border ${cat.status === 'ACTIVE'
                             ? 'text-amber-600 border-amber-200 hover:bg-amber-50'
                             : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
@@ -944,7 +852,7 @@ export const CategoryList: React.FC = () => {
 
                     <button
                         type="button"
-                        onClick={() => handleDeleteCategory(cat.id)}
+                        onClick={() => handleOpenDeleteModal(cat)}
                         className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600 transition-colors"
                         title="Xóa danh mục"
                     >
@@ -965,18 +873,34 @@ export const CategoryList: React.FC = () => {
                         <span>Quản lý danh mục</span>
                     </h1>
                     <p className="text-xs text-gray-500 mt-1">
-                        Tổ chức hệ thống phân cấp danh mục sản phẩm, tối ưu đường dẫn tĩnh và hiển thị trang chủ.
+                        Hệ thống phân cấp danh mục sản phẩm
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={() => toast.success('Danh sách danh mục sản phẩm đã được xuất ra file Excel thành công!', 'Xuất file thành công')}
+                        onClick={() => {
+                            loadCategories(true);
+                            loadParentOptions();
+                        }}
+                        disabled={isRefreshing}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60"
+                        title="Làm mới dữ liệu từ máy chủ"
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Làm mới</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleExportCSV}
                         className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors"
+                        title="Xuất dữ liệu ra file CSV"
                     >
                         <Download className="w-3.5 h-3.5 text-gray-500" />
-                        <span className="hidden sm:inline">Xuất file</span>
+                        <span className="hidden sm:inline">Xuất CSV</span>
                     </button>
+
                     <button
                         type="button"
                         onClick={() => {
@@ -986,7 +910,6 @@ export const CategoryList: React.FC = () => {
                                 description: '',
                                 parentId: '',
                                 image: '',
-                                order: categories.length + 1,
                                 status: 'ACTIVE',
                                 isFeatured: false,
                                 showOnMenu: true,
@@ -999,13 +922,33 @@ export const CategoryList: React.FC = () => {
                             }
                             setIsAddModalOpen(true);
                         }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all shadow-blue-500/20"
                     >
                         <Plus className="w-4 h-4 text-white" />
                         <span>Thêm danh mục</span>
                     </button>
                 </div>
             </div>
+
+            {/* Error Banner (if any) */}
+            {error && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start justify-between gap-3 animate-in fade-in">
+                    <div className="flex items-start gap-2.5">
+                        <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="text-xs font-bold text-rose-900">Không thể kết nối API máy chủ</h4>
+                            <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => loadCategories()}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                    >
+                        Thử lại
+                    </button>
+                </div>
+            )}
 
             {/* Reusable Admin Filter Toolbar */}
             <AdminFilter
@@ -1023,37 +966,46 @@ export const CategoryList: React.FC = () => {
                 }}
             />
 
-            {/* Category Data Table */}
-            <AdminTable
-                columns={categoryTableColumns}
-                data={paginatedCategories}
-                rowKey="id"
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredCategories.length}
-                pageSize={pageSize}
-                pageSizeOptions={[10, 15, 20]}
-                onPageChange={(page) => setCurrentPage(page)}
-                onPageSizeChange={(newSize) => {
-                    setPageSize(newSize);
-                    setCurrentPage(1);
-                }}
-                onRowClick={(cat) => handleOpenDetailModal(cat)}
-                itemUnitName="danh mục"
-                emptyText="Không tìm thấy danh mục sản phẩm nào thỏa mãn điều kiện."
-            />
+            {/* Category Data Table with Loading State */}
+            {isLoading ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
+                    <p className="text-xs font-bold text-gray-700">Đang tải danh sách danh mục từ máy chủ...</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Vui lòng chờ trong giây lát</p>
+                </div>
+            ) : (
+                <AdminTable
+                    columns={categoryTableColumns}
+                    data={categories}
+                    rowKey="id"
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalElements}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 15, 20, 50]}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    onPageSizeChange={(newSize) => {
+                        setPageSize(newSize);
+                        setCurrentPage(1);
+                    }}
+                    onRowClick={(cat) => handleOpenDetailModal(cat)}
+                    itemUnitName="danh mục"
+                    emptyText="Không tìm thấy danh mục sản phẩm nào thỏa mãn điều kiện."
+                />
+            )}
 
             {/* MODAL 1: THÊM DANH MỤC MỚI (AdminModal với Tabs) */}
             <AdminModal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
+                onClose={() => !isSubmitting && setIsAddModalOpen(false)}
                 title="Thêm danh mục sản phẩm mới"
-                subtitle="Phân loại hàng hóa theo các thẻ tab trực quan để tránh biểu mẫu quá dài"
+                subtitle="Tạo mới danh mục phân cấp trên máy chủ backend API"
                 icon={Plus}
                 size="lg"
                 tabs={categoryModalTabs}
                 onSubmit={handleAddCategory}
-                submitText="Tạo danh mục"
+                submitText={isSubmitting ? 'Đang tạo...' : 'Tạo danh mục'}
+                isSubmitting={isSubmitting}
             >
                 {(activeTab) => (
                     <div>
@@ -1105,7 +1057,7 @@ export const CategoryList: React.FC = () => {
                                                 <RefreshCw className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
-                                        <p className="text-[11px] text-gray-400 mt-1">Đường dẫn thân thiện hiển thị trên thanh địa chỉ URL trình duyệt</p>
+                                        <p className="text-[11px] text-gray-400 mt-1">Đường dẫn thân thiện hiển thị trên thanh địa chỉ URL</p>
                                     </div>
 
                                     <div>
@@ -1118,9 +1070,9 @@ export const CategoryList: React.FC = () => {
                                             className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
                                         >
                                             <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
-                                            {rootCategories.map((rc) => (
+                                            {allParentOptions.map((rc) => (
                                                 <option key={rc.id} value={rc.id}>
-                                                    📂 {rc.name}
+                                                    📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
                                                 </option>
                                             ))}
                                         </select>
@@ -1128,94 +1080,6 @@ export const CategoryList: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Thứ tự ưu tiên hiển thị
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            value={formData.order}
-                                            onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
-                                            className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                        <p className="text-[11px] text-gray-400 mt-1">Số nhỏ hơn sẽ được ưu tiên xếp trước trên menu và bảng</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Ảnh đại diện / Banner
-                                        </label>
-                                        <input
-                                            ref={imageInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageFileChange}
-                                            className="hidden"
-                                            id="category-image-input"
-                                        />
-                                        <div
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                setIsDraggingImage(true);
-                                            }}
-                                            onDragLeave={() => setIsDraggingImage(false)}
-                                            onDrop={handleDropImage}
-                                            className={`flex items-center gap-3 p-2.5 rounded-2xl border border-dashed transition-all ${isDraggingImage
-                                                ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20'
-                                                : 'border-gray-200 bg-gray-50/50 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            <div
-                                                onClick={() => imageInputRef.current?.click()}
-                                                className="relative group w-12 h-12 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center cursor-pointer shadow-sm"
-                                                title="Bấm để tải ảnh"
-                                            >
-                                                {formData.image ? (
-                                                    <img
-                                                        src={formData.image}
-                                                        alt="Preview"
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <FolderTree className="w-5 h-5 text-gray-400" />
-                                                )}
-                                                <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Camera className="w-3.5 h-3.5" />
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => imageInputRef.current?.click()}
-                                                        className="px-2.5 py-1 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-[11px] rounded-lg border border-gray-200 shadow-sm"
-                                                    >
-                                                        Chọn ảnh
-                                                    </button>
-                                                    {formData.image && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleRemoveImage}
-                                                            className="text-[11px] text-rose-600 hover:underline font-semibold"
-                                                        >
-                                                            Xóa
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] text-gray-400 mt-1 truncate">Kéo thả ảnh hoặc bấm chọn (tối đa 5MB)</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Tab 2: Mô tả & SEO */}
-                        {activeTab === 'seo' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                         Mô tả chi tiết danh mục
@@ -1228,56 +1092,9 @@ export const CategoryList: React.FC = () => {
                                         className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
                                     />
                                 </div>
-
-                                <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-3">
-                                    <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                                        <Globe className="w-4 h-4 text-blue-600" />
-                                        <span>Tối ưu hóa công cụ tìm kiếm (SEO)</span>
-                                    </h4>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Tiêu đề SEO (Meta Title)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.metaTitle}
-                                            onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
-                                            placeholder="vd: PC Gaming Chính Hãng - Giá Rẻ | PCStore"
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Mô tả SEO (Meta Description)
-                                        </label>
-                                        <textarea
-                                            rows={2}
-                                            value={formData.metaDescription}
-                                            onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
-                                            placeholder="Đoạn văn ngắn 120-160 ký tự hiển thị trên kết quả tìm kiếm Google..."
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Từ khóa SEO (Keywords)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.metaKeywords}
-                                            onChange={(e) => setFormData({ ...formData, metaKeywords: e.target.value })}
-                                            placeholder="vd: pc gaming, may tinh ban, pc gia re"
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         )}
-
-                        {/* Tab 3: Hiển thị & Trạng thái */}
+                        {/* Tab 2: Hiển thị & Trạng thái */}
                         {activeTab === 'display' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
                                 <div>
@@ -1422,18 +1239,17 @@ export const CategoryList: React.FC = () => {
                                         <img
                                             src={detailCategory.image}
                                             alt={detailCategory.name}
-                                            className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md flex-shrink-0"
+                                            className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md flex-shrink-0 bg-white"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src =
+                                                    'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+                                            }}
                                         />
                                         <div className="flex-1 text-center sm:text-left min-w-0">
                                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                                                 <h3 className="text-lg font-bold text-gray-900 tracking-tight">
                                                     {detailCategory.name}
                                                 </h3>
-                                                {detailCategory.isFeatured && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
-                                                        <Sparkles className="w-3 h-3 text-amber-600" /> Nổi bật
-                                                    </span>
-                                                )}
                                                 {detailCategory.status === 'ACTIVE' ? (
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
                                                         <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đang hiển thị
@@ -1447,7 +1263,7 @@ export const CategoryList: React.FC = () => {
                                             <p className="text-xs text-gray-500 mt-1 flex items-center justify-center sm:justify-start gap-1.5 font-mono">
                                                 <span>/{detailCategory.slug}</span>
                                                 <span>•</span>
-                                                <span>ID: {detailCategory.id}</span>
+                                                <span>Mã ID: {detailCategory.id}</span>
                                             </p>
                                             <p className="text-xs text-gray-600 mt-2 font-normal line-clamp-2">
                                                 {detailCategory.description}
@@ -1515,10 +1331,11 @@ export const CategoryList: React.FC = () => {
 
                                         <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
                                             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
-                                                Thứ tự hiển thị
+                                                Thời gian khởi tạo
                                             </span>
-                                            <span className="text-xs font-bold text-gray-900">
-                                                Vị trí số #{detailCategory.order}
+                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                                <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                                                <span>{detailCategory.createdAt}</span>
                                             </span>
                                         </div>
                                     </div>
@@ -1528,118 +1345,78 @@ export const CategoryList: React.FC = () => {
                             {/* Tab 2: Sản phẩm thuộc nhóm */}
                             {activeTab === 'products' && (
                                 <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50">
-                                            <span className="text-[11px] font-semibold text-blue-600">Tổng sản phẩm</span>
-                                            <p className="text-lg font-bold text-gray-900 mt-1">{detailCategory.productsCount} mặt hàng</p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">Thuộc 8 thương hiệu</p>
+                                            <span className="text-[11px] font-semibold text-blue-600">Sản phẩm thuộc nhóm</span>
+                                            <p className="text-lg font-bold text-gray-900 mt-1">
+                                                {categoryProducts.length} mặt hàng
+                                            </p>
+                                            <p className="text-[10px] text-gray-500 mt-0.5">Dữ liệu theo danh mục ID #{detailCategory.id}</p>
                                         </div>
 
                                         <div className="p-3.5 rounded-xl border border-emerald-100 bg-emerald-50/50">
-                                            <span className="text-[11px] font-semibold text-emerald-600">Còn hàng</span>
-                                            <p className="text-lg font-bold text-emerald-700 mt-1">{Math.floor(detailCategory.productsCount * 0.85)} mặt hàng</p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">Sẵn sàng giao ngay</p>
-                                        </div>
-
-                                        <div className="p-3.5 rounded-xl border border-purple-100 bg-purple-50/50">
-                                            <span className="text-[11px] font-semibold text-purple-600">Doanh số trung bình</span>
-                                            <p className="text-lg font-bold text-purple-700 mt-1">Cao</p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">Tăng trưởng 18% tháng này</p>
+                                            <span className="text-[11px] font-semibold text-emerald-600">Trạng thái danh mục</span>
+                                            <p className="text-lg font-bold text-emerald-700 mt-1">
+                                                {detailCategory.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ẩn'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-500 mt-0.5">Phân cấp: {detailCategory.parentName}</p>
                                         </div>
                                     </div>
 
-                                    {/* Mock Product Samples */}
+                                    {/* Products list from Real API */}
                                     <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white">
                                         <div className="px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
                                             <span className="text-xs font-bold text-gray-700">Sản phẩm tiêu biểu trong danh mục</span>
-                                            <span className="text-[11px] text-gray-400">Hiển thị 3 sản phẩm hàng đầu</span>
+                                            <span className="text-[11px] text-gray-400">
+                                                {isLoadingProducts ? 'Đang tải...' : `${categoryProducts.length} sản phẩm`}
+                                            </span>
                                         </div>
-                                        <div className="divide-y divide-gray-100">
-                                            {[
-                                                {
-                                                    id: 'P-101',
-                                                    name: 'PC Gaming Titan Dragon RTX 4070 Ti Super 16GB',
-                                                    price: '38,900,000 ₫',
-                                                    stock: 14,
-                                                    image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=100&q=80',
-                                                },
-                                                {
-                                                    id: 'P-102',
-                                                    name: 'PC Đồ Họa Master Workstation i9 14900K 64GB',
-                                                    price: '54,500,000 ₫',
-                                                    stock: 8,
-                                                    image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=100&q=80',
-                                                },
-                                                {
-                                                    id: 'P-103',
-                                                    name: 'PC Văn Phòng Pro Business Core i5 12400',
-                                                    price: '11,200,000 ₫',
-                                                    stock: 25,
-                                                    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=100&q=80',
-                                                },
-                                            ].map((prod) => (
-                                                <div key={prod.id} className="p-3.5 hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <img
-                                                            src={prod.image}
-                                                            alt={prod.name}
-                                                            className="w-10 h-10 rounded-xl object-cover border border-gray-200"
-                                                        />
-                                                        <div>
-                                                            <p className="text-xs font-bold text-gray-900">{prod.name}</p>
-                                                            <p className="text-[11px] text-gray-400 font-mono mt-0.5">Mã: {prod.id} • Còn lại: {prod.stock} bộ</p>
+
+                                        {isLoadingProducts ? (
+                                            <div className="p-8 text-center">
+                                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin mx-auto mb-2" />
+                                                <p className="text-xs text-gray-500">Đang truy vấn sản phẩm thuộc danh mục...</p>
+                                            </div>
+                                        ) : categoryProducts.length === 0 ? (
+                                            <div className="p-8 text-center text-gray-400 text-xs">
+                                                <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                                                Chưa có sản phẩm nào thuộc danh mục này trong hệ thống.
+                                            </div>
+                                        ) : (
+                                            <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                                                {categoryProducts.map((prod) => (
+                                                    <div key={prod.id} className="p-3.5 hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <img
+                                                                src={prod.imageUrl || getCategoryImage(prod.name, prod.slug)}
+                                                                alt={prod.name}
+                                                                className="w-10 h-10 rounded-xl object-cover border border-gray-200 bg-gray-50"
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).src =
+                                                                        'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=100&q=80';
+                                                                }}
+                                                            />
+                                                            <div>
+                                                                <p className="text-xs font-bold text-gray-900">{prod.name}</p>
+                                                                <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                                                                    Mã: {prod.code || `PROD-${prod.id}`}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                {prod.status || 'ACTIVE'}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs font-bold text-blue-600">{prod.price}</p>
-                                                        <span className="text-[10px] font-semibold text-emerald-600 mt-0.5 block">Sẵn hàng</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Tab 3: Nội dung & SEO */}
-                            {activeTab === 'seo' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    {/* Google SERP Simulator */}
-                                    <div className="p-4 bg-white border border-gray-200 rounded-2xl shadow-sm space-y-1">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">
-                                            Xem trước kết quả tìm kiếm Google (SERP Preview)
-                                        </span>
-                                        <div className="text-xs text-emerald-800 font-mono">
-                                            https://pcstore.vn/category/{detailCategory.slug}
-                                        </div>
-                                        <h4 className="text-sm font-semibold text-blue-700 hover:underline cursor-pointer">
-                                            {detailCategory.metaTitle || `${detailCategory.name} Chính Hãng - Giá Rẻ | PCStore`}
-                                        </h4>
-                                        <p className="text-xs text-gray-600 leading-relaxed">
-                                            {detailCategory.metaDescription || detailCategory.description}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400">Meta Title</span>
-                                            <p className="text-xs font-bold text-gray-900">{detailCategory.metaTitle || 'Chưa thiết lập'}</p>
-                                        </div>
-
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400">Meta Description</span>
-                                            <p className="text-xs text-gray-700">{detailCategory.metaDescription || detailCategory.description}</p>
-                                        </div>
-
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400">Meta Keywords</span>
-                                            <p className="text-xs font-mono text-gray-800">{detailCategory.metaKeywords || detailCategory.slug}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tab 4: Trạng thái & Vị trí */}
+                            {/* Tab 3: Trạng thái & Vị trí */}
                             {activeTab === 'status' && (
                                 <div className="space-y-4 animate-in fade-in duration-150">
                                     <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/70 space-y-3">
@@ -1652,12 +1429,11 @@ export const CategoryList: React.FC = () => {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => handleToggleStatus(detailCategory.id)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                                                    detailCategory.status === 'ACTIVE'
-                                                        ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                                        : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-                                                }`}
+                                                onClick={() => handleOpenToggleStatusModal(detailCategory)}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${detailCategory.status === 'ACTIVE'
+                                                    ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
+                                                    : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                                    }`}
                                             >
                                                 {detailCategory.status === 'ACTIVE' ? (
                                                     <>
@@ -1705,14 +1481,15 @@ export const CategoryList: React.FC = () => {
             {/* MODAL 3: CHỈNH SỬA DANH MỤC (AdminModal với Tabs) */}
             <AdminModal
                 isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
+                onClose={() => !isSubmitting && setIsEditModalOpen(false)}
                 title={editingCategory ? `Chỉnh sửa: ${editingCategory.name}` : 'Chỉnh sửa danh mục'}
-                subtitle="Cập nhật cấu trúc phân nhóm, thông tin SEO và cài đặt hiển thị"
+                subtitle="Cập nhật cấu trúc phân nhóm và mô tả trên backend API"
                 icon={Edit}
                 size="lg"
                 tabs={categoryModalTabs}
                 onSubmit={handleUpdateCategory}
-                submitText="Lưu thay đổi"
+                submitText={isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                isSubmitting={isSubmitting}
             >
                 {(activeTab) => (
                     <div>
@@ -1768,104 +1545,17 @@ export const CategoryList: React.FC = () => {
                                             className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
                                         >
                                             <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
-                                            {rootCategories
+                                            {allParentOptions
                                                 .filter((rc) => rc.id !== editingCategory?.id)
                                                 .map((rc) => (
                                                     <option key={rc.id} value={rc.id}>
-                                                        📂 {rc.name}
+                                                        📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
                                                     </option>
                                                 ))}
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Thứ tự ưu tiên hiển thị
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            value={editFormData.order}
-                                            onChange={(e) => setEditFormData({ ...editFormData, order: Number(e.target.value) })}
-                                            className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Ảnh đại diện / Banner
-                                        </label>
-                                        <input
-                                            ref={editImageInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleEditImageFileChange}
-                                            className="hidden"
-                                            id="edit-category-image-input"
-                                        />
-                                        <div
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                                setIsDraggingEditImage(true);
-                                            }}
-                                            onDragLeave={() => setIsDraggingEditImage(false)}
-                                            onDrop={handleDropEditImage}
-                                            className={`flex items-center gap-3 p-2.5 rounded-2xl border border-dashed transition-all ${isDraggingEditImage
-                                                ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20'
-                                                : 'border-gray-200 bg-gray-50/50 hover:bg-gray-50'
-                                                }`}
-                                        >
-                                            <div
-                                                onClick={() => editImageInputRef.current?.click()}
-                                                className="relative group w-12 h-12 rounded-xl border border-gray-200 overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center cursor-pointer shadow-sm"
-                                                title="Bấm để đổi ảnh"
-                                            >
-                                                {editFormData.image ? (
-                                                    <img
-                                                        src={editFormData.image}
-                                                        alt="Preview"
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <FolderTree className="w-5 h-5 text-gray-400" />
-                                                )}
-                                                <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <Camera className="w-3.5 h-3.5" />
-                                                </div>
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => editImageInputRef.current?.click()}
-                                                        className="px-2.5 py-1 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-[11px] rounded-lg border border-gray-200 shadow-sm"
-                                                    >
-                                                        Đổi ảnh
-                                                    </button>
-                                                    {editFormData.image && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleRemoveEditImage}
-                                                            className="text-[11px] text-rose-600 hover:underline font-semibold"
-                                                        >
-                                                            Xóa
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <p className="text-[10px] text-gray-400 mt-1 truncate">Kéo thả ảnh hoặc chọn từ máy</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Tab 2: Mô tả & SEO */}
-                        {activeTab === 'seo' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                         Mô tả chi tiết danh mục
@@ -1878,55 +1568,8 @@ export const CategoryList: React.FC = () => {
                                         className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
                                     />
                                 </div>
-
-                                <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-2xl space-y-3">
-                                    <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                                        <Globe className="w-4 h-4 text-blue-600" />
-                                        <span>Tối ưu hóa công cụ tìm kiếm (SEO)</span>
-                                    </h4>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Tiêu đề SEO (Meta Title)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={editFormData.metaTitle}
-                                            onChange={(e) => setEditFormData({ ...editFormData, metaTitle: e.target.value })}
-                                            placeholder="Tiêu đề hiển thị trên Google..."
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Mô tả SEO (Meta Description)
-                                        </label>
-                                        <textarea
-                                            rows={2}
-                                            value={editFormData.metaDescription}
-                                            onChange={(e) => setEditFormData({ ...editFormData, metaDescription: e.target.value })}
-                                            placeholder="Mô tả kết quả tìm kiếm..."
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                            Từ khóa SEO (Keywords)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={editFormData.metaKeywords}
-                                            onChange={(e) => setEditFormData({ ...editFormData, metaKeywords: e.target.value })}
-                                            placeholder="vd: pc gaming, pc gia re"
-                                            className="w-full text-xs px-3.5 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         )}
-
                         {/* Tab 3: Hiển thị & Trạng thái */}
                         {activeTab === 'display' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
@@ -2019,6 +1662,84 @@ export const CategoryList: React.FC = () => {
                     </div>
                 )}
             </AdminModal>
+
+            {/* MODAL 4: XÁC NHẬN XÓA DANH MỤC (AdminConfirmModal) */}
+            <AdminConfirmModal
+                isOpen={Boolean(deleteTargetCategory)}
+                onClose={() => !isDeleting && setDeleteTargetCategory(null)}
+                onConfirm={handleConfirmDelete}
+                variant="danger"
+                title="Xác nhận xóa danh mục"
+                message={
+                    <span>
+                        Bạn có chắc chắn muốn xóa danh mục{' '}
+                        <strong className="text-gray-900 font-bold">
+                            "{deleteTargetCategory?.name}"
+                        </strong>{' '}
+                        khỏi hệ thống?
+                    </span>
+                }
+                description="Hành động này sẽ thực hiện xóa mềm danh mục. Lưu ý: Chỉ danh mục không còn chứa danh mục con nào mới có thể xóa thành công."
+                confirmText="Xác nhận xóa"
+                cancelText="Hủy bỏ"
+                isLoading={isDeleting}
+                itemPreview={
+                    deleteTargetCategory
+                        ? {
+                            title: deleteTargetCategory.name,
+                            subtitle: `/${deleteTargetCategory.slug} • Nhóm: ${deleteTargetCategory.parentName}`,
+                            badge: deleteTargetCategory.status === 'ACTIVE' ? 'Đang hiển thị' : 'Tạm ẩn',
+                            avatar: deleteTargetCategory.image,
+                        }
+                        : undefined
+                }
+            />
+
+            {/* MODAL 5: XÁC NHẬN CHUYỂN TRẠNG THÁI DANH MỤC (AdminConfirmModal) */}
+            <AdminConfirmModal
+                isOpen={Boolean(statusTargetCategory)}
+                onClose={() => !isTogglingStatus && setStatusTargetCategory(null)}
+                onConfirm={handleConfirmToggleStatus}
+                variant={statusTargetCategory?.status === 'ACTIVE' ? 'warning' : 'success'}
+                icon={statusTargetCategory?.status === 'ACTIVE' ? EyeOff : Eye}
+                title={
+                    statusTargetCategory?.status === 'ACTIVE'
+                        ? 'Xác nhận tạm ẩn danh mục'
+                        : 'Xác nhận hiển thị danh mục'
+                }
+                message={
+                    <span>
+                        Bạn có chắc chắn muốn{' '}
+                        <strong>
+                            {statusTargetCategory?.status === 'ACTIVE' ? 'tạm ẩn' : 'hiển thị'}
+                        </strong>{' '}
+                        danh mục{' '}
+                        <strong className="text-gray-900 font-bold">
+                            "{statusTargetCategory?.name}"
+                        </strong>?
+                    </span>
+                }
+                description={
+                    statusTargetCategory?.status === 'ACTIVE'
+                        ? 'Khi tạm ẩn, khách hàng sẽ không nhìn thấy danh mục này trên thanh menu và các bộ lọc tìm kiếm sản phẩm.'
+                        : 'Khi kích hoạt, danh mục sẽ được hiển thị công khai trên giao diện người dùng và khách hàng có thể tra cứu bình thường.'
+                }
+                confirmText={
+                    statusTargetCategory?.status === 'ACTIVE' ? 'Tạm ẩn danh mục' : 'Hiển thị danh mục'
+                }
+                cancelText="Hủy bỏ"
+                isLoading={isTogglingStatus}
+                itemPreview={
+                    statusTargetCategory
+                        ? {
+                            title: statusTargetCategory.name,
+                            subtitle: `/${statusTargetCategory.slug} • Nhóm: ${statusTargetCategory.parentName}`,
+                            badge: statusTargetCategory.status === 'ACTIVE' ? 'Đang hiển thị' : 'Tạm ẩn',
+                            avatar: statusTargetCategory.image,
+                        }
+                        : undefined
+                }
+            />
         </div>
     );
 };

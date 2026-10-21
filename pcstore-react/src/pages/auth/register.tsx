@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'
 import { User, Lock, Mail, Phone, AtSign, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -34,8 +34,14 @@ export const Register: React.FC = () => {
             return;
         }
 
-        if (password.length < 6) {
-            setErrorMsg('Mật khẩu phải chứa ít nhất 6 ký tự.');
+        if (password.length < 8) {
+            setErrorMsg('Mật khẩu phải chứa ít nhất 8 ký tự.');
+            return;
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setErrorMsg('Mật khẩu phải chứa ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.');
             return;
         }
 

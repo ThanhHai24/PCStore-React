@@ -50,11 +50,11 @@ export interface AdminModalProps {
 }
 
 const SIZE_CLASSES = {
-    sm: 'max-w-[600px]',
-    md: 'max-w-[800px]',
-    lg: 'max-w-[1000px]',
-    xl: 'max-w-[1200px]',
-    '2xl': 'max-w-[1400px]',
+    sm: 'max-w-[80%] h-[80%] overflow-y-auto',
+    md: 'max-w-[80%] h-[80%] overflow-y-auto',
+    lg: 'max-w-[80%] h-[80%] overflow-y-auto',
+    xl: 'max-w-[80%] h-[80%] overflow-y-auto',
+    '2xl': 'max-w-[80%] h-[80%] overflow-y-auto',
 };
 
 export const AdminModal: React.FC<AdminModalProps> = ({
@@ -148,13 +148,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             handleTabClick(tabs[currentTabIndex - 1].id);
         }
     };
-
-    const handleNextTab = () => {
-        if (!isLastTab) {
-            handleTabClick(tabs[currentTabIndex + 1].id);
-        }
-    };
-
     // Determine current tab content if defined inside tab object
     const activeTabObj = tabs.find((t) => t.id === currentTabId);
 
@@ -282,17 +275,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 >
                                     {cancelText}
                                 </button>
-
-                                {/* Next tab button if not on last tab and tab navigation is enabled */}
-                                {tabs.length > 1 && showTabNavigation && !isLastTab && (
-                                    <button
-                                        type="button"
-                                        onClick={handleNextTab}
-                                        className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors"
-                                    >
-                                        Tiếp theo ({tabs[currentTabIndex + 1].label}) →
-                                    </button>
-                                )}
 
                                 {onSubmit && (
                                     <button

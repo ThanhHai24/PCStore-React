@@ -7,7 +7,8 @@ import BuildPc from './pages/storePage/builder/builder';
 import Cart from './pages/storePage/cart/cart';
 import PaymentResult from './pages/storePage/cart/paymentResult';
 import ProductCompare from './pages/storePage/compare/compare';
-import Account from './pages/auth/login';
+import Login from './pages/auth/login';
+import Account from './pages/auth/account';
 import Register from './pages/auth/register';
 import ForgotPassword from './pages/auth/forgotPassword';
 import NotFound from './pages/storePage/notFound/notFound';
@@ -47,7 +48,7 @@ function App() {
               <Route path="build-pc" element={<BuildPc />} />
               <Route path="cart" element={<Cart />} />
               <Route path="vnpay-return" element={<PaymentResult />} />
-              <Route path="login" element={<Account />} />
+              <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="account" element={<Account />} />
               <Route path="forgot-password" element={<ForgotPassword />} />
@@ -56,6 +57,8 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="admin" element={<AdminDashboard />} />
               <Route path="users" element={<UserList />} />
               <Route path="category" element={<CategoryList />} />

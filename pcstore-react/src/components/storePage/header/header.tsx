@@ -20,8 +20,7 @@ import {
     PcCase,
     Truck
 } from 'lucide-react';
-// import { useCart } from '../../context/CartContext';
-// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 // import { getProducts } from '../../services/productService';
 // import type { ApiProduct } from '../../types/apiProduct';
 
@@ -295,7 +294,7 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
 export const Header: React.FC = () => {
     const navigate = useNavigate();
     // const { totalItems: cartCount } = useCart();
-    // const { user, logout } = useAuth();
+    const { user } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
@@ -716,14 +715,23 @@ export const Header: React.FC = () => {
                             </span>
                         </Link>
 
-                        {/* 5. TÀI KHOẢN */}
+                        {/* 5. TÀI KHOẢN / USER */}
                         <Link
                             to="/account"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-blue-700/50 transition-all text-center group"
+                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-blue-700/50 transition-all text-center group max-w-[110px]"
+                            title={user ? `Xin chào, ${user.fullName || user.username}` : 'Đăng nhập / Đăng ký'}
                         >
-                            <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
-                                Tài Khoản
+                            {user?.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt={user.fullName || user.username}
+                                    className="w-6 h-6 rounded-full object-cover mb-0.5 ring-1 ring-white/60"
+                                />
+                            ) : (
+                                <User className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform shrink-0" />
+                            )}
+                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white truncate w-full text-center">
+                                {user ? (user.fullName || user.username) : 'Tài Khoản'}
                             </span>
                         </Link>
                     </div>
@@ -736,8 +744,25 @@ export const Header: React.FC = () => {
                                 2
                             </span>
                         </Link>
-                        <Link to="/account" className="p-2 text-white hover:bg-white/10 rounded-lg">
-                            <User className="w-6 h-6" />
+                        <Link
+                            to="/account"
+                            className="p-1.5 text-white hover:bg-white/10 rounded-lg flex items-center space-x-1"
+                            title={user ? (user.fullName || user.username) : 'Tài Khoản'}
+                        >
+                            {user?.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt={user.fullName || user.username}
+                                    className="w-6 h-6 rounded-full object-cover ring-1 ring-white/60"
+                                />
+                            ) : (
+                                <User className="w-6 h-6" />
+                            )}
+                            {user && (
+                                <span className="text-[11px] font-bold text-white max-w-[70px] truncate hidden sm:inline-block">
+                                    {user.fullName || user.username}
+                                </span>
+                            )}
                         </Link>
                     </div>
                 </div>
@@ -772,8 +797,8 @@ export const Header: React.FC = () => {
                                 to="/account"
                                 className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
                             >
-                                <User className="w-4 h-4 text-blue-600" />
-                                <span>Tài Khoản</span>
+                                <User className="w-4 h-4 text-blue-600 shrink-0" />
+                                <span className="truncate">{user ? (user.fullName || user.username) : 'Tài Khoản'}</span>
                             </Link>
                             <Link
                                 to="/track-order"

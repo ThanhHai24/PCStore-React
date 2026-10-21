@@ -1,20 +1,20 @@
 export interface User {
   id: string;
   username: string;
-  email: string;
+  email?: string;
   fullName: string;
   phone?: string | null;
   avatar?: string | null;
-  role: 'CUSTOMER' | 'ADMIN' | 'STAFF';
-  status: 'ACTIVE' | 'INACTIVE' | 'BANNED';
+  role: 'CUSTOMER' | 'ADMIN' | 'STAFF' | 'MANAGER' | 'STAFF_WAREHOUSE' | 'STAFF_SALES' | 'STAFF_TECH' | string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'BANNED' | string;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface LoginPayload {
-  email?: string;
-  username?: string;
+  username: string;
   password: string;
+  email?: string;
 }
 
 export interface RegisterPayload {
@@ -37,8 +37,14 @@ export interface ChangePasswordPayload {
 }
 
 export interface AuthResponse {
-  message: string;
-  token?: string;
+  accessToken: string;
+  refreshToken?: string;
+  tokenType?: string;
+  expiresInMs?: number;
+  username: string;
+  fullName: string;
+  role: string;
+  message?: string;
   user?: User;
 }
 

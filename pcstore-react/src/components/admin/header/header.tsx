@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
     const handleLogout = () => {
         logout();
-        navigate('/admin/login');
+        navigate('/login');
     };
 
     const notifications = [

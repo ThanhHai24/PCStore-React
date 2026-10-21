@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
     CheckCircle2,
     XCircle,
@@ -295,28 +295,39 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
         };
     }, [addToast]);
 
-    const toast = {
-        success: useCallback(
-            (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
-                addToast({ type: 'success', message, title, ...options }),
-            [addToast]
-        ),
-        error: useCallback(
-            (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
-                addToast({ type: 'error', message, title, ...options }),
-            [addToast]
-        ),
-        warning: useCallback(
-            (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
-                addToast({ type: 'warning', message, title, ...options }),
-            [addToast]
-        ),
-        info: useCallback(
-            (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
-                addToast({ type: 'info', message, title, ...options }),
-            [addToast]
-        ),
-    };
+    const successToast = useCallback(
+        (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
+            addToast({ type: 'success', message, title, ...options }),
+        [addToast]
+    );
+
+    const errorToast = useCallback(
+        (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
+            addToast({ type: 'error', message, title, ...options }),
+        [addToast]
+    );
+
+    const warningToast = useCallback(
+        (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
+            addToast({ type: 'warning', message, title, ...options }),
+        [addToast]
+    );
+
+    const infoToast = useCallback(
+        (message: React.ReactNode, title?: string, options?: Partial<ToastItem>) =>
+            addToast({ type: 'info', message, title, ...options }),
+        [addToast]
+    );
+
+    const toast = useMemo(
+        () => ({
+            success: successToast,
+            error: errorToast,
+            warning: warningToast,
+            info: infoToast,
+        }),
+        [successToast, errorToast, warningToast, infoToast]
+    );
 
     const showToast = useCallback(
         (message: React.ReactNode, type: ToastType = 'info'): string => {
@@ -325,17 +336,20 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
         [addToast]
     );
 
+    const contextValue = useMemo(
+        () => ({
+            toasts,
+            addToast,
+            removeToast,
+            clearAllToasts,
+            showToast,
+            toast,
+        }),
+        [toasts, addToast, removeToast, clearAllToasts, showToast, toast]
+    );
+
     return (
-        <ToastContext.Provider
-            value={{
-                toasts,
-                addToast,
-                removeToast,
-                clearAllToasts,
-                showToast,
-                toast,
-            }}
-        >
+        <ToastContext.Provider value={contextValue}>
             {children}
             <AdminToastContainer toasts={toasts} onClose={removeToast} position={position} />
         </ToastContext.Provider>

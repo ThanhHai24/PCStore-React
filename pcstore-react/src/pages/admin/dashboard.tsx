@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Package, ShoppingBag, BarChart3, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Package, ShoppingBag, BarChart3 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
     return (

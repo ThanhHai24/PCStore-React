@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Loader2 } from 'lucide-react';
 
 export interface Column<T> {
     key: string;
@@ -24,7 +24,10 @@ export interface AdminTableProps<T> {
     totalPages?: number;
     totalItems?: number;
     pageSize?: number;
+    pageSizeOptions?: number[];
     onPageChange?: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    showPageSizeSelector?: boolean;
     itemUnitName?: string;
     showPagination?: boolean;
 
@@ -49,8 +52,11 @@ export function AdminTable<T>({
     currentPage = 1,
     totalPages = 1,
     totalItems,
-    pageSize,
+    pageSize = 10,
+    pageSizeOptions = [10, 15, 20],
     onPageChange,
+    onPageSizeChange,
+    showPageSizeSelector = true,
     itemUnitName = 'mục',
     showPagination = true,
     selectable = false,
@@ -90,7 +96,8 @@ export function AdminTable<T>({
     };
 
     const itemsCount = totalItems !== undefined ? totalItems : data.length;
-    const calcPageSize = pageSize || (data.length > 0 ? data.length : 10);
+    const calcPageSize = pageSize || 10;
+    const mergedPageSizeOptions = Array.from(new Set([...pageSizeOptions, calcPageSize])).sort((a, b) => a - b);
     const startItem = itemsCount > 0 ? (currentPage - 1) * calcPageSize + 1 : 0;
     const endItem = Math.min(currentPage * calcPageSize, itemsCount);
 
@@ -216,43 +223,67 @@ export function AdminTable<T>({
                         <span className="font-bold text-gray-900">{itemsCount}</span> {itemUnitName}
                     </p>
 
-                    {totalPages > 1 && onPageChange && (
-                        <div className="flex items-center gap-1.5">
-                            <button
-                                type="button"
-                                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                                disabled={currentPage === 1}
-                                className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                title="Trang trước"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {showPageSizeSelector && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Số bản ghi:</span>
+                                <div className="relative inline-block">
+                                    <select
+                                        value={calcPageSize}
+                                        onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
+                                        disabled={!onPageSizeChange}
+                                        aria-label="Số bản ghi trên 1 trang"
+                                        className="appearance-none bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 cursor-pointer hover:border-gray-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        {mergedPageSizeOptions.map((size) => (
+                                            <option key={size} value={size}>
+                                                {size} / trang
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                </div>
+                            </div>
+                        )}
 
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        {totalPages > 1 && onPageChange && (
+                            <div className="flex items-center gap-1.5">
                                 <button
-                                    key={page}
                                     type="button"
-                                    onClick={() => onPageChange(page)}
-                                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${currentPage === page
-                                        ? 'bg-blue-600 text-white shadow-sm'
-                                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                                        }`}
+                                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="Trang trước"
                                 >
-                                    {page}
+                                    <ChevronLeft className="w-4 h-4" />
                                 </button>
-                            ))}
 
-                            <button
-                                type="button"
-                                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                                disabled={currentPage === totalPages}
-                                className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                title="Trang kế tiếp"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    )}
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        type="button"
+                                        onClick={() => onPageChange(page)}
+                                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${currentPage === page
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="Trang kế tiếp"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

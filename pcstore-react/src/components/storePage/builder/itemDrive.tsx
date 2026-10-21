@@ -1,4 +1,3 @@
-import React from 'react';
 import { Gift, Plus } from "lucide-react";
 import SelectedItem from "./selectedItem";
 import type { BuilderProduct } from "../../../data/builderProducts";
@@ -11,6 +10,7 @@ interface ItemDriveProps {
     selectedProduct?: BuilderProduct;
     quantity?: number;
     maxQuantity?: number;
+    issues?: string[];
     onOpenModal?: () => void;
     onUpdateQuantity?: (qty: number) => void;
     onRemoveItem?: () => void;

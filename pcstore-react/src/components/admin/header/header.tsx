@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
     Bell,
     ChevronDown,
-    Globe,
     LogOut,
     Menu,
     SlidersHorizontal,

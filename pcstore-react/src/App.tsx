@@ -16,6 +16,10 @@ import { CartProvider } from './context/CartContext';
 import AdminDashboard from './pages/admin/dashboard';
 import AdminLayout from './layouts/adminLayout';
 import UserList from './pages/admin/user/list';
+import CategoryList from './pages/admin/category/list';
+import BrandList from './pages/admin/brand/list';
+import ProductList from './pages/admin/product/list';
+import SupplierList from './pages/admin/supplier/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -54,6 +58,14 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="admin" element={<AdminDashboard />} />
               <Route path="users" element={<UserList />} />
+              <Route path="category" element={<CategoryList />} />
+              <Route path="categories" element={<CategoryList />} />
+              <Route path="brand" element={<BrandList />} />
+              <Route path="brands" element={<BrandList />} />
+              <Route path="product" element={<ProductList />} />
+              <Route path="products" element={<ProductList />} />
+              <Route path="supplier" element={<SupplierList />} />
+              <Route path="suppliers" element={<SupplierList />} />
             </Route>
           </Routes>
         </BrowserRouter>

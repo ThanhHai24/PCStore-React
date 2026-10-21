@@ -7,6 +7,7 @@ import {
     Users,
     FolderTree,
     Award,
+    Building2,
     ShieldCheck,
     Globe,
     ChevronDown,
@@ -106,7 +107,7 @@ const navItems: NavItem[] = [
         label: 'Quản lý nhập hàng',
         icon: Download,
         children: [
-            { path: '/admin/supplier', label: 'Quản lý NCC', icon: Award },
+            { path: '/admin/supplier', label: 'Quản lý NCC', icon: Building2 },
             { path: '/admin/import', label: 'Quản lý đơn nhập hàng', icon: Package },
             { path: '/admin/import-ticket', label: 'Quản lý phiếu nhập hàng', icon: Ticket },
         ],

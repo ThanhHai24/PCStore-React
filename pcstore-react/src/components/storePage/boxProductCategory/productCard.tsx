@@ -77,29 +77,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </Link>
 
                 {/* Bottom Overlay Banner Badge */}
-                {banner && (
-                    <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-[94%] z-10 pointer-events-none">
-                        {banner.type === "hot" ? (
-                            <div className="bg-gradient-to-r from-[#0052cc] via-[#0066ff] to-[#0040b3] text-white rounded-full px-1.5 py-0.5 flex items-center shadow-md border border-white/60">
-                                <div className="w-6 h-6 rounded-full bg-[#003d99] border-2 border-[#ffeb3b] flex items-center justify-center text-[9px] font-black italic text-[#ffeb3b] transform -rotate-12 shadow-sm shrink-0">
-                                    {banner.badgeText || "HOT"}
-                                </div>
-                                <span className="text-[#ffeb3b] font-extrabold text-[11px] sm:text-[12px] tracking-wide uppercase mx-auto drop-shadow-sm truncate pl-0.5">
-                                    {banner.title}
-                                </span>
-                            </div>
-                        ) : (
-                            <div className="bg-gradient-to-r from-[#d32f2f] via-[#f44336] to-[#ff9800] text-white rounded-full px-1.5 py-0.5 flex items-center shadow-md border border-white/60">
-                                <div className="w-6 h-6 rounded-full bg-[#b71c1c] border-2 border-[#ffeb3b] flex items-center justify-center text-[9px] font-black italic text-[#ffeb3b] transform -rotate-12 shadow-sm shrink-0">
-                                    {banner.badgeText || "GIÁ"}
-                                </div>
-                                <span className="text-[#ffeb3b] font-extrabold text-[11px] sm:text-[12px] tracking-wide uppercase mx-auto drop-shadow-sm truncate pl-0.5">
-                                    {banner.title}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
 
             {/* Product Info */}

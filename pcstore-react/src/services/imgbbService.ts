@@ -8,7 +8,30 @@
 // Bạn có thể điền API key tại file .env: VITE_IMGBB_API_KEY="your_api_key_here"
 // Hoặc điền tạm trực tiếp vào biến IMGBB_API_KEY_FALLBACK bên dưới.
 // ============================================================================
-export const IMGBB_API_KEY_FALLBACK = ''; // <-- Điền API key ImgBB vào đây nếu chưa cấu hình .env
+export const IMGBB_API_KEY_FALLBACK = 'eb6f7a446f476715af2c6cc0701de314';
+
+/**
+ * Kiểm tra tính hợp lệ của file ảnh trước khi xử lý
+ */
+export const validateImageFile = (
+  file: File,
+  maxSizeMB = 32
+): { valid: boolean; error?: string } => {
+  if (!file.type.startsWith('image/')) {
+    return {
+      valid: false,
+      error: 'Tệp tải lên không phải là ảnh hợp lệ (PNG, JPG, WEBP, GIF,...)',
+    };
+  }
+  const maxSizeInBytes = maxSizeMB * 1024 * 1024;
+  if (file.size > maxSizeInBytes) {
+    return {
+      valid: false,
+      error: `Dung lượng ảnh vượt quá giới hạn tối đa cho phép (${maxSizeMB}MB)`,
+    };
+  }
+  return { valid: true };
+};
 
 /**
  * Lấy API key ImgBB từ biến môi trường hoặc biến fallback
@@ -154,6 +177,7 @@ export const imgbbService = {
   uploadImageToImgBB,
   uploadImage,
   getImgbbApiKey,
+  validateImageFile,
 };
 
 export default imgbbService;

@@ -20,7 +20,7 @@ import {
     Link as LinkIcon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { uploadImage } from '../../services/imgbbService';
+import { uploadImage, validateImageFile } from '../../services/imgbbService';
 
 export const Account: React.FC = () => {
     const { user, logout, updateProfile, changePassword, loading } = useAuth();
@@ -46,6 +46,7 @@ export const Account: React.FC = () => {
 
     // Avatar upload states
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
@@ -59,36 +60,35 @@ export const Account: React.FC = () => {
             setPhone(user.phone || '');
             setAvatar(user.avatar || '');
             setPreviewUrl(user.avatar || '');
+            setSelectedAvatarFile(null);
         }
     }, [user]);
 
-    const handleFileSelect = async (file: File) => {
-        if (!file.type.startsWith('image/')) {
-            setUploadError('Vui lòng chọn một tệp hình ảnh hợp lệ (PNG, JPG, WEBP, GIF,...)');
+    // Cleanup blob preview url on unmount
+    useEffect(() => {
+        return () => {
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
+    const handleFileSelect = (file: File) => {
+        const validation = validateImageFile(file, 32);
+        if (!validation.valid) {
+            setUploadError(validation.error || 'Tệp hình ảnh không hợp lệ');
             return;
         }
 
-        if (file.size > 32 * 1024 * 1024) {
-            setUploadError('Dung lượng ảnh vượt quá giới hạn tối đa (32MB)');
-            return;
+        // Dọn dẹp blob url cũ trước đó nếu có
+        if (previewUrl && previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
         }
 
         const localPreview = URL.createObjectURL(file);
         setPreviewUrl(localPreview);
+        setSelectedAvatarFile(file);
         setUploadError(null);
-        setUploadSuccessMsg(null);
-        setIsUploadingAvatar(true);
-
-        try {
-            const uploadedUrl = await uploadImage(file);
-            setAvatar(uploadedUrl);
-            setPreviewUrl(uploadedUrl);
-            setUploadSuccessMsg('Tải ảnh lên ImgBB thành công!');
-        } catch (err: any) {
-            setUploadError(err.message || 'Tải ảnh lên ImgBB thất bại');
-        } finally {
-            setIsUploadingAvatar(false);
-        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,6 +108,10 @@ export const Account: React.FC = () => {
     };
 
     const handleRemoveAvatar = () => {
+        if (previewUrl && previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setSelectedAvatarFile(null);
         setAvatar('');
         setPreviewUrl('');
         setUploadError(null);
@@ -130,17 +134,50 @@ export const Account: React.FC = () => {
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         setProfileMsg(null);
+        setUploadError(null);
+
         if (!fullName.trim()) {
             setProfileMsg({ type: 'error', text: 'Họ và tên không được để trống' });
             return;
         }
 
         setIsUpdatingProfile(true);
+        let finalAvatar = avatar;
+
         try {
+            // NẾU CÓ ẢNH ĐƯỢC CHỌN TỪ MÁY: BÂY GIỜ MỚI TIẾN HÀNH ĐẨY LÊN IMGBB
+            if (selectedAvatarFile) {
+                setIsUploadingAvatar(true);
+                try {
+                    const uploadedUrl = await uploadImage(selectedAvatarFile);
+                    finalAvatar = uploadedUrl;
+                    setAvatar(uploadedUrl);
+
+                    if (previewUrl && previewUrl.startsWith('blob:')) {
+                        URL.revokeObjectURL(previewUrl);
+                    }
+                    setPreviewUrl(uploadedUrl);
+                    setSelectedAvatarFile(null);
+                    setUploadSuccessMsg('Đã tải ảnh lên ImgBB thành công!');
+                } catch (imgErr: any) {
+                    const errDetail = imgErr.message || 'Tải ảnh lên ImgBB thất bại';
+                    setUploadError(errDetail);
+                    setProfileMsg({
+                        type: 'error',
+                        text: `Không thể tải ảnh đại diện lên ImgBB: ${errDetail}`,
+                    });
+                    setIsUploadingAvatar(false);
+                    setIsUpdatingProfile(false);
+                    return;
+                } finally {
+                    setIsUploadingAvatar(false);
+                }
+            }
+
             await updateProfile({
                 fullName: fullName.trim(),
                 phone: phone.trim() || undefined,
-                avatar: avatar.trim() || undefined,
+                avatar: finalAvatar.trim() || undefined,
             });
             setProfileMsg({ type: 'success', text: 'Cập nhật thông tin thành công!' });
         } catch (err: any) {
@@ -222,9 +259,8 @@ export const Account: React.FC = () => {
                             <span className="text-[10px] font-semibold mt-0.5">Đổi ảnh</span>
                         </button>
                         <span
-                            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${
-                                user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
-                            }`}
+                            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
+                                }`}
                             title={`Trạng thái: ${user.status}`}
                         />
                     </div>
@@ -241,11 +277,10 @@ export const Account: React.FC = () => {
                     <div className="w-full pt-4 border-t border-gray-100 space-y-2">
                         <button
                             onClick={() => setActiveTab('info')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                                activeTab === 'info'
-                                    ? 'bg-blue-600 text-white shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'info'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <UserCheck className="w-4 h-4" />
                             <span>Thông tin tài khoản</span>
@@ -253,11 +288,10 @@ export const Account: React.FC = () => {
 
                         <button
                             onClick={() => setActiveTab('edit')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                                activeTab === 'edit'
-                                    ? 'bg-blue-600 text-white shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'edit'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <UserIcon className="w-4 h-4" />
                             <span>Chỉnh sửa thông tin</span>
@@ -265,11 +299,10 @@ export const Account: React.FC = () => {
 
                         <button
                             onClick={() => setActiveTab('password')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                                activeTab === 'password'
-                                    ? 'bg-blue-600 text-white shadow-sm'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'password'
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <KeyRound className="w-4 h-4" />
                             <span>Đổi mật khẩu</span>
@@ -345,11 +378,10 @@ export const Account: React.FC = () => {
 
                             {profileMsg && (
                                 <div
-                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
-                                        profileMsg.type === 'success'
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            : 'bg-red-50 text-red-600 border border-red-200'
-                                    }`}
+                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${profileMsg.type === 'success'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-red-50 text-red-600 border border-red-200'
+                                        }`}
                                 >
                                     {profileMsg.type === 'success' ? (
                                         <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -410,7 +442,7 @@ export const Account: React.FC = () => {
                                             {isUploadingAvatar && (
                                                 <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center text-white backdrop-blur-[2px]">
                                                     <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-                                                    <span className="text-[10px] mt-1 font-semibold">Đang upload...</span>
+                                                    <span className="text-[10px] mt-1 font-semibold text-center px-1">Đang tải lên...</span>
                                                 </div>
                                             )}
                                         </div>
@@ -434,11 +466,10 @@ export const Account: React.FC = () => {
                                                 onDragLeave={() => setIsDragging(false)}
                                                 onDrop={handleDrop}
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all ${
-                                                    isDragging
-                                                        ? 'border-blue-500 bg-blue-50/60 scale-[1.01]'
-                                                        : 'border-gray-300 hover:border-blue-500 hover:bg-white bg-gray-50'
-                                                }`}
+                                                className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all ${isDragging
+                                                    ? 'border-blue-500 bg-blue-50/60 scale-[1.01]'
+                                                    : 'border-gray-300 hover:border-blue-500 hover:bg-white bg-gray-50'
+                                                    }`}
                                             >
                                                 <div className="flex flex-col items-center justify-center space-y-1">
                                                     <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-0.5">
@@ -448,7 +479,7 @@ export const Account: React.FC = () => {
                                                         Bấm để chọn ảnh từ máy tính hoặc kéo thả ảnh vào đây
                                                     </p>
                                                     <p className="text-[11px] text-gray-400">
-                                                        Hỗ trợ PNG, JPG, WEBP, GIF (Tải trực tiếp lên ImgBB)
+                                                        Hỗ trợ PNG, JPG, WEBP, GIF (Chỉ xem trước, bấm "Lưu Thay Đổi" để tải lên ImgBB)
                                                     </p>
                                                 </div>
                                             </div>
@@ -497,6 +528,10 @@ export const Account: React.FC = () => {
                                                         type="text"
                                                         value={avatar}
                                                         onChange={(e) => {
+                                                            if (previewUrl && previewUrl.startsWith('blob:')) {
+                                                                URL.revokeObjectURL(previewUrl);
+                                                            }
+                                                            setSelectedAvatarFile(null);
                                                             setAvatar(e.target.value);
                                                             setPreviewUrl(e.target.value);
                                                         }}
@@ -514,13 +549,15 @@ export const Account: React.FC = () => {
 
                                 <button
                                     type="submit"
-                                    disabled={isUpdatingProfile}
+                                    disabled={isUpdatingProfile || isUploadingAvatar}
                                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow transition-colors flex items-center space-x-2 disabled:opacity-70 cursor-pointer"
                                 >
                                     {isUpdatingProfile ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span>Đang lưu...</span>
+                                            <span>
+                                                {isUploadingAvatar ? 'Đang tải ảnh lên' : 'Đang lưu thay đổi...'}
+                                            </span>
                                         </>
                                     ) : (
                                         <span>Lưu Thay Đổi</span>
@@ -539,11 +576,10 @@ export const Account: React.FC = () => {
 
                             {passMsg && (
                                 <div
-                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
-                                        passMsg.type === 'success'
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            : 'bg-red-50 text-red-600 border border-red-200'
-                                    }`}
+                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${passMsg.type === 'success'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-red-50 text-red-600 border border-red-200'
+                                        }`}
                                 >
                                     {passMsg.type === 'success' ? (
                                         <CheckCircle2 className="w-4 h-4 shrink-0" />

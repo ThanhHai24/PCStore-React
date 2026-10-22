@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Star, Send, Camera, CheckCircle2, User, Trash2, MessageSquare, CornerDownRight } from 'lucide-react';
+import { Star, Send, Camera, CheckCircle2, User, Trash2, MessageSquare, CornerDownRight, Loader2 } from 'lucide-react';
 import type { Product } from '../../../types/product';
 import { mockReviewsList, mockQAItems, type QuestionItem } from '../../../data/mockReviews';
-import type { ReviewItem, ReviewSummary } from '../../../types/review';
+import type { ReviewItem } from '../../../types/review';
 
 interface ProductReviewsProps {
     product: Product;
@@ -10,7 +10,7 @@ interface ProductReviewsProps {
 
 export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
     // Static User State
-    const user = { fullName: 'Khách hàng', username: 'user', role: 'ADMIN' };
+    const user = { id: 'user-admin', fullName: 'Khách hàng', username: 'user', role: 'ADMIN' };
     const isAuthenticated = true;
     const userHasPurchased = true;
 
@@ -148,7 +148,9 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product }) => {
 
             {/* 1. Bình luận và đánh giá Box */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
-                <h3 className="font-extrabold text-base text-gray-900">Bình luận và đánh giá</h3>
+                <h3 className="font-extrabold text-base text-gray-900">
+                    Bình luận và đánh giá {product.title ? `- ${product.title}` : ''}
+                </h3>
 
                 {/* Rating Breakdown Card */}
                 <div className="border border-gray-200 rounded-2xl p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">

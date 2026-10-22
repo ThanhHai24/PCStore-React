@@ -248,18 +248,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             {/* Modal Footer */}
             {showFooter && (
                 <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-                    {/* Left: Tab step indicators / Previous button */}
-                    <div>
-                        {tabs.length > 1 && showTabNavigation && !isFirstTab && (
-                            <button
-                                type="button"
-                                onClick={handlePrevTab}
-                                className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-colors shadow-sm"
-                            >
-                                ← Quay lại ({tabs[currentTabIndex - 1].label})
-                            </button>
-                        )}
-                    </div>
+
 
                     {/* Right: Custom footer or default action buttons */}
                     <div className="flex items-center gap-2 ml-auto">

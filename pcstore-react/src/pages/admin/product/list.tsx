@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Package,
     Plus,
@@ -12,63 +12,58 @@ import {
     Calendar,
     Check,
     Upload,
-    Camera,
     Copy,
-    ExternalLink,
-    Sparkles,
-    Globe,
-    FileText,
-    TrendingUp,
-    Layers,
-    ArrowUpRight,
-    Search,
-    Info,
     RefreshCw,
-    ShieldCheck,
-    Star,
     DollarSign,
-    Percent,
-    Warehouse,
-    AlertTriangle,
     Image as ImageIcon,
     Tag,
     Cpu,
-    Flame,
-    Zap
+    Loader2,
+    Layers,
+    Laptop,
+    AlertCircle
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
 import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
 import { useToast } from '../../../components/admin/common/toast';
+import { uploadImage, validateImageFile } from '../../../services/imgbbService';
+import { adminProductService } from '../../../services/adminProductService';
+import { adminCategoryService } from '../../../services/adminCategoryService';
+import { adminBrandService } from '../../../services/adminBrandService';
+import type { CategoryResponse } from '../../../types/adminCategory';
+import type { BrandResponse } from '../../../types/adminBrand';
+import type { ProductResponse, BackendProductStatus, ProductType } from '../../../types/adminProduct';
 
-export type ProductStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'DISCONTINUED';
+export interface ProductImageItem {
+    id: string;
+    url: string;
+    file?: File;
+}
 
 export interface AdminProductItem {
     id: string;
+    numericId: number;
     name: string;
     sku: string;
     slug: string;
+    brandId?: number | null;
     brand: string;
+    categoryIds?: number[];
+    primaryCategoryId?: number | null;
     category: string;
+    productType: ProductType;
     price: number;
-    originalPrice: number;
-    discountPercent: number;
-    stock: number;
-    salesCount: number;
     image: string;
     gallery: string[];
-    warranty: string;
-    status: ProductStatus;
-    isFeatured: boolean;
-    isHot: boolean;
-    badge?: 'HOT' | 'NEW' | 'SALE' | 'BEST' | null;
-    shortSpecs: string;
+    status: BackendProductStatus;
+    specification: string;
     description: string;
     createdAt: string;
-    metaTitle?: string;
-    metaDescription?: string;
-    metaKeywords?: string;
+    lastModifiedAt?: string;
 }
+
+const DEFAULT_PRODUCT_IMAGE = 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
 
 // Slug Generator
 const generateSlug = (str: string) => {
@@ -88,526 +83,314 @@ const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
-// Initial Realistic Mock Data for PC Store
-const INITIAL_PRODUCTS: AdminProductItem[] = [
-    {
-        id: 'prod-1',
-        name: 'Bộ PC Hatsune Miku Ryzen 7 9800X3D, RAM 32GB, VGA RTX 5080 16GB',
-        sku: 'PC-MIKU-9800X3D',
-        slug: 'bo-pc-hatsune-miku-ryzen-7-9800x3d-rtx-5080',
-        brand: 'ASUS',
-        category: 'PC Gaming',
-        price: 136000000,
-        originalPrice: 145000000,
-        discountPercent: 6,
-        stock: 5,
-        salesCount: 14,
-        image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'HOT',
-        shortSpecs: 'Ryzen 7 9800X3D | 32GB DDR5 | RTX 5080 16GB | NVMe 2TB',
-        description: 'Bộ máy tính để bàn PC Gaming phiên bản giới hạn Hatsune Miku kết hợp sức mạnh vô địch từ AMD Ryzen 7 9800X3D và Card đồ họa RTX 5080 kiến trúc Blackwell mới nhất.',
-        createdAt: '2024-01-10',
-        metaTitle: 'Bộ PC Gaming Hatsune Miku Ryzen 7 9800X3D RTX 5080 | PCStore',
-        metaDescription: 'Siêu phẩm PC Gaming Hatsune Miku cấu hình khủng Ryzen 7 9800X3D và RTX 5080 16GB bảo hành chính hãng 3 năm.',
-        metaKeywords: 'pc gaming, hatsune miku, ryzen 7 9800x3d, rtx 5080',
-    },
-    {
-        id: 'prod-2',
-        name: 'Card màn hình ASUS ROG Strix GeForce RTX 4090 OC 24GB GDDR6X',
-        sku: 'VGA-ASUS-4090-OC',
-        slug: 'vga-asus-rog-strix-geforce-rtx-4090-oc-24gb',
-        brand: 'ASUS',
-        category: 'Card màn hình (VGA)',
-        price: 56990000,
-        originalPrice: 62000000,
-        discountPercent: 8,
-        stock: 12,
-        salesCount: 38,
-        image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'BEST',
-        shortSpecs: '24GB GDDR6X | 384-bit | Boost 2640 MHz | Khung kim loại Diecast',
-        description: 'Vua đồ họa thế giới trang bị hệ thống tản nhiệt buồng hơi Vapor Chamber độc quyền và quạt Axial-tech làm mát tối đa cho đồ họa 8K và AI Workstation.',
-        createdAt: '2024-01-12',
-        metaTitle: 'Card Màn Hình ASUS ROG Strix GeForce RTX 4090 OC 24GB | PCStore',
-        metaDescription: 'VGA ASUS ROG Strix RTX 4090 OC 24GB chính hãng, hiệu năng đồ họa số 1 thế giới.',
-        metaKeywords: 'rtx 4090, asus rog strix 4090, vga asus 4090',
-    },
-    {
-        id: 'prod-3',
-        name: 'Bộ vi xử lý Intel Core i9-14900K (Up to 6.0GHz, 24 Nhân 32 Luồng, 36MB Cache)',
-        sku: 'CPU-INTEL-14900K',
-        slug: 'cpu-intel-core-i9-14900k-up-to-6-0ghz',
-        brand: 'Intel',
-        category: 'Vi xử lý (CPU)',
-        price: 15490000,
-        originalPrice: 16990000,
-        discountPercent: 9,
-        stock: 20,
-        salesCount: 65,
-        image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'HOT',
-        shortSpecs: 'LGA 1700 | 24C/32T | Xung tối đa 6.0 GHz | TDP 125W-253W',
-        description: 'CPU thế hệ thứ 14 đỉnh cao của Intel, xung nhịp tự động ép xung vượt ngưỡng 6.0 GHz mang lại trải nghiệm chiến game mượt mà và render 3D nhanh như chớp.',
-        createdAt: '2024-01-15',
-        metaTitle: 'CPU Intel Core i9-14900K Chính Hãng Giá Tốt | PCStore',
-        metaDescription: 'Mua CPU Intel Core i9-14900K thế hệ 14 mới nhất với 24 nhân 32 luồng, xung nhịp 6.0GHz.',
-        metaKeywords: 'intel core i9 14900k, cpu intel 14th, i9 14900k',
-    },
-    {
-        id: 'prod-4',
-        name: 'Bộ vi xử lý AMD Ryzen 7 7800X3D (4.2GHz Boost 5.0GHz, 8C/16T, 104MB Cache 3D V-Cache)',
-        sku: 'CPU-AMD-7800X3D',
-        slug: 'cpu-amd-ryzen-7-7800x3d-3d-vcache',
-        brand: 'AMD',
-        category: 'Vi xử lý (CPU)',
-        price: 10890000,
-        originalPrice: 11990000,
-        discountPercent: 9,
-        stock: 8,
-        salesCount: 92,
-        image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'HOT',
-        shortSpecs: 'Socket AM5 | 8C/16T | 96MB 3D V-Cache | TDP 120W',
-        description: 'Bộ vi xử lý chơi game đỉnh cao số 1 thế giới với bộ nhớ đệm 3D V-Cache khổng lồ 104MB, tiêu thụ điện năng cực thấp và hoạt động mát mẻ.',
-        createdAt: '2024-01-18',
-        metaTitle: 'CPU AMD Ryzen 7 7800X3D - Vua Game Thế Giới | PCStore',
-        metaDescription: 'Bộ vi xử lý AMD Ryzen 7 7800X3D chính hãng socket AM5, công nghệ 3D V-Cache tối ưu cho game thủ.',
-        metaKeywords: 'ryzen 7 7800x3d, amd 7800x3d, cpu amd ryzen',
-    },
-    {
-        id: 'prod-5',
-        name: 'Bo mạch chủ MSI MAG B760 TOMAHAWK WIFI DDR5',
-        sku: 'MAIN-MSI-B760-TOMA',
-        slug: 'bo-mach-chu-msi-mag-b760-tomahawk-wifi-ddr5',
-        brand: 'MSI',
-        category: 'Bo mạch chủ',
-        price: 5290000,
-        originalPrice: 5890000,
-        discountPercent: 10,
-        stock: 15,
-        salesCount: 47,
-        image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: false,
-        isHot: true,
-        badge: 'BEST',
-        shortSpecs: 'Chipset B760 | LGA 1700 | 4x DDR5 7000+ MHz | WiFi 6E & 2.5G LAN',
-        description: 'Dòng bo mạch chủ quốc dân với thiết kế tản nhiệt kim loại dày dặn, VRM 12+1+1 pha điện kỹ thuật số chịu tải hoàn hảo cho Intel Core i5 và Core i7.',
-        createdAt: '2024-01-20',
-        metaTitle: 'Mainboard MSI MAG B760 TOMAHAWK WIFI DDR5 | PCStore',
-        metaDescription: 'Bo mạch chủ MSI B760 Tomahawk DDR5 hỗ trợ CPU Intel Gen 12, 13, 14.',
-        metaKeywords: 'msi b760, b760 tomahawk, mainboard msi ddr5',
-    },
-    {
-        id: 'prod-6',
-        name: 'Bộ nhớ RAM Corsair Dominator Titanium RGB 32GB (2x16GB) DDR5 6000MHz White',
-        sku: 'RAM-COR-DOM-32G',
-        slug: 'ram-corsair-dominator-titanium-rgb-32gb-ddr5-6000mhz',
-        brand: 'Corsair',
-        category: 'Bộ nhớ RAM',
-        price: 4990000,
-        originalPrice: 5690000,
-        discountPercent: 12,
-        stock: 18,
-        salesCount: 53,
-        image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: 'Lifetime (Trọn đời)',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'NEW',
-        shortSpecs: '32GB (2x16GB) | DDR5 6000MHz | CL30 | LED RGB 11 vùng iCUE',
-        description: 'Tuyệt tác RAM DDR5 cao cấp nhất từ Corsair với nắp tản nhiệt có thể thay thế mô-đun, chip nhớ chọn lọc thủ công cho khả năng ép xung tối đa.',
-        createdAt: '2024-01-22',
-        metaTitle: 'RAM Corsair Dominator Titanium RGB 32GB DDR5 6000MHz | PCStore',
-        metaDescription: 'RAM Corsair Dominator Titanium DDR5 màu trắng cao cấp, tương thích Intel XMP 3.0 và AMD EXPO.',
-        metaKeywords: 'ram corsair, dominator titanium, ram ddr5 6000mhz',
-    },
-    {
-        id: 'prod-7',
-        name: 'Ổ cứng SSD Samsung 990 Pro 2TB PCIe Gen 4.0 x4 NVMe M.2',
-        sku: 'SSD-SSG-990PRO-2TB',
-        slug: 'ssd-samsung-990-pro-2tb-pcie-gen-4-nvme',
-        brand: 'Samsung',
-        category: 'Ổ cứng SSD',
-        price: 4890000,
-        originalPrice: 5490000,
-        discountPercent: 11,
-        stock: 22,
-        salesCount: 84,
-        image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '60 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'BEST',
-        shortSpecs: 'Dung lượng 2TB | Đọc 7450 MB/s | Ghi 6900 MB/s | V-NAND TLC',
-        description: 'Ổ cứng thể rắn M.2 NVMe nhanh nhất phân khúc Gen 4, tối ưu hóa băng thông cho đồ họa 4K/8K, PS5 và load game không độ trễ.',
-        createdAt: '2024-01-25',
-        metaTitle: 'SSD Samsung 990 Pro 2TB NVMe M.2 Tốc Độ 7450MB/s | PCStore',
-        metaDescription: 'Ổ cứng SSD Samsung 990 Pro 2TB chính hãng bảo hành 5 năm, tốc độ đọc 7450MB/s.',
-        metaKeywords: 'ssd samsung 990 pro, samsung 990 pro 2tb, ssd m2 nvme',
-    },
-    {
-        id: 'prod-8',
-        name: 'Vỏ case Lian Li O11 Vision Chrome (3 mặt kính cường lực không viền)',
-        sku: 'CASE-LL-O11-VIS-CR',
-        slug: 'vo-case-lian-li-o11-vision-chrome',
-        brand: 'Lian Li',
-        category: 'Vỏ Case',
-        price: 3690000,
-        originalPrice: 4200000,
-        discountPercent: 12,
-        stock: 9,
-        salesCount: 31,
-        image: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '12 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'NEW',
-        shortSpecs: 'Mid-Tower | 3 mặt kính tráng gương | Hỗ trợ 2x Radiator 360mm | Khay mainboard lùi',
-        description: 'Sản phẩm hợp tác đỉnh cao giữa Lian Li và PCMR, thiết kế 3 mặt kính cường lực liền khối không cột góc cho góc nhìn toàn cảnh linh kiện máy tính.',
-        createdAt: '2024-02-01',
-        metaTitle: 'Vỏ Case Bể Cá Lian Li O11 Vision Chrome Chính Hãng | PCStore',
-        metaDescription: 'Case máy tính Lian Li O11 Vision bản Chrome tráng gương phản chiếu tuyệt đẹp.',
-        metaKeywords: 'lian li o11 vision, case be ca, o11 vision chrome',
-    },
-    {
-        id: 'prod-9',
-        name: 'Nguồn máy tính Corsair RM1000x Shift 1000W 80 Plus Gold Fully Modular',
-        sku: 'PSU-COR-RM1000X-SH',
-        slug: 'nguon-corsair-rm1000x-shift-1000w-80-plus-gold',
-        brand: 'Corsair',
-        category: 'Nguồn máy tính (PSU)',
-        price: 5190000,
-        originalPrice: 5690000,
-        discountPercent: 9,
-        stock: 14,
-        salesCount: 29,
-        image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '120 Tháng (10 Năm)',
-        status: 'IN_STOCK',
-        isFeatured: false,
-        isHot: false,
-        badge: null,
-        shortSpecs: '1000W | 80 Plus Gold | Chuẩn ATX 3.0 & PCIe 5.0 | Cổng cắm bên hông',
-        description: 'Thiết kế cổng cắm mô-đun xoay ngang bên hông mang tính đột phá giúp việc đi dây và quản lý cáp trong thùng máy trở nên dễ dàng chưa từng thấy.',
-        createdAt: '2024-02-05',
-        metaTitle: 'Nguồn Corsair RM1000x Shift 1000W ATX 3.0 Chuẩn Gold | PCStore',
-        metaDescription: 'Nguồn Corsair RM1000x Shift 1000W chuẩn PCIe 5.0 12VHPWR cho card đồ họa RTX 4080/4090.',
-        metaKeywords: 'corsair rm1000x shift, nguon 1000w, nguon corsair gold',
-    },
-    {
-        id: 'prod-10',
-        name: 'Màn hình Dell UltraSharp U2724D 27 inch 2K 120Hz IPS Black 100% sRGB',
-        sku: 'MON-DELL-U2724D',
-        slug: 'man-hinh-dell-ultrasharp-u2724d-27-inch-2k-120hz',
-        brand: 'Dell',
-        category: 'Màn hình máy tính',
-        price: 10490000,
-        originalPrice: 11990000,
-        discountPercent: 13,
-        stock: 7,
-        salesCount: 42,
-        image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'SALE',
-        shortSpecs: '27 inch 2K QHD | IPS Black tương phản 2000:1 | 120Hz mượt mà | Cảm biến ánh sáng',
-        description: 'Màn hình chuyên nghiệp dành cho thiết kế đồ họa cao cấp ứng dụng tấm nền IPS Black độc quyền của LG giúp màu đen sâu gấp đôi màn IPS thông thường.',
-        createdAt: '2024-02-10',
-        metaTitle: 'Màn Hình Đồ Họa Dell UltraSharp U2724D 2K 120Hz | PCStore',
-        metaDescription: 'Màn hình Dell UltraSharp U2724D độ phân giải 2K 120Hz chuẩn màu đồ họa 100% sRGB 98% DCI-P3.',
-        metaKeywords: 'dell u2724d, man hinh dell ultrasharp, u2724d 120hz',
-    },
-    {
-        id: 'prod-11',
-        name: 'Chuột Logitech G Pro X Superlight 2 Wireless Black (Cảm biến HERO 2 32.000 DPI)',
-        sku: 'GEAR-LOGI-GPX2-BK',
-        slug: 'chuot-logitech-g-pro-x-superlight-2-wireless-black',
-        brand: 'Logitech',
-        category: 'Phụ kiện & Gaming Gear',
-        price: 3490000,
-        originalPrice: 3890000,
-        discountPercent: 10,
-        stock: 3,
-        salesCount: 115,
-        image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '24 Tháng',
-        status: 'LOW_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'HOT',
-        shortSpecs: 'Siêu nhẹ 60g | Switch quang học lai LIGHTFORCE | Tần số quét 4000Hz | Pin 95 giờ',
-        description: 'Vũ khí tối thượng của các game thủ bắn súng FPS chuyên nghiệp trên toàn thế giới, tốc độ phản hồi 0.25ms và trọng lượng siêu nhẹ 60 gram.',
-        createdAt: '2024-02-15',
-        metaTitle: 'Chuột Không Dây Logitech G Pro X Superlight 2 | PCStore',
-        metaDescription: 'Chuột eSports Logitech GPX 2 Superlight bảo hành chính hãng 2 năm 1 đổi 1.',
-        metaKeywords: 'logitech g pro x superlight 2, chuot gpx2, chuot gaming logitech',
-    },
-    {
-        id: 'prod-12',
-        name: 'Tản nhiệt khí Thermalright Peerless Assassin 120 SE ARGB',
-        sku: 'COOL-THR-PA120-SE',
-        slug: 'tan-nhiet-khi-thermalright-peerless-assassin-120-se-argb',
-        brand: 'Thermalright',
-        category: 'Tản nhiệt CPU',
-        price: 850000,
-        originalPrice: 1100000,
-        discountPercent: 23,
-        stock: 0,
-        salesCount: 156,
-        image: 'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1547082299-de196ea013d6?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '24 Tháng',
-        status: 'OUT_OF_STOCK',
-        isFeatured: false,
-        isHot: true,
-        badge: 'BEST',
-        shortSpecs: 'Tháp đôi Dual Tower | 6 ống đồng DTP AGHP Gen 4 | 2 quạt 120mm ARGB | TDP 245W',
-        description: 'Vua tản nhiệt khí quốc dân với hiệu năng giải nhiệt tương đương các bộ tản nước AIO 240mm đắt tiền trong tầm giá dưới 1 triệu đồng.',
-        createdAt: '2024-02-20',
-        metaTitle: 'Tản Nhiệt Khí Thermalright Peerless Assassin 120 SE ARGB | PCStore',
-        metaDescription: 'Tản tháp đôi Thermalright PA120 SE làm mát cực tốt cho CPU Intel Core i7 và Ryzen 7.',
-        metaKeywords: 'peerless assassin 120, tan nhiet thermalright, pa120 se',
-    },
-    {
-        id: 'prod-13',
-        name: 'Bo mạch chủ ASUS ROG MAXIMUS Z790 HERO DDR5',
-        sku: 'MAIN-ASUS-Z790-HERO',
-        slug: 'bo-mach-chu-asus-rog-maximus-z790-hero-ddr5',
-        brand: 'ASUS',
-        category: 'Bo mạch chủ',
-        price: 16990000,
-        originalPrice: 18500000,
-        discountPercent: 8,
-        stock: 6,
-        salesCount: 19,
-        image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'NEW',
-        shortSpecs: 'Chipset Intel Z790 | 20+1 Power Stages | PCIe 5.0 | Màn hình Polymo Lighting',
-        description: 'Bo mạch chủ cao cấp chuyên dụng cho các hệ thống PC Gaming và ép xung cao cấp đỉnh cao của ASUS ROG.',
-        createdAt: '2024-02-25',
-        metaTitle: 'Mainboard ASUS ROG MAXIMUS Z790 HERO DDR5 | PCStore',
-        metaDescription: 'Bo mạch chủ ROG Maximus Z790 Hero đẳng cấp với dàn VRM 20+1 pha và cổng Thunderbolt 4.',
-        metaKeywords: 'asus z790 hero, rog maximus z790, mainboard z790',
-    },
-    {
-        id: 'prod-14',
-        name: 'Card màn hình MSI GeForce RTX 4070 Ti SUPER 16G GAMING X SLIM',
-        sku: 'VGA-MSI-4070TIS-SLIM',
-        slug: 'vga-msi-geforce-rtx-4070-ti-super-16g-gaming-x-slim',
-        brand: 'MSI',
-        category: 'Card màn hình (VGA)',
-        price: 24990000,
-        originalPrice: 27500000,
-        discountPercent: 9,
-        stock: 11,
-        salesCount: 34,
-        image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: true,
-        badge: 'HOT',
-        shortSpecs: '16GB GDDR6X | 256-bit | TRI FROZR 3 tản nhiệt mỏng nhẹ | TORX FAN 5.0',
-        description: 'Phiên bản Gaming X Slim mỏng nhẹ nhưng sở hữu sức mạnh đồ họa 16GB VRAM đáp ứng hoàn hảo game 2K/4K và dựng video.',
-        createdAt: '2024-03-01',
-        metaTitle: 'VGA MSI GeForce RTX 4070 Ti SUPER 16G GAMING X SLIM | PCStore',
-        metaDescription: 'Card màn hình MSI RTX 4070 Ti Super Gaming X Slim chính hãng giá cực tốt.',
-        metaKeywords: 'msi rtx 4070 ti super, vga msi slim, 4070 ti super 16gb',
-    },
-    {
-        id: 'prod-15',
-        name: 'Bộ nhớ RAM Kingston FURY Beast 32GB (2x16GB) DDR5 5600MHz RGB',
-        sku: 'RAM-KST-FURY-32G',
-        slug: 'ram-kingston-fury-beast-32gb-ddr5-5600mhz-rgb',
-        brand: 'Kingston',
-        category: 'Bộ nhớ RAM',
-        price: 2890000,
-        originalPrice: 3290000,
-        discountPercent: 12,
-        stock: 25,
-        salesCount: 78,
-        image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '36 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: false,
-        isHot: true,
-        badge: 'SALE',
-        shortSpecs: '32GB (2x16GB) | DDR5 5600MHz | CL36 | LED RGB đồng bộ Kingston FURY CTRL',
-        description: 'Dòng RAM DDR5 quốc dân hiệu năng cao và độ ổn định bền bỉ vượt trội của Kingston.',
-        createdAt: '2024-03-05',
-        metaTitle: 'RAM Kingston FURY Beast RGB 32GB DDR5 5600MHz | PCStore',
-        metaDescription: 'Bộ nhớ RAM Kingston FURY Beast DDR5 32GB bảo hành 3 năm 1 đổi 1.',
-        metaKeywords: 'ram kingston fury, ddr5 5600mhz, ram fury beast',
-    },
-    {
-        id: 'prod-16',
-        name: 'Bàn phím cơ Razer Huntsman V3 Pro Tenkeyless Optical Switch Gen-2',
-        sku: 'GEAR-RZR-HUNT-V3',
-        slug: 'ban-phim-co-razer-huntsman-v3-pro-tkl',
-        brand: 'Razer',
-        category: 'Phụ kiện & Gaming Gear',
-        price: 5290000,
-        originalPrice: 5990000,
-        discountPercent: 12,
-        stock: 4,
-        salesCount: 28,
-        image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '24 Tháng',
-        status: 'LOW_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'HOT',
-        shortSpecs: 'Rapid Trigger 0.1-4.0mm | Switch Analog Quang Học | Keycap PBT Doubleshot',
-        description: 'Bàn phím eSports đỉnh cao với tính năng kích hoạt tức thì Rapid Trigger mang lại lợi thế phản xạ tối đa trong game FPS.',
-        createdAt: '2024-03-08',
-        metaTitle: 'Bàn Phím Cơ Razer Huntsman V3 Pro TKL Rapid Trigger | PCStore',
-        metaDescription: 'Bàn phím cơ gaming chuyên nghiệp Razer Huntsman V3 Pro TKL trang bị switch quang học analog.',
-        metaKeywords: 'razer huntsman v3 pro, ban phim razer, rapid trigger',
-    },
-    {
-        id: 'prod-17',
-        name: 'Tản nhiệt khí Noctua NH-D15 chromax.black (Phiên bản đen huyền bí)',
-        sku: 'COOL-NOC-D15-BLK',
-        slug: 'tan-nhiet-khi-noctua-nh-d15-chromax-black',
-        brand: 'Noctua',
-        category: 'Tản nhiệt CPU',
-        price: 3190000,
-        originalPrice: 3500000,
-        discountPercent: 9,
-        stock: 8,
-        salesCount: 45,
-        image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '72 Tháng (6 Năm)',
-        status: 'IN_STOCK',
-        isFeatured: true,
-        isHot: false,
-        badge: 'BEST',
-        shortSpecs: 'Dual Tower 6 Heatpipes | 2x Quạt NF-A15 140mm | Sơn đen tĩnh điện chromax',
-        description: 'Vua tản khí thế giới đến từ nước Áo, hoạt động êm ái tuyệt đối và bảo hành chính hãng lên tới 6 năm.',
-        createdAt: '2024-03-12',
-        metaTitle: 'Tản Nhiệt Khí Noctua NH-D15 chromax.black Chính Hãng | PCStore',
-        metaDescription: 'Tản nhiệt khí Noctua NH-D15 đen huyền bí cho CPU i9 và Ryzen 9.',
-        metaKeywords: 'noctua nh-d15 chromax, tan nhiet noctua, nh-d15',
-    },
-    {
-        id: 'prod-18',
-        name: 'Vỏ case Corsair 5000D AIRFLOW Tempered Glass Mid-Tower White',
-        sku: 'CASE-COR-5000D-WH',
-        slug: 'vo-case-corsair-5000d-airflow-white',
-        brand: 'Corsair',
-        category: 'Vỏ Case',
-        price: 3890000,
-        originalPrice: 4290000,
-        discountPercent: 9,
-        stock: 10,
-        salesCount: 37,
-        image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=400&q=80',
-        gallery: [
-            'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80'
-        ],
-        warranty: '24 Tháng',
-        status: 'IN_STOCK',
-        isFeatured: false,
-        isHot: false,
-        badge: null,
-        shortSpecs: 'Mid-Tower | Mặt lưới thông gió tối đa | Hỗ trợ 2x Radiator 360mm cùng lúc',
-        description: 'Vỏ thùng máy tính chuẩn mực về luồng gió làm mát với thiết kế khoang cáp thông minh RapidRoute.',
-        createdAt: '2024-03-15',
-        metaTitle: 'Vỏ Case Corsair 5000D AIRFLOW Màu Trắng Chính Hãng | PCStore',
-        metaDescription: 'Case máy tính Corsair 5000D Airflow rộng rãi, thoáng mát, kính cường lực sang trọng.',
-        metaKeywords: 'corsair 5000d airflow, case corsair, 5000d trang',
-    }
-];
+// =============================================================================
+// PRODUCT MEDIA TAB COMPONENT (Phần 1: Ảnh đại diện | Phần 2: Ảnh sản phẩm tối đa 10)
+// =============================================================================
+interface ProductMediaTabProps {
+    avatarUrl: string;
+    avatarFile: File | null;
+    onAvatarUrlChange: (url: string) => void;
+    onAvatarFileSelect: (file: File) => void;
+    onAvatarReset: () => void;
+    gallery: ProductImageItem[];
+    onAddGalleryFiles: (files: FileList | File[]) => void;
+    onAddGalleryUrl: (url: string) => void;
+    onRemoveGalleryItem: (id: string) => void;
+}
+
+function ProductMediaTab({
+    avatarUrl,
+    avatarFile,
+    onAvatarUrlChange,
+    onAvatarFileSelect,
+    onAvatarReset,
+    gallery,
+    onAddGalleryFiles,
+    onAddGalleryUrl,
+    onRemoveGalleryItem,
+}: ProductMediaTabProps) {
+    const [galleryUrlInput, setGalleryUrlInput] = useState('');
+    const avatarFileInputRef = useRef<HTMLInputElement>(null);
+    const galleryFileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleAvatarFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            onAvatarFileSelect(file);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    const handleGalleryFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            onAddGalleryFiles(e.target.files);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    const handleGalleryUrlSubmit = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if (galleryUrlInput.trim()) {
+            onAddGalleryUrl(galleryUrlInput.trim());
+            setGalleryUrlInput('');
+        }
+    };
+
+    const isGalleryFull = gallery.length >= 10;
+
+    return (
+        <div className="space-y-6">
+            {/*ẢNH ĐẠI DIỆN*/}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                            1
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                Ảnh đại diện sản phẩm
+                                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                                    1 Ảnh
+                                </span>
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                    {/* Preview Box */}
+                    <div className="relative w-40 h-40 rounded-2xl bg-gradient-to-br from-gray-50 to-blue-50/20 border-2 border-dashed border-gray-300 p-2.5 flex items-center justify-center shrink-0 overflow-hidden shadow-inner group">
+                        <img
+                            src={avatarUrl || DEFAULT_PRODUCT_IMAGE}
+                            alt="Ảnh đại diện"
+                            className="w-full h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                            }}
+                        />
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex-1 space-y-3.5 w-full">
+                        <input
+                            ref={avatarFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarFileInput}
+                        />
+
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => avatarFileInputRef.current?.click()}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold hover:bg-blue-100 active:scale-[0.98] transition-all shadow-sm"
+                            >
+                                <Upload className="w-4 h-4" />
+                                Chọn ảnh  từ máy tính
+                            </button>
+
+                            {avatarUrl !== DEFAULT_PRODUCT_IMAGE && (
+                                <button
+                                    type="button"
+                                    onClick={onAvatarReset}
+                                    className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                                    title="Đặt lại ảnh mẫu mặc định"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    Đặt lại ảnh
+                                </button>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                                Đường dẫn URL ảnh:
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="url"
+                                    placeholder="https://images.unsplash.com/... hoặc https://i.ibb.co/..."
+                                    value={avatarUrl}
+                                    onChange={(e) => onAvatarUrlChange(e.target.value)}
+                                    className="w-full px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs text-gray-800 transition-all font-mono"
+                                />
+                            </div>
+                            <p className="text-[11px] text-gray-400 mt-1">
+                                Hỗ trợ định dạng JPG, PNG, WebP.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/*ẢNH SẢN PHẨM */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                            2
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                Bộ sưu tập ảnh sản phẩm
+                                <span
+                                    className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${isGalleryFull
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                        }`}
+                                >
+                                    {gallery.length} / 10 ảnh
+                                </span>
+                            </h3>
+                            <p className="text-xs text-gray-400">
+                                Hỗ trợ định dạng JPG, PNG, WebP. Tối đa 10 ảnh, mỗi ảnh dung lượng dưới 2MB
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Add Gallery Controls */}
+                {!isGalleryFull ? (
+                    <div className="bg-gray-50/80 p-4 rounded-xl border border-gray-200 space-y-3">
+                        <input
+                            ref={galleryFileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleGalleryFileInput}
+                        />
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => galleryFileInputRef.current?.click()}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all shadow-sm shrink-0"
+                            >
+                                <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                                Tải ảnh từ máy tính
+                            </button>
+
+                            <div className="h-4 w-px bg-gray-300 hidden sm:block" />
+
+                            <div className="flex-1 flex items-center gap-2">
+                                <input
+                                    type="url"
+                                    placeholder="Nhập URL ảnh sản phẩm"
+                                    value={galleryUrlInput}
+                                    onChange={(e) => setGalleryUrlInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleGalleryUrlSubmit();
+                                        }
+                                    }}
+                                    className="flex-1 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs text-gray-800 transition-all font-mono bg-white"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleGalleryUrlSubmit}
+                                    disabled={!galleryUrlInput.trim()}
+                                    className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shrink-0"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Thêm ảnh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-800">
+                        <span className="font-medium flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                            Đã đạt số lượng tối đa 10 ảnh sản phẩm.
+                        </span>
+                        <span className="text-[11px] text-amber-700 font-medium">
+                            Xóa bớt ảnh nếu muốn thêm ảnh mới
+                        </span>
+                    </div>
+                )}
+
+                {/* Gallery Grid */}
+                {gallery.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center bg-gray-50/40 space-y-2">
+                        <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+                            <ImageIcon className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-xs font-bold text-gray-700">
+                            Chưa có ảnh sản phẩm nào
+                        </h4>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        {gallery.map((item, idx) => (
+                            <div
+                                key={item.id}
+                                className="group relative aspect-square rounded-xl bg-white border border-gray-200 p-1.5 shadow-sm overflow-hidden hover:border-indigo-400 hover:shadow-md transition-all duration-200 flex items-center justify-center"
+                            >
+                                {/* Index Pill */}
+                                <span className="absolute top-1.5 left-1.5 z-10 bg-gray-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                    #{idx + 1}
+                                </span>
+
+                                {/* Preview Badge if pending upload */}
+                                {item.file && (
+                                    <span
+                                        className="absolute bottom-1.5 left-1.5 z-10 bg-amber-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow"
+                                        title="Ảnh xem trước"
+                                    >
+                                        Xem trước
+                                    </span>
+                                )}
+
+                                {/* Delete Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => onRemoveGalleryItem(item.id)}
+                                    className="absolute top-1.5 right-1.5 z-10 w-6 h-6 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 group-hover:opacity-100 sm:opacity-90"
+                                    title="Xóa ảnh này"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                {/* Thumbnail Image */}
+                                <img
+                                    src={item.url}
+                                    alt={`Ảnh sản phẩm #${idx + 1}`}
+                                    className="w-full h-full object-contain rounded-lg transition-transform duration-200 group-hover:scale-105"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                                    }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function ProductList() {
     const { showToast } = useToast();
 
-    // Data State
-    const [products, setProducts] = useState<AdminProductItem[]>(INITIAL_PRODUCTS);
+    // Data State from Backend API
+    const [products, setProducts] = useState<AdminProductItem[]>([]);
+    const [categories, setCategories] = useState<CategoryResponse[]>([]);
+    const [brands, setBrands] = useState<BrandResponse[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Pagination & Search & Filter State
     const [searchQuery, setSearchQuery] = useState('');
     const [filters, setFilters] = useState<Record<string, string>>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [totalElements, setTotalElements] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -625,156 +408,204 @@ export default function ProductList() {
         name: '',
         sku: '',
         slug: '',
-        brand: 'ASUS',
-        category: 'PC Gaming',
-        price: 15000000,
-        originalPrice: 16500000,
-        discountPercent: 9,
-        stock: 10,
-        warranty: '36 Tháng',
-        status: 'IN_STOCK' as ProductStatus,
-        isFeatured: false,
-        isHot: false,
-        badge: null as 'HOT' | 'NEW' | 'SALE' | 'BEST' | null,
-        shortSpecs: '',
+        brandId: '' as string | number,
+        primaryCategoryId: '' as string | number,
+        productType: 'COMPONENT' as ProductType,
+        price: 1000000,
+        status: 'ACTIVE' as BackendProductStatus,
+        specification: '',
         description: '',
-        image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-        metaTitle: '',
-        metaDescription: '',
-        metaKeywords: '',
+        image: DEFAULT_PRODUCT_IMAGE,
     });
 
     // Edit Form State
     const [editForm, setEditForm] = useState<AdminProductItem | null>(null);
 
-    // Image Input references
-    const addImageInputRef = useRef<HTMLInputElement>(null);
-    const editImageInputRef = useRef<HTMLInputElement>(null);
+    // Image Input references & upload states
+    const [addGallery, setAddGallery] = useState<ProductImageItem[]>([]);
+    const [editGallery, setEditGallery] = useState<ProductImageItem[]>([]);
+    const [addSelectedFile, setAddSelectedFile] = useState<File | null>(null);
+    const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+    const [isUploadingProductImage, setIsUploadingProductImage] = useState<boolean>(false);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Filter fields configuration
+    // Load Categories & Brands dictionary
+    const loadDictionaries = useCallback(async () => {
+        try {
+            const [catRes, brandRes] = await Promise.all([
+                adminCategoryService.getAllCategories({ size: 100, sort: ['name,ASC'] }).catch(() => null),
+                adminBrandService.getAllBrands({ size: 100, sort: ['name,ASC'] }).catch(() => null),
+            ]);
+            if (catRes?.content) {
+                setCategories(catRes.content);
+            }
+            if (brandRes?.content) {
+                setBrands(brandRes.content);
+            }
+        } catch (err) {
+            console.warn('Error loading categories/brands options:', err);
+        }
+    }, []);
+
+    // Load Products from Backend API
+    const loadProducts = useCallback(async (isSilent = false) => {
+        if (!isSilent) {
+            setIsLoading(true);
+        } else {
+            setIsRefreshing(true);
+        }
+        setError(null);
+
+        try {
+            const pageIndex = Math.max(0, currentPage - 1);
+            const response = await adminProductService.getAllProducts({
+                keyword: searchQuery.trim() || undefined,
+                status: filters.status || undefined,
+                productType: filters.productType || undefined,
+                brandId: filters.brandId || undefined,
+                categoryId: filters.categoryId || undefined,
+                page: pageIndex,
+                size: pageSize,
+                sort: ['id,DESC'],
+            });
+
+            const content = response.content || [];
+            setTotalElements(response.totalElements ?? content.length);
+            setTotalPages(response.totalPages || 1);
+
+            // Map backend ProductResponse to AdminProductItem
+            const mappedItems: AdminProductItem[] = content.map((p: ProductResponse) => {
+                let formattedCreatedDate = 'Chưa cập nhật';
+                if (p.createdDate) {
+                    try {
+                        formattedCreatedDate = new Date(p.createdDate).toLocaleDateString('vi-VN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                        });
+                    } catch {
+                        formattedCreatedDate = p.createdDate.split('T')[0] || 'Chưa cập nhật';
+                    }
+                }
+
+                // Resolve Brand Name
+                const matchedBrand = brands.find((b) => b.id === p.brandId);
+                const brandName = matchedBrand?.name || (p.brandId ? `Brand #${p.brandId}` : 'Chưa gán');
+
+                // Resolve Category Name
+                const catId = p.primaryCategoryId ?? (p.categoryIds && p.categoryIds.length > 0 ? p.categoryIds[0] : null);
+                const matchedCat = categories.find((c) => c.id === catId);
+                const categoryName = matchedCat?.name || (catId ? `Danh mục #${catId}` : 'Chưa phân loại');
+
+                const rawImageUrl = p.imageUrl?.trim() || '';
+                const splitUrls = rawImageUrl
+                    ? rawImageUrl
+                        .split(';')
+                        .map((u) => u.trim())
+                        .filter(Boolean)
+                    : [];
+
+                const avatarImage = splitUrls[0] || DEFAULT_PRODUCT_IMAGE;
+                const galleryImages = splitUrls.slice(1);
+
+                return {
+                    id: String(p.id),
+                    numericId: p.id,
+                    name: p.name || 'Chưa đặt tên',
+                    sku: p.code || `SKU-${p.id}`,
+                    slug: p.slug || '',
+                    brandId: p.brandId ?? null,
+                    brand: brandName,
+                    categoryIds: p.categoryIds || [],
+                    primaryCategoryId: p.primaryCategoryId ?? null,
+                    category: categoryName,
+                    productType: (p.productType as ProductType) || 'COMPONENT',
+                    price: typeof p.price === 'number' ? p.price : 0,
+                    image: avatarImage,
+                    gallery: galleryImages,
+                    status: (p.status as BackendProductStatus) || 'ACTIVE',
+                    specification: p.specification || '',
+                    description: p.description || 'Chưa có bài viết mô tả sản phẩm.',
+                    createdAt: formattedCreatedDate,
+                    lastModifiedAt: p.lastModifiedDate ? p.lastModifiedDate.split('T')[0] : undefined,
+                };
+            });
+
+            setProducts(mappedItems);
+        } catch (err: any) {
+            console.error('Error fetching products from API:', err);
+            setError(err.message || 'Không thể tải danh sách sản phẩm từ máy chủ');
+            showToast(err.message || 'Lỗi tải danh sách sản phẩm', 'error');
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+        }
+    }, [currentPage, pageSize, searchQuery, filters, brands, categories, showToast]);
+
+    // Initial load dictionary and products
+    useEffect(() => {
+        loadDictionaries();
+    }, [loadDictionaries]);
+
+    useEffect(() => {
+        loadProducts();
+    }, [loadProducts]);
+
+    // Build Filter fields dynamically with real categories and brands from Backend
     const filterFields: FilterField[] = [
         {
-            name: 'category',
+            name: 'categoryId',
             label: 'Danh mục',
             type: 'select',
             placeholder: 'Tất cả danh mục',
             options: [
                 { label: 'Tất cả danh mục', value: '' },
-                { label: '🖥️ PC Gaming', value: 'PC Gaming' },
-                { label: '🎮 Card màn hình (VGA)', value: 'Card màn hình (VGA)' },
-                { label: '⚡ Vi xử lý (CPU)', value: 'Vi xử lý (CPU)' },
-                { label: '🧩 Bo mạch chủ', value: 'Bo mạch chủ' },
-                { label: '🚀 Bộ nhớ RAM', value: 'Bộ nhớ RAM' },
-                { label: '💾 Ổ cứng SSD', value: 'Ổ cứng SSD' },
-                { label: '📦 Vỏ Case', value: 'Vỏ Case' },
-                { label: '🔌 Nguồn máy tính (PSU)', value: 'Nguồn máy tính (PSU)' },
-                { label: '🖥️ Màn hình máy tính', value: 'Màn hình máy tính' },
-                { label: '🖱️ Phụ kiện & Gaming Gear', value: 'Phụ kiện & Gaming Gear' },
-                { label: '❄️ Tản nhiệt CPU', value: 'Tản nhiệt CPU' },
+                ...categories.map((c) => ({
+                    label: c.name,
+                    value: String(c.id),
+                })),
             ],
         },
         {
-            name: 'brand',
+            name: 'brandId',
             label: 'Thương hiệu',
             type: 'select',
             placeholder: 'Tất cả thương hiệu',
             options: [
                 { label: 'Tất cả thương hiệu', value: '' },
-                { label: 'ASUS', value: 'ASUS' },
-                { label: 'MSI', value: 'MSI' },
-                { label: 'Gigabyte', value: 'Gigabyte' },
-                { label: 'Intel', value: 'Intel' },
-                { label: 'AMD', value: 'AMD' },
-                { label: 'Corsair', value: 'Corsair' },
-                { label: 'Kingston', value: 'Kingston' },
-                { label: 'Samsung', value: 'Samsung' },
-                { label: 'Dell', value: 'Dell' },
-                { label: 'Logitech', value: 'Logitech' },
-                { label: 'Lian Li', value: 'Lian Li' },
-                { label: 'Thermalright', value: 'Thermalright' },
+                ...brands.map((b) => ({
+                    label: b.name,
+                    value: String(b.id),
+                })),
+            ],
+        },
+        {
+            name: 'productType',
+            label: 'Loại sản phẩm',
+            type: 'select',
+            placeholder: 'Tất cả loại',
+            options: [
+                { label: 'Tất cả loại', value: '' },
+                { label: '🧩 Linh kiện (COMPONENT)', value: 'COMPONENT' },
+                { label: '💻 Laptop xách tay (LAPTOP)', value: 'LAPTOP' },
+                { label: '🖥️ Máy bộ / Desktop (PC)', value: 'PC' },
             ],
         },
         {
             name: 'status',
-            label: 'Tình trạng kho',
+            label: 'Trạng thái kinh doanh',
             type: 'select',
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: '✅ Còn hàng (In Stock)', value: 'IN_STOCK' },
-                { label: '⚠️ Sắp hết hàng (< 5 cái)', value: 'LOW_STOCK' },
+                { label: '✅ Đang bán (Active)', value: 'ACTIVE' },
                 { label: '❌ Hết hàng (Out of Stock)', value: 'OUT_OF_STOCK' },
-                { label: '⛔ Ngừng kinh doanh', value: 'DISCONTINUED' },
+                { label: '👁️ Đang ẩn (Inactive)', value: 'INACTIVE' },
             ],
-        },
-        {
-            name: 'badge',
-            label: 'Nhãn sản phẩm',
-            type: 'select',
-            placeholder: 'Tất cả',
-            options: [
-                { label: 'Tất cả nhãn', value: '' },
-                { label: '🔥 HOT', value: 'HOT' },
-                { label: '✨ NEW', value: 'NEW' },
-                { label: '🏷️ SALE', value: 'SALE' },
-                { label: '⭐ BEST', value: 'BEST' },
-            ],
-        },
-        {
-            name: 'createdDate',
-            label: 'Ngày thêm vào',
-            type: 'date',
-            placeholder: 'Chọn ngày',
         },
     ];
 
-    // Filter Logic
-    const filteredProducts = products.filter((p) => {
-        // Search query
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase().trim();
-            const matchName = p.name.toLowerCase().includes(query);
-            const matchSku = p.sku.toLowerCase().includes(query);
-            const matchBrand = p.brand.toLowerCase().includes(query);
-            const matchCat = p.category.toLowerCase().includes(query);
-            if (!matchName && !matchSku && !matchBrand && !matchCat) return false;
-        }
-
-        // Category filter
-        if (filters.category && p.category !== filters.category) {
-            return false;
-        }
-
-        // Brand filter
-        if (filters.brand && p.brand !== filters.brand) {
-            return false;
-        }
-
-        // Status filter
-        if (filters.status && p.status !== filters.status) {
-            return false;
-        }
-
-        // Badge filter
-        if (filters.badge && p.badge !== filters.badge) {
-            return false;
-        }
-
-        // Date filter
-        if (filters.createdDate && !p.createdAt.startsWith(filters.createdDate)) {
-            return false;
-        }
-
-        return true;
-    });
-
-    const totalPages = Math.ceil(filteredProducts.length / pageSize) || 1;
-    const paginatedProducts = filteredProducts.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
-
-    // Handlers
+    // Search and Filter Handlers
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         setCurrentPage(1);
@@ -789,29 +620,74 @@ export default function ProductList() {
         setSearchQuery('');
         setFilters({});
         setCurrentPage(1);
-        showToast('Đã xóa toàn bộ bộ lọc sản phẩm', 'info');
+        showToast('Đã đặt lại bộ lọc', 'info');
     };
 
+    // Export to Excel / CSV with UTF-8 BOM
     const handleExportExcel = () => {
-        showToast(`Đã xuất danh sách ${filteredProducts.length} sản phẩm ra file Excel thành công`, 'success');
+        if (products.length === 0) {
+            showToast('Không có sản phẩm nào để xuất file', 'warning');
+            return;
+        }
+
+        const headers = ['ID', 'Mã SKU', 'Tên sản phẩm', 'Loại', 'Thương hiệu', 'Danh mục', 'Giá bán (VNĐ)', 'Trạng thái', 'Ngày tạo'];
+        const rows = products.map((p) => [
+            p.numericId,
+            `"${p.sku}"`,
+            `"${p.name.replace(/"/g, '""')}"`,
+            p.productType,
+            `"${p.brand.replace(/"/g, '""')}"`,
+            `"${p.category.replace(/"/g, '""')}"`,
+            p.price,
+            p.status,
+            p.createdAt,
+        ]);
+
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `danh_sach_san_pham_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(`Đã xuất ${products.length} sản phẩm ra file thành công`, 'success');
     };
 
-    // Toggle Status / Stock
-    const handleToggleStockStatus = (p: AdminProductItem, e?: React.MouseEvent) => {
+    // Toggle Status / Stock via API
+    const handleToggleStockStatus = async (p: AdminProductItem, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        const nextStatus: ProductStatus = p.status === 'IN_STOCK' ? 'OUT_OF_STOCK' : 'IN_STOCK';
-        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, status: nextStatus } : item));
-        showToast(
-            `Đã chuyển trạng thái sản phẩm "${p.name.slice(0, 30)}..." sang ${nextStatus === 'IN_STOCK' ? 'Còn hàng' : 'Hết hàng'}`,
-            nextStatus === 'IN_STOCK' ? 'success' : 'warning'
-        );
+        const nextStatus: BackendProductStatus = p.status === 'ACTIVE' ? 'OUT_OF_STOCK' : 'ACTIVE';
+        try {
+            await adminProductService.updateProductStatus(p.numericId, nextStatus);
+            showToast(
+                `Đã chuyển trạng thái sản phẩm "${p.name.slice(0, 30)}..." sang ${nextStatus === 'ACTIVE' ? 'Đang bán' : 'Hết hàng'}`,
+                nextStatus === 'ACTIVE' ? 'success' : 'warning'
+            );
+            loadProducts(true);
+        } catch (err: any) {
+            showToast(`Cập nhật trạng thái thất bại: ${err.message}`, 'error');
+        }
     };
 
-    // Delete Product
-    const handleDeleteProduct = (p: AdminProductItem, e?: React.MouseEvent) => {
+    // Delete Product via API
+    const handleDeleteProduct = async (p: AdminProductItem, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        setProducts(prev => prev.filter(item => item.id !== p.id));
-        showToast(`Đã xóa sản phẩm "${p.name}" khỏi hệ thống`, 'success');
+        if (!window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${p.name}" (SKU: ${p.sku}) khỏi hệ thống?`)) {
+            return;
+        }
+
+        try {
+            await adminProductService.deleteProduct(p.numericId);
+            showToast(`Đã xóa sản phẩm "${p.name}" khỏi hệ thống thành công`, 'success');
+            if (selectedProduct?.id === p.id) {
+                setIsDetailModalOpen(false);
+            }
+            loadProducts(true);
+        } catch (err: any) {
+            showToast(`Xóa sản phẩm thất bại: ${err.message}`, 'error');
+        }
     };
 
     // Open Modals
@@ -825,12 +701,108 @@ export default function ProductList() {
         e?.stopPropagation();
         setSelectedProduct(p);
         setEditForm({ ...p });
+        setEditSelectedFile(null);
+        setEditGallery(
+            (p.gallery || []).map((url, idx) => ({
+                id: `edit-gal-${idx}-${Date.now()}`,
+                url,
+            }))
+        );
         setActiveEditTab('basic');
         setIsEditModalOpen(true);
     };
 
-    // Save Edit
-    const handleSaveEdit = () => {
+    // Avatar File Handlers
+    const handleAvatarFileSelect = (file: File, isEdit: boolean) => {
+        const validation = validateImageFile(file, 32);
+        if (!validation.valid) {
+            showToast(validation.error || 'Tệp hình ảnh không hợp lệ', 'error');
+            return;
+        }
+        const objectUrl = URL.createObjectURL(file);
+        if (isEdit) {
+            setEditSelectedFile(file);
+            setEditForm((prev) => (prev ? { ...prev, image: objectUrl } : null));
+        } else {
+            setAddSelectedFile(file);
+            setAddForm((prev) => ({ ...prev, image: objectUrl }));
+        }
+        showToast(`Đã chọn ảnh đại diện "${file.name}". Bấm "Lưu" để tải ảnh lên ImgBB.`, 'info');
+    };
+
+    // Gallery Item Handlers (Thêm nhiều ảnh tối đa 10, xóa ảnh)
+    const handleAddGalleryFiles = (files: FileList | File[], isEdit: boolean) => {
+        const currentGallery = isEdit ? editGallery : addGallery;
+        const availableSlots = 10 - currentGallery.length;
+        if (availableSlots <= 0) {
+            showToast('Đã đạt tối đa 10 ảnh sản phẩm. Vui lòng xóa bớt ảnh trước khi thêm.', 'warning');
+            return;
+        }
+
+        const fileArray = Array.from(files).slice(0, availableSlots);
+        if (fileArray.length < files.length) {
+            showToast(`Chỉ có thể thêm tối đa 10 ảnh. Đã nhận ${fileArray.length} ảnh đầu tiên.`, 'info');
+        }
+
+        const newItems: ProductImageItem[] = [];
+        for (const file of fileArray) {
+            const validation = validateImageFile(file, 32);
+            if (!validation.valid) {
+                showToast(validation.error || `Tệp ${file.name} không hợp lệ`, 'error');
+                continue;
+            }
+            newItems.push({
+                id: `gal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                url: URL.createObjectURL(file),
+                file,
+            });
+        }
+
+        if (newItems.length > 0) {
+            if (isEdit) {
+                setEditGallery((prev) => [...prev, ...newItems]);
+            } else {
+                setAddGallery((prev) => [...prev, ...newItems]);
+            }
+            showToast(`Đã thêm ${newItems.length} ảnh sản phẩm xem trước. Bấm "Lưu" để tải lên hệ thống.`, 'info');
+        }
+    };
+
+    const handleAddGalleryUrl = (url: string, isEdit: boolean) => {
+        const trimmed = url.trim();
+        if (!trimmed) {
+            showToast('Vui lòng nhập đường dẫn URL ảnh hợp lệ', 'error');
+            return;
+        }
+        const currentGallery = isEdit ? editGallery : addGallery;
+        if (currentGallery.length >= 10) {
+            showToast('Đã đạt tối đa 10 ảnh sản phẩm. Vui lòng xóa bớt ảnh trước khi thêm.', 'warning');
+            return;
+        }
+
+        const newItem: ProductImageItem = {
+            id: `gal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            url: trimmed,
+        };
+
+        if (isEdit) {
+            setEditGallery((prev) => [...prev, newItem]);
+        } else {
+            setAddGallery((prev) => [...prev, newItem]);
+        }
+        showToast('Đã thêm ảnh sản phẩm từ URL thành công', 'success');
+    };
+
+    const handleRemoveGalleryItem = (id: string, isEdit: boolean) => {
+        if (isEdit) {
+            setEditGallery((prev) => prev.filter((item) => item.id !== id));
+        } else {
+            setAddGallery((prev) => prev.filter((item) => item.id !== id));
+        }
+    };
+
+    // Save Edit via API
+    const handleSaveEdit = async () => {
         if (!editForm) return;
         if (!editForm.name.trim()) {
             showToast('Tên sản phẩm không được để trống', 'error');
@@ -841,16 +813,94 @@ export default function ProductList() {
             return;
         }
 
-        setProducts(prev => prev.map(p => p.id === editForm.id ? editForm : p));
-        setIsEditModalOpen(false);
-        showToast(`Cập nhật thông tin sản phẩm "${editForm.name.slice(0, 30)}..." thành công`, 'success');
-        if (selectedProduct?.id === editForm.id) {
-            setSelectedProduct(editForm);
+        setIsSubmitting(true);
+        let finalAvatarUrl = editForm.image;
+
+        // 1. Upload Avatar nếu có file mới
+        if (editSelectedFile) {
+            setIsUploadingProductImage(true);
+            try {
+                finalAvatarUrl = await uploadImage(editSelectedFile);
+                setEditSelectedFile(null);
+            } catch (err: any) {
+                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
+                setIsUploadingProductImage(false);
+                setIsSubmitting(false);
+                return;
+            } finally {
+                setIsUploadingProductImage(false);
+            }
+        }
+
+        // 2. Upload các file ảnh sản phẩm trong gallery
+        const hasPendingGalleryUploads = editGallery.some((item) => !!item.file);
+        const finalGalleryUrls: string[] = [];
+
+        if (hasPendingGalleryUploads) {
+            setIsUploadingProductImage(true);
+        }
+
+        try {
+            const uploadPromises = editGallery.map(async (item) => {
+                if (item.file) {
+                    return await uploadImage(item.file);
+                }
+                if (item.url && !item.url.startsWith('blob:')) {
+                    return item.url;
+                }
+                return '';
+            });
+
+            const uploadedUrls = await Promise.all(uploadPromises);
+            for (const u of uploadedUrls) {
+                if (u && u.trim().length > 0) {
+                    finalGalleryUrls.push(u.trim());
+                }
+            }
+        } catch (err: any) {
+            showToast(`Tải ảnh sản phẩm lên ImgBB thất bại: ${err.message}`, 'error');
+            setIsUploadingProductImage(false);
+            setIsSubmitting(false);
+            return;
+        } finally {
+            setIsUploadingProductImage(false);
+        }
+
+        // 3. Ghép các URL thành dạng string, ngăn cách bởi dấu ";". URL đầu sẽ là ảnh đại diện, các URL sau là ảnh sản phẩm
+        const cleanedAvatarUrl = (finalAvatarUrl || '').trim() || DEFAULT_PRODUCT_IMAGE;
+        const combinedImageUrl = [cleanedAvatarUrl, ...finalGalleryUrls].filter(Boolean).join(';');
+
+        try {
+            const brandIdNum = editForm.brandId ? Number(editForm.brandId) : null;
+            const catIdNum = editForm.primaryCategoryId ? Number(editForm.primaryCategoryId) : null;
+
+            await adminProductService.updateProduct(editForm.numericId, {
+                name: editForm.name.trim(),
+                code: editForm.sku.trim().toUpperCase(),
+                slug: editForm.slug.trim() || generateSlug(editForm.name),
+                price: Number(editForm.price) || 0,
+                productType: editForm.productType,
+                status: editForm.status,
+                imageUrl: combinedImageUrl,
+                brandId: brandIdNum,
+                primaryCategoryId: catIdNum,
+                categoryIds: catIdNum ? [catIdNum] : [],
+                specification: editForm.specification,
+                description: editForm.description,
+            });
+
+            showToast(`Cập nhật thông tin sản phẩm "${editForm.name.slice(0, 30)}..." thành công`, 'success');
+            setIsEditModalOpen(false);
+            loadProducts(true);
+        } catch (err: any) {
+            showToast(`Cập nhật thất bại: ${err.message}`, 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    // Add Product Submit
-    const handleAddSubmit = (e: React.FormEvent) => {
+    // Add Product Submit via API
+    const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!addForm.name.trim()) {
             showToast('Vui lòng nhập tên sản phẩm', 'error');
@@ -861,77 +911,109 @@ export default function ProductList() {
             return;
         }
 
-        const newId = `prod-${Date.now().toString(36)}`;
-        const finalSlug = addForm.slug || generateSlug(addForm.name);
+        setIsSubmitting(true);
+        let finalAvatarUrl = addForm.image;
 
-        const newProduct: AdminProductItem = {
-            id: newId,
-            name: addForm.name.trim(),
-            sku: addForm.sku.trim().toUpperCase(),
-            slug: finalSlug,
-            brand: addForm.brand,
-            category: addForm.category,
-            price: Number(addForm.price) || 0,
-            originalPrice: Number(addForm.originalPrice) || Number(addForm.price),
-            discountPercent: Number(addForm.discountPercent) || 0,
-            stock: Number(addForm.stock) || 0,
-            salesCount: 0,
-            image: addForm.image,
-            gallery: [addForm.image],
-            warranty: addForm.warranty,
-            status: addForm.status,
-            isFeatured: addForm.isFeatured,
-            isHot: addForm.isHot,
-            badge: addForm.badge,
-            shortSpecs: addForm.shortSpecs || 'Chưa cập nhật thông số nhanh',
-            description: addForm.description || 'Chưa có bài viết mô tả chi tiết.',
-            createdAt: new Date().toISOString().split('T')[0],
-            metaTitle: addForm.metaTitle || `${addForm.name} Chính Hãng Giá Tốt | PCStore`,
-            metaDescription: addForm.metaDescription || `Mua ngay ${addForm.name} tại PCStore giá ưu đãi, bảo hành ${addForm.warranty}.`,
-            metaKeywords: addForm.metaKeywords || `${addForm.slug}, ${addForm.brand.toLowerCase()}`,
-        };
-
-        setProducts(prev => [newProduct, ...prev]);
-        setIsAddModalOpen(false);
-        showToast(`Đã thêm mới thành công sản phẩm "${newProduct.name}"`, 'success');
-
-        // Reset Add Form
-        setAddForm({
-            name: '',
-            sku: '',
-            slug: '',
-            brand: 'ASUS',
-            category: 'PC Gaming',
-            price: 15000000,
-            originalPrice: 16500000,
-            discountPercent: 9,
-            stock: 10,
-            warranty: '36 Tháng',
-            status: 'IN_STOCK',
-            isFeatured: false,
-            isHot: false,
-            badge: null,
-            shortSpecs: '',
-            description: '',
-            image: 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80',
-            metaTitle: '',
-            metaDescription: '',
-            metaKeywords: '',
-        });
-        setActiveAddTab('basic');
-    };
-
-    // Upload Image Handlers
-    const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEditMode = false) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const objectUrl = URL.createObjectURL(file);
-            if (isEditMode) {
-                setEditForm(prev => prev ? { ...prev, image: objectUrl } : null);
-            } else {
-                setAddForm(prev => ({ ...prev, image: objectUrl }));
+        // 1. Upload Avatar nếu có file mới
+        if (addSelectedFile) {
+            setIsUploadingProductImage(true);
+            try {
+                finalAvatarUrl = await uploadImage(addSelectedFile);
+                setAddSelectedFile(null);
+            } catch (err: any) {
+                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
+                setIsUploadingProductImage(false);
+                setIsSubmitting(false);
+                return;
+            } finally {
+                setIsUploadingProductImage(false);
             }
-            showToast(`Đã tải lên ảnh sản phẩm "${file.name}"`, 'info');
+        }
+
+        // 2. Upload các file ảnh sản phẩm trong gallery
+        const hasPendingGalleryUploads = addGallery.some((item) => !!item.file);
+        const finalGalleryUrls: string[] = [];
+
+        if (hasPendingGalleryUploads) {
+            setIsUploadingProductImage(true);
+        }
+
+        try {
+            const uploadPromises = addGallery.map(async (item) => {
+                if (item.file) {
+                    return await uploadImage(item.file);
+                }
+                if (item.url && !item.url.startsWith('blob:')) {
+                    return item.url;
+                }
+                return '';
+            });
+
+            const uploadedUrls = await Promise.all(uploadPromises);
+            for (const u of uploadedUrls) {
+                if (u && u.trim().length > 0) {
+                    finalGalleryUrls.push(u.trim());
+                }
+            }
+        } catch (err: any) {
+            showToast(`Tải ảnh sản phẩm lên ImgBB thất bại: ${err.message}`, 'error');
+            setIsUploadingProductImage(false);
+            setIsSubmitting(false);
+            return;
+        } finally {
+            setIsUploadingProductImage(false);
+        }
+
+        // 3. Ghép các URL thành dạng string, ngăn cách bởi dấu ";". URL đầu sẽ là ảnh đại diện, các URL sau là ảnh sản phẩm
+        const cleanedAvatarUrl = (finalAvatarUrl || '').trim() || DEFAULT_PRODUCT_IMAGE;
+        const combinedImageUrl = [cleanedAvatarUrl, ...finalGalleryUrls].filter(Boolean).join(';');
+
+        try {
+            const finalSlug = addForm.slug.trim() || generateSlug(addForm.name);
+            const brandIdNum = addForm.brandId ? Number(addForm.brandId) : null;
+            const catIdNum = addForm.primaryCategoryId ? Number(addForm.primaryCategoryId) : null;
+
+            await adminProductService.createProduct({
+                name: addForm.name.trim(),
+                code: addForm.sku.trim().toUpperCase(),
+                slug: finalSlug,
+                price: Number(addForm.price) || 0,
+                productType: addForm.productType,
+                status: addForm.status,
+                imageUrl: combinedImageUrl,
+                brandId: brandIdNum,
+                primaryCategoryId: catIdNum,
+                categoryIds: catIdNum ? [catIdNum] : [],
+                specification: addForm.specification,
+                description: addForm.description,
+            });
+
+            showToast(`Đã thêm mới thành công sản phẩm "${addForm.name}"`, 'success');
+            setIsAddModalOpen(false);
+
+            // Reset Add Form & Gallery
+            setAddForm({
+                name: '',
+                sku: '',
+                slug: '',
+                brandId: brands[0]?.id || '',
+                primaryCategoryId: categories[0]?.id || '',
+                productType: 'COMPONENT',
+                price: 1000000,
+                status: 'ACTIVE',
+                specification: '',
+                description: '',
+                image: DEFAULT_PRODUCT_IMAGE,
+            });
+            setAddSelectedFile(null);
+            setAddGallery([]);
+            setActiveAddTab('basic');
+
+            loadProducts(true);
+        } catch (err: any) {
+            showToast(`Thêm sản phẩm thất bại: ${err.message}`, 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -941,52 +1023,39 @@ export default function ProductList() {
         showToast(`Đã sao chép ${label}: ${text}`, 'info');
     };
 
-    // Badge Renderer
-    const renderBadge = (badge?: 'HOT' | 'NEW' | 'SALE' | 'BEST' | null) => {
-        if (!badge) return null;
-        switch (badge) {
-            case 'HOT':
+    // Product Type Badge Renderer
+    const renderTypeBadge = (type: ProductType) => {
+        switch (type) {
+            case 'PC':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white shadow-sm">
-                        <Flame className="w-3 h-3 fill-white" /> HOT
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <Layers className="w-3 h-3 text-indigo-500" /> PC Đồng bộ
                     </span>
                 );
-            case 'NEW':
+            case 'LAPTOP':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500 text-white shadow-sm">
-                        <Zap className="w-3 h-3 fill-white" /> NEW
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                        <Laptop className="w-3 h-3 text-purple-500" /> Laptop
                     </span>
                 );
-            case 'SALE':
+            case 'COMPONENT':
+            default:
                 return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-sm">
-                        <Percent className="w-3 h-3" /> SALE
-                    </span>
-                );
-            case 'BEST':
-                return (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-sm">
-                        <Star className="w-3 h-3 fill-white" /> BEST
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                        <Cpu className="w-3 h-3 text-sky-500" /> Linh kiện
                     </span>
                 );
         }
     };
 
-    // Stock Status Badge Renderer
-    const renderStatusBadge = (status: ProductStatus, stock: number) => {
+    // Status Badge Renderer
+    const renderStatusBadge = (status: BackendProductStatus) => {
         switch (status) {
-            case 'IN_STOCK':
+            case 'ACTIVE':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Còn hàng ({stock})
-                    </span>
-                );
-            case 'LOW_STOCK':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-300">
-                        <AlertTriangle className="w-3 h-3 text-amber-600" />
-                        Sắp hết ({stock})
+                        Đang bán
                     </span>
                 );
             case 'OUT_OF_STOCK':
@@ -996,10 +1065,12 @@ export default function ProductList() {
                         Hết hàng
                     </span>
                 );
-            case 'DISCONTINUED':
+            case 'INACTIVE':
+            default:
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-300">
-                        Ngừng bán
+                        <EyeOff className="w-3 h-3 text-gray-500" />
+                        Đang ẩn
                     </span>
                 );
         }
@@ -1019,29 +1090,21 @@ export default function ProductList() {
                                 alt={p.name}
                                 className="w-full h-full object-contain rounded-lg"
                                 onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+                                    (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                                 }}
                             />
                         </div>
-                        {p.isFeatured && (
-                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gradient-to-tr from-amber-500 to-yellow-400 text-white rounded-full flex items-center justify-center shadow-md text-[9px]">
-                                ★
-                            </span>
-                        )}
                     </div>
                     <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                            {renderBadge(p.badge)}
-                            <span className="px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 text-[10px] font-mono border border-gray-200 font-semibold">
+                        <div className="flex items-center gap-1.5 mb-1">
+                            {renderTypeBadge(p.productType)}
+                            <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-mono border border-gray-200 font-semibold">
                                 {p.sku}
                             </span>
                         </div>
                         <h4 className="font-semibold text-gray-900 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors" title={p.name}>
                             {p.name}
                         </h4>
-                        <p className="text-xs text-gray-400 line-clamp-1 mt-0.5 font-sans">
-                            {p.shortSpecs}
-                        </p>
                     </div>
                 </div>
             ),
@@ -1063,45 +1126,22 @@ export default function ProductList() {
         },
         {
             key: 'price',
-            header: 'Giá bán & Giảm',
+            header: 'Giá bán niêm yết',
             render: (p) => (
                 <div className="space-y-0.5">
                     <div className="text-sm font-bold text-rose-600">
                         {formatVND(p.price)}
                     </div>
-                    {p.originalPrice > p.price && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                            <span className="text-gray-400 line-through">
-                                {formatVND(p.originalPrice)}
-                            </span>
-                            <span className="text-[11px] font-semibold text-rose-500 bg-rose-50 px-1 rounded">
-                                -{p.discountPercent}%
-                            </span>
-                        </div>
-                    )}
                 </div>
             ),
         },
         {
-            key: 'stock',
-            header: 'Kho & Đã bán',
+            key: 'status',
+            header: 'Trạng thái',
             render: (p) => (
-                <div className="space-y-1">
-                    {renderStatusBadge(p.status, p.stock)}
-                    <div className="text-[11px] text-gray-500">
-                        Đã bán: <strong className="text-gray-800">{p.salesCount}</strong>
-                    </div>
+                <div>
+                    {renderStatusBadge(p.status)}
                 </div>
-            ),
-        },
-        {
-            key: 'warranty',
-            header: 'Bảo hành',
-            render: (p) => (
-                <span className="inline-flex items-center gap-1 text-xs text-gray-700 font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    {p.warranty}
-                </span>
             ),
         },
         {
@@ -1139,13 +1179,13 @@ export default function ProductList() {
                     <button
                         type="button"
                         onClick={(e) => handleToggleStockStatus(p, e)}
-                        className={`p-1.5 rounded-lg transition-colors ${p.status === 'IN_STOCK'
+                        className={`p-1.5 rounded-lg transition-colors ${p.status === 'ACTIVE'
                             ? 'text-gray-500 hover:text-rose-600 hover:bg-rose-50'
                             : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'
                             }`}
-                        title={p.status === 'IN_STOCK' ? 'Đổi sang Hết hàng' : 'Đổi sang Còn hàng'}
+                        title={p.status === 'ACTIVE' ? 'Đổi sang Hết hàng' : 'Đổi sang Đang bán'}
                     >
-                        {p.status === 'IN_STOCK' ? <EyeOff className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                     </button>
                     <button
                         type="button"
@@ -1163,17 +1203,16 @@ export default function ProductList() {
     // Tabs for Add Modal
     const addModalTabs: ModalTab[] = [
         { id: 'basic', label: 'Thông tin cơ bản', icon: Package },
-        { id: 'pricing', label: 'Giá & Tồn kho', icon: DollarSign },
-        { id: 'media', label: 'Hình ảnh & Video', icon: ImageIcon },
-        { id: 'seo', label: 'Cấu hình SEO & Mô tả', icon: Globe },
+        { id: 'pricing', label: 'Giá & Trạng thái', icon: DollarSign },
+        { id: 'media', label: 'Hình ảnh', icon: ImageIcon },
+        { id: 'specs', label: 'Thông số kỹ thuật', icon: Cpu },
     ];
 
     // Tabs for Detail Modal
     const detailModalTabs: ModalTab[] = [
         { id: 'overview', label: 'Tổng quan sản phẩm', icon: Package },
+        { id: 'gallery', label: 'Hình ảnh', icon: ImageIcon },
         { id: 'specs', label: 'Thông số kỹ thuật', icon: Cpu },
-        { id: 'gallery', label: 'Bộ sưu tập ảnh', icon: ImageIcon },
-        { id: 'seo', label: 'Mô phỏng SEO Google', icon: Globe },
     ];
 
     return (
@@ -1186,10 +1225,20 @@ export default function ProductList() {
                         Quản lý sản phẩm & linh kiện PC
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">
-                        Quản lý kho máy tính nguyên bộ, linh kiện phần cứng, giá bán, tồn kho và danh mục hiển thị
+                        Dữ liệu sản phẩm trực tiếp từ hệ thống API máy chủ Backend, hỗ trợ cập nhật kho và thông số
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => loadProducts(false)}
+                        disabled={isLoading || isRefreshing}
+                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
+                        title="Làm mới dữ liệu từ API"
+                    >
+                        <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        Làm mới
+                    </button>
                     <button
                         type="button"
                         onClick={handleExportExcel}
@@ -1201,6 +1250,21 @@ export default function ProductList() {
                     <button
                         type="button"
                         onClick={() => {
+                            setAddForm({
+                                name: '',
+                                sku: `SP-${Date.now().toString(36).slice(-5).toUpperCase()}`,
+                                slug: '',
+                                brandId: brands[0]?.id || '',
+                                primaryCategoryId: categories[0]?.id || '',
+                                productType: 'COMPONENT',
+                                price: 1000000,
+                                status: 'ACTIVE',
+                                specification: '',
+                                description: '',
+                                image: DEFAULT_PRODUCT_IMAGE,
+                            });
+                            setAddSelectedFile(null);
+                            setAddGallery([]);
                             setActiveAddTab('basic');
                             setIsAddModalOpen(true);
                         }}
@@ -1213,12 +1277,11 @@ export default function ProductList() {
             </div>
 
             {/* Quick KPI Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                     <div>
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng sản phẩm</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">{products.length}</h3>
-                        <p className="text-xs text-blue-600 font-medium mt-1">Đang quản lý trong kho</p>
+                        <h3 className="text-2xl font-bold text-gray-900 mt-1">{totalElements}</h3>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                         <Package className="w-6 h-6" />
@@ -1229,9 +1292,8 @@ export default function ProductList() {
                     <div>
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang kinh doanh</p>
                         <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                            {products.filter(p => p.status === 'IN_STOCK').length}
+                            {products.filter((p) => p.status === 'ACTIVE').length}
                         </h3>
-                        <p className="text-xs text-emerald-600 font-medium mt-1">Sẵn sàng giao ngay</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                         <CheckCircle2 className="w-6 h-6" />
@@ -1242,9 +1304,8 @@ export default function ProductList() {
                     <div>
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Cần nhập thêm</p>
                         <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                            {products.filter(p => p.status === 'LOW_STOCK' || p.status === 'OUT_OF_STOCK').length}
+                            {products.filter((p) => p.status === 'OUT_OF_STOCK').length}
                         </h3>
-                        <p className="text-xs text-rose-500 font-medium mt-1">Sắp hết hoặc hết hàng</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                         <AlertTriangle className="w-6 h-6" />
@@ -1253,36 +1314,54 @@ export default function ProductList() {
 
                 <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng giá trị tồn kho</p>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Định giá trang này</p>
                         <h3 className="text-xl font-bold text-gray-900 mt-1">
-                            {formatVND(products.reduce((acc, curr) => acc + curr.price * curr.stock, 0))}
+                            {formatVND(products.reduce((acc, curr) => acc + (curr.price || 0), 0))}
                         </h3>
-                        <p className="text-xs text-indigo-600 font-medium mt-1">Định giá kho hiện tại</p>
                     </div>
                     <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                         <Warehouse className="w-6 h-6" />
                     </div>
                 </div>
-            </div>
+            </div> */}
+
+            {/* Error Banner */}
+            {error && (
+                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                        <span className="text-sm font-medium">{error}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => loadProducts(false)}
+                        className="px-3 py-1.5 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+                    >
+                        Thử lại
+                    </button>
+                </div>
+            )}
 
             {/* Filter Section */}
             <AdminFilter
                 fields={filterFields}
+                searchQuery={searchQuery}
                 onSearch={handleSearch}
                 onFilterChange={handleFilterChange}
                 onReset={handleFilterReset}
-                searchPlaceholder="Tìm kiếm linh kiện theo tên, mã SKU, thương hiệu, thông số..."
+                searchPlaceholder="Tìm kiếm linh kiện theo tên, mã SKU, slug..."
             />
 
             {/* Products Table */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <AdminTable
                     columns={columns}
-                    data={paginatedProducts}
+                    data={products}
+                    loading={isLoading}
                     rowKey="id"
                     currentPage={currentPage}
                     totalPages={totalPages}
-                    totalItems={filteredProducts.length}
+                    totalItems={totalElements}
                     pageSize={pageSize}
                     pageSizeOptions={[10, 15, 20]}
                     onPageChange={(page) => setCurrentPage(page)}
@@ -1292,7 +1371,7 @@ export default function ProductList() {
                     }}
                     onRowClick={(item) => handleOpenDetail(item)}
                     itemUnitName="sản phẩm"
-                    emptyText="Không tìm thấy sản phẩm hoặc linh kiện nào phù hợp với bộ lọc hiện tại."
+                    emptyText="Không tìm thấy sản phẩm nào từ API phù hợp với bộ lọc hiện tại."
                 />
             </div>
 
@@ -1301,9 +1380,9 @@ export default function ProductList() {
             {/* ========================================================================= */}
             <AdminModal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
+                onClose={() => !isSubmitting && setIsAddModalOpen(false)}
                 title="Thêm mới sản phẩm / linh kiện máy tính"
-                description="Nhập thông tin sản phẩm, định giá niêm yết, số lượng tồn kho và cấu hình SEO"
+                description="Nhập thông tin sản phẩm và lưu trực tiếp vào cơ sở dữ liệu qua API"
                 size="2xl"
                 tabs={addModalTabs}
                 activeTab={activeAddTab}
@@ -1312,18 +1391,34 @@ export default function ProductList() {
                     <div className="flex items-center justify-end gap-3 w-full">
                         <button
                             type="button"
+                            disabled={isSubmitting || isUploadingProductImage}
                             onClick={() => setIsAddModalOpen(false)}
-                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                         >
                             Hủy bỏ
                         </button>
                         <button
                             type="button"
+                            disabled={isSubmitting || isUploadingProductImage}
                             onClick={handleAddSubmit}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20"
+                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
                         >
-                            <Plus className="w-4 h-4" />
-                            Tạo sản phẩm
+                            {isUploadingProductImage ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Đang tải ảnh lên ImgBB...
+                                </>
+                            ) : isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Đang lưu sản phẩm...
+                                </>
+                            ) : (
+                                <>
+                                    <Plus className="w-4 h-4" />
+                                    Tạo sản phẩm
+                                </>
+                            )}
                         </button>
                     </div>
                 }
@@ -1339,50 +1434,19 @@ export default function ProductList() {
                                 <input
                                     type="text"
                                     required
-                                    placeholder="Ví dụ: Card màn hình ASUS ROG Strix GeForce RTX 4090 OC 24GB..."
+                                    placeholder="Tên sản phẩm"
                                     value={addForm.name}
                                     onChange={(e) => {
                                         const newName = e.target.value;
-                                        setAddForm(prev => ({
+                                        setAddForm((prev) => ({
                                             ...prev,
                                             name: newName,
                                             slug: generateSlug(newName),
-                                            sku: prev.sku || `SKU-${Date.now().toString(36).slice(-5).toUpperCase()}`
                                         }));
                                     }}
                                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
                                 />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Mã SKU sản phẩm <span className="text-rose-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="VGA-ASUS-4090-OC"
-                                        value={addForm.sku}
-                                        onChange={(e) => setAddForm({ ...addForm, sku: e.target.value.toUpperCase() })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono uppercase text-gray-800 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Thời hạn bảo hành chính hãng
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="36 Tháng"
-                                        value={addForm.warranty}
-                                        onChange={(e) => setAddForm({ ...addForm, warranty: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
-                            </div>
-
                             {/* Slug */}
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
@@ -1391,7 +1455,7 @@ export default function ProductList() {
                                     </label>
                                     <button
                                         type="button"
-                                        onClick={() => setAddForm(prev => ({ ...prev, slug: generateSlug(prev.name) }))}
+                                        onClick={() => setAddForm((prev) => ({ ...prev, slug: generateSlug(prev.name) }))}
                                         className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
                                     >
                                         <RefreshCw className="w-3 h-3" />
@@ -1400,7 +1464,7 @@ export default function ProductList() {
                                 </div>
                                 <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-600">
                                     <span className="inline-flex items-center px-3.5 bg-gray-50 text-gray-500 text-xs font-mono border-r border-gray-200">
-                                        pcstore.vn/san-pham/
+                                        /product/
                                     </span>
                                     <input
                                         type="text"
@@ -1415,79 +1479,83 @@ export default function ProductList() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Danh mục sản phẩm <span className="text-rose-500">*</span>
+                                        Mã SKU sản phẩm <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Mã sản phẩm"
+                                        value={addForm.sku}
+                                        onChange={(e) => setAddForm({ ...addForm, sku: e.target.value.toUpperCase() })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono uppercase text-gray-800 transition-all"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Loại sản phẩm <span className="text-rose-500">*</span>
                                     </label>
                                     <select
-                                        value={addForm.category}
-                                        onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                                        value={addForm.productType}
+                                        onChange={(e) => setAddForm({ ...addForm, productType: e.target.value as ProductType })}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                     >
-                                        <option value="PC Gaming">🖥️ PC Gaming</option>
-                                        <option value="PC Đồ Họa">🎨 PC Đồ Họa & Render</option>
-                                        <option value="Card màn hình (VGA)">🎮 Card màn hình (VGA)</option>
-                                        <option value="Vi xử lý (CPU)">⚡ Vi xử lý (CPU)</option>
-                                        <option value="Bo mạch chủ">🧩 Bo mạch chủ</option>
-                                        <option value="Bộ nhớ RAM">🚀 Bộ nhớ RAM</option>
-                                        <option value="Ổ cứng SSD">💾 Ổ cứng SSD</option>
-                                        <option value="Vỏ Case">📦 Vỏ Case</option>
-                                        <option value="Nguồn máy tính (PSU)">🔌 Nguồn máy tính (PSU)</option>
-                                        <option value="Màn hình máy tính">🖥️ Màn hình máy tính</option>
-                                        <option value="Phụ kiện & Gaming Gear">🖱️ Phụ kiện & Gaming Gear</option>
-                                        <option value="Tản nhiệt CPU">❄️ Tản nhiệt CPU</option>
+                                        <option value="COMPONENT">🧩 Linh kiện máy tính (COMPONENT)</option>
+                                        <option value="LAPTOP">💻 Máy tính xách tay (LAPTOP)</option>
+                                        <option value="PC">🖥️ Máy tính để bàn / Desktop (PC)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Danh mục sản phẩm
+                                    </label>
+                                    <select
+                                        value={addForm.primaryCategoryId}
+                                        onChange={(e) => setAddForm({ ...addForm, primaryCategoryId: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
+                                    >
+                                        <option value="">-- Chọn danh mục --</option>
+                                        {categories.map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Thương hiệu sản xuất <span className="text-rose-500">*</span>
+                                        Thương hiệu
                                     </label>
                                     <select
-                                        value={addForm.brand}
-                                        onChange={(e) => setAddForm({ ...addForm, brand: e.target.value })}
+                                        value={addForm.brandId}
+                                        onChange={(e) => setAddForm({ ...addForm, brandId: e.target.value })}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                     >
-                                        <option value="ASUS">ASUS</option>
-                                        <option value="MSI">MSI</option>
-                                        <option value="Gigabyte">Gigabyte</option>
-                                        <option value="Intel">Intel</option>
-                                        <option value="AMD">AMD</option>
-                                        <option value="Corsair">Corsair</option>
-                                        <option value="Kingston">Kingston</option>
-                                        <option value="Samsung">Samsung</option>
-                                        <option value="Dell">Dell</option>
-                                        <option value="Logitech">Logitech</option>
-                                        <option value="Razer">Razer</option>
-                                        <option value="Lian Li">Lian Li</option>
-                                        <option value="Thermalright">Thermalright</option>
-                                        <option value="Noctua">Noctua</option>
+                                        <option value="">-- Chọn thương hiệu --</option>
+                                        {brands.map((b) => (
+                                            <option key={b.id} value={b.id}>
+                                                {b.name}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
-                            </div>
-
-                            {/* Short Specs */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Thông số tóm tắt nhanh (Quick Specs)
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: 24GB GDDR6X | 384-bit | Boost 2640 MHz | Khung kim loại"
-                                    value={addForm.shortSpecs}
-                                    onChange={(e) => setAddForm({ ...addForm, shortSpecs: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                />
-                                <p className="text-xs text-gray-400 mt-1">Xuất hiện ngay dưới tên sản phẩm ở bảng danh sách và card sản phẩm ngoài trang chủ</p>
                             </div>
                         </div>
                     )}
 
-                    {/* TAB 2: GIÁ & TỒN KHO */}
+                    {/* TAB 2: GIÁ & TRẠNG THÁI */}
                     {activeAddTab === 'pricing' && (
                         <div className="space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Giá bán ưu đãi (VNĐ) <span className="text-rose-500">*</span>
+                                        Giá bán niêm yết (VNĐ) <span className="text-rose-500">*</span>
                                     </label>
                                     <div className="relative">
                                         <input
@@ -1496,12 +1564,7 @@ export default function ProductList() {
                                             step="10000"
                                             required
                                             value={addForm.price}
-                                            onChange={(e) => {
-                                                const p = Number(e.target.value) || 0;
-                                                const orig = addForm.originalPrice || p;
-                                                const disc = orig > p ? Math.round(((orig - p) / orig) * 100) : 0;
-                                                setAddForm({ ...addForm, price: p, discountPercent: disc });
-                                            }}
+                                            onChange={(e) => setAddForm({ ...addForm, price: Number(e.target.value) || 0 })}
                                             className="w-full pl-4 pr-12 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-bold text-rose-600 transition-all"
                                         />
                                         <span className="absolute right-3.5 top-2.5 text-xs text-gray-400 font-medium">VNĐ</span>
@@ -1511,191 +1574,18 @@ export default function ProductList() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Giá gốc niêm yết (VNĐ)
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="10000"
-                                            value={addForm.originalPrice}
-                                            onChange={(e) => {
-                                                const orig = Number(e.target.value) || 0;
-                                                const p = addForm.price;
-                                                const disc = orig > p ? Math.round(((orig - p) / orig) * 100) : 0;
-                                                setAddForm({ ...addForm, originalPrice: orig, discountPercent: disc });
-                                            }}
-                                            className="w-full pl-4 pr-12 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                        />
-                                        <span className="absolute right-3.5 top-2.5 text-xs text-gray-400 font-medium">VNĐ</span>
-                                    </div>
-                                    <p className="text-xs text-rose-500 mt-1 font-medium">
-                                        Giảm giá: {addForm.discountPercent}%
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Số lượng tồn kho ban đầu
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={addForm.stock}
-                                        onChange={(e) => {
-                                            const st = parseInt(e.target.value) || 0;
-                                            let stt: ProductStatus = 'IN_STOCK';
-                                            if (st === 0) stt = 'OUT_OF_STOCK';
-                                            else if (st < 5) stt = 'LOW_STOCK';
-                                            setAddForm({ ...addForm, stock: st, status: stt });
-                                        }}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Tình trạng kho hàng
+                                        Trạng thái ban đầu <span className="text-rose-500">*</span>
                                     </label>
                                     <select
                                         value={addForm.status}
-                                        onChange={(e) => setAddForm({ ...addForm, status: e.target.value as ProductStatus })}
+                                        onChange={(e) => setAddForm({ ...addForm, status: e.target.value as BackendProductStatus })}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                     >
-                                        <option value="IN_STOCK">✅ Còn hàng sẵn sàng bán</option>
-                                        <option value="LOW_STOCK">⚠️ Sắp hết hàng (&lt; 5 cái)</option>
-                                        <option value="OUT_OF_STOCK">❌ Hết hàng trong kho</option>
-                                        <option value="DISCONTINUED">⛔ Ngừng kinh doanh</option>
+                                        <option value="ACTIVE">✅ Đang bán (Active)</option>
+                                        <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
+                                        <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            {/* Badge and Featured */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Huy hiệu nổi bật (Badge)
-                                    </label>
-                                    <select
-                                        value={addForm.badge || ''}
-                                        onChange={(e) => setAddForm({ ...addForm, badge: (e.target.value || null) as any })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                    >
-                                        <option value="">Không gắn nhãn</option>
-                                        <option value="HOT">🔥 HOT (Bán chạy nhất)</option>
-                                        <option value="NEW">✨ NEW (Hàng mới về)</option>
-                                        <option value="SALE">🏷️ SALE (Khuyến mãi sốc)</option>
-                                        <option value="BEST">⭐ BEST (Khuyên dùng)</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-3 pt-6">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={addForm.isFeatured}
-                                            onChange={(e) => setAddForm({ ...addForm, isFeatured: e.target.checked })}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                        />
-                                        <span className="text-sm font-medium text-gray-700">Đưa vào danh sách Sản phẩm Nổi bật (Featured)</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* TAB 3: HÌNH ẢNH */}
-                    {activeAddTab === 'media' && (
-                        <div className="space-y-5">
-                            <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
-                                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">
-                                    Ảnh đại diện chính sản phẩm
-                                </label>
-                                <div className="flex flex-col sm:flex-row items-center gap-6">
-                                    <div className="w-32 h-32 rounded-2xl bg-white border border-gray-200 shadow-sm p-2 flex items-center justify-center shrink-0 overflow-hidden">
-                                        <img
-                                            src={addForm.image}
-                                            alt="Preview"
-                                            className="w-full h-full object-contain"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 text-center sm:text-left">
-                                        <input
-                                            ref={addImageInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => handleImageFileChange(e, false)}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => addImageInputRef.current?.click()}
-                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                                        >
-                                            <Upload className="w-4 h-4" />
-                                            Tải ảnh từ máy tính
-                                        </button>
-                                        <p className="text-xs text-gray-400">
-                                            Hỗ trợ PNG, JPG, WebP. Nên dùng ảnh vuông nền trắng hoặc trong suốt chất lượng cao (tối thiểu 800x800px).
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Hoặc dán đường link ảnh trực tiếp (URL)
-                                </label>
-                                <input
-                                    type="url"
-                                    placeholder="https://images.unsplash.com/..."
-                                    value={addForm.image}
-                                    onChange={(e) => setAddForm({ ...addForm, image: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* TAB 4: SEO & MÔ TẢ */}
-                    {activeAddTab === 'seo' && (
-                        <div className="space-y-5">
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Thẻ tiêu đề SEO (Meta Title)
-                                    </label>
-                                    <span className="text-xs text-gray-400">
-                                        {addForm.metaTitle.length}/60 ký tự khuyến nghị
-                                    </span>
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="[Tên sản phẩm] Chính Hãng Giá Rẻ Nhất | PCStore"
-                                    value={addForm.metaTitle}
-                                    onChange={(e) => setAddForm({ ...addForm, metaTitle: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Thẻ mô tả SEO (Meta Description)
-                                    </label>
-                                    <span className="text-xs text-gray-400">
-                                        {addForm.metaDescription.length}/160 ký tự khuyến nghị
-                                    </span>
-                                </div>
-                                <textarea
-                                    rows={3}
-                                    placeholder="Mua ngay sản phẩm chính hãng với bảo hành uy tín, miễn phí giao hàng toàn quốc và hỗ trợ trả góp 0% tại PCStore..."
-                                    value={addForm.metaDescription}
-                                    onChange={(e) => setAddForm({ ...addForm, metaDescription: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
-                                />
                             </div>
 
                             <div>
@@ -1704,35 +1594,53 @@ export default function ProductList() {
                                 </label>
                                 <textarea
                                     rows={4}
-                                    placeholder="Mô tả công nghệ nổi bật, hiệu năng thực tế, tính năng tản nhiệt và hướng dẫn sử dụng..."
+                                    placeholder="Nhập thông tin giới thiệu, ưu điểm công nghệ, chế độ bảo hành..."
                                     value={addForm.description}
                                     onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
                                 />
                             </div>
+                        </div>
+                    )}
 
-                            {/* SERP Preview */}
-                            <div className="mt-4 p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-1.5 font-sans">
-                                <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                    <Globe className="w-4 h-4 text-blue-600" />
-                                    Xem trước kết quả trên Google Search
-                                </div>
-                                <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                                    <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[10px] text-blue-600 font-bold">
-                                        P
-                                    </div>
-                                    <span>pcstore.vn</span>
-                                    <span className="text-gray-400">›</span>
-                                    <span>san-pham</span>
-                                    <span className="text-gray-400">›</span>
-                                    <span className="text-gray-400">{addForm.slug || 'san-pham'}</span>
-                                </div>
-                                <h4 className="text-base text-blue-800 font-medium hover:underline cursor-pointer line-clamp-1">
-                                    {addForm.metaTitle || `${addForm.name || 'Sản phẩm máy tính'} Chính Hãng Giá Tốt Nhất | PCStore`}
-                                </h4>
-                                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
-                                    {addForm.metaDescription || addForm.description || 'Mua sắm linh kiện máy tính, PC Gaming chính hãng giá cạnh tranh nhất thị trường.'}
+                    {/* TAB 3: HÌNH ẢNH (Phần 1: Ảnh đại diện | Phần 2: Ảnh sản phẩm tối đa 10) */}
+                    {activeAddTab === 'media' && (
+                        <ProductMediaTab
+                            avatarUrl={addForm.image}
+                            avatarFile={addSelectedFile}
+                            onAvatarUrlChange={(url) => {
+                                setAddSelectedFile(null);
+                                setAddForm((prev) => ({ ...prev, image: url }));
+                            }}
+                            onAvatarFileSelect={(file) => handleAvatarFileSelect(file, false)}
+                            onAvatarReset={() => {
+                                setAddSelectedFile(null);
+                                setAddForm((prev) => ({ ...prev, image: DEFAULT_PRODUCT_IMAGE }));
+                            }}
+                            gallery={addGallery}
+                            onAddGalleryFiles={(files) => handleAddGalleryFiles(files, false)}
+                            onAddGalleryUrl={(url) => handleAddGalleryUrl(url, false)}
+                            onRemoveGalleryItem={(id) => handleRemoveGalleryItem(id, false)}
+                        />
+                    )}
+
+                    {/* TAB 4: THÔNG SỐ KỸ THUẬT */}
+                    {activeAddTab === 'specs' && (
+                        <div className="space-y-4">
+                            <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
+                                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                                    Thông số kỹ thuật chi tiết (Specification)
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Ghi rõ thông số phần cứng, hiệu năng, cổng giao tiếp, độ phân giải hoặc tiêu chuẩn kỹ thuật của sản phẩm.
                                 </p>
+                                <textarea
+                                    rows={8}
+                                    placeholder="Ví dụ:&#10;- Chipset: Intel B760&#10;- Socket: LGA1700&#10;- RAM: 32GB DDR5 6000MHz&#10;- VGA: RTX 4070 Ti Super 16GB&#10;- Lưu trữ: 1TB NVMe PCIe 4.0"
+                                    value={addForm.specification}
+                                    onChange={(e) => setAddForm({ ...addForm, specification: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono text-gray-800 transition-all leading-relaxed bg-white"
+                                />
                             </div>
                         </div>
                     )}
@@ -1745,9 +1653,9 @@ export default function ProductList() {
             {editForm && (
                 <AdminModal
                     isOpen={isEditModalOpen}
-                    onClose={() => setIsEditModalOpen(false)}
+                    onClose={() => !isSubmitting && setIsEditModalOpen(false)}
                     title={`Chỉnh sửa: ${editForm.name}`}
-                    description={`Mã SKU: ${editForm.sku} • Hãng: ${editForm.brand}`}
+                    description={`ID: #${editForm.numericId} • Mã SKU: ${editForm.sku}`}
                     size="2xl"
                     tabs={addModalTabs}
                     activeTab={activeEditTab}
@@ -1756,18 +1664,34 @@ export default function ProductList() {
                         <div className="flex items-center justify-end gap-3 w-full">
                             <button
                                 type="button"
+                                disabled={isSubmitting || isUploadingProductImage}
                                 onClick={() => setIsEditModalOpen(false)}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                             >
                                 Hủy bỏ
                             </button>
                             <button
                                 type="button"
+                                disabled={isSubmitting || isUploadingProductImage}
                                 onClick={handleSaveEdit}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20"
+                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
                             >
-                                <Check className="w-4 h-4" />
-                                Lưu thay đổi
+                                {isUploadingProductImage ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Đang tải ảnh lên ImgBB...
+                                    </>
+                                ) : isSubmitting ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Đang lưu thay đổi...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        Lưu thay đổi
+                                    </>
+                                )}
                             </button>
                         </div>
                     }
@@ -1805,14 +1729,17 @@ export default function ProductList() {
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Thời hạn bảo hành
+                                            Loại sản phẩm
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={editForm.warranty}
-                                            onChange={(e) => setEditForm({ ...editForm, warranty: e.target.value })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                        />
+                                        <select
+                                            value={editForm.productType}
+                                            onChange={(e) => setEditForm({ ...editForm, productType: e.target.value as ProductType })}
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
+                                        >
+                                            <option value="COMPONENT">🧩 Linh kiện máy tính (COMPONENT)</option>
+                                            <option value="LAPTOP">💻 Máy tính xách tay (LAPTOP)</option>
+                                            <option value="PC">🖥️ Máy tính để bàn / Desktop (PC)</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -1823,7 +1750,7 @@ export default function ProductList() {
                                         </label>
                                         <button
                                             type="button"
-                                            onClick={() => setEditForm(prev => prev ? { ...prev, slug: generateSlug(prev.name) } : null)}
+                                            onClick={() => setEditForm((prev) => (prev ? { ...prev, slug: generateSlug(prev.name) } : null))}
                                             className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
                                         >
                                             <RefreshCw className="w-3 h-3" />
@@ -1849,22 +1776,16 @@ export default function ProductList() {
                                             Danh mục
                                         </label>
                                         <select
-                                            value={editForm.category}
-                                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                                            value={editForm.primaryCategoryId ?? ''}
+                                            onChange={(e) => setEditForm({ ...editForm, primaryCategoryId: e.target.value ? Number(e.target.value) : null })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                         >
-                                            <option value="PC Gaming">🖥️ PC Gaming</option>
-                                            <option value="PC Đồ Họa">🎨 PC Đồ Họa & Render</option>
-                                            <option value="Card màn hình (VGA)">🎮 Card màn hình (VGA)</option>
-                                            <option value="Vi xử lý (CPU)">⚡ Vi xử lý (CPU)</option>
-                                            <option value="Bo mạch chủ">🧩 Bo mạch chủ</option>
-                                            <option value="Bộ nhớ RAM">🚀 Bộ nhớ RAM</option>
-                                            <option value="Ổ cứng SSD">💾 Ổ cứng SSD</option>
-                                            <option value="Vỏ Case">📦 Vỏ Case</option>
-                                            <option value="Nguồn máy tính (PSU)">🔌 Nguồn máy tính (PSU)</option>
-                                            <option value="Màn hình máy tính">🖥️ Màn hình máy tính</option>
-                                            <option value="Phụ kiện & Gaming Gear">🖱️ Phụ kiện & Gaming Gear</option>
-                                            <option value="Tản nhiệt CPU">❄️ Tản nhiệt CPU</option>
+                                            <option value="">-- Chọn danh mục --</option>
+                                            {categories.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
 
@@ -1873,90 +1794,39 @@ export default function ProductList() {
                                             Thương hiệu
                                         </label>
                                         <select
-                                            value={editForm.brand}
-                                            onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+                                            value={editForm.brandId ?? ''}
+                                            onChange={(e) => setEditForm({ ...editForm, brandId: e.target.value ? Number(e.target.value) : null })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                         >
-                                            <option value="ASUS">ASUS</option>
-                                            <option value="MSI">MSI</option>
-                                            <option value="Gigabyte">Gigabyte</option>
-                                            <option value="Intel">Intel</option>
-                                            <option value="AMD">AMD</option>
-                                            <option value="Corsair">Corsair</option>
-                                            <option value="Kingston">Kingston</option>
-                                            <option value="Samsung">Samsung</option>
-                                            <option value="Dell">Dell</option>
-                                            <option value="Logitech">Logitech</option>
-                                            <option value="Lian Li">Lian Li</option>
-                                            <option value="Thermalright">Thermalright</option>
+                                            <option value="">-- Chọn thương hiệu --</option>
+                                            {brands.map((b) => (
+                                                <option key={b.id} value={b.id}>
+                                                    {b.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Thông số tóm tắt nhanh
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.shortSpecs}
-                                        onChange={(e) => setEditForm({ ...editForm, shortSpecs: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
+
                             </div>
                         )}
 
-                        {/* TAB 2: GIÁ & TỒN KHO */}
+                        {/* TAB 2: GIÁ & TRẠNG THÁI */}
                         {activeEditTab === 'pricing' && (
                             <div className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Giá bán ưu đãi (VNĐ)
+                                            Giá bán niêm yết (VNĐ)
                                         </label>
                                         <input
                                             type="number"
                                             value={editForm.price}
-                                            onChange={(e) => {
-                                                const p = Number(e.target.value) || 0;
-                                                const orig = editForm.originalPrice || p;
-                                                const disc = orig > p ? Math.round(((orig - p) / orig) * 100) : 0;
-                                                setEditForm({ ...editForm, price: p, discountPercent: disc });
-                                            }}
+                                            onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) || 0 })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-bold text-rose-600 transition-all"
                                         />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Giá gốc niêm yết (VNĐ)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={editForm.originalPrice}
-                                            onChange={(e) => {
-                                                const orig = Number(e.target.value) || 0;
-                                                const p = editForm.price;
-                                                const disc = orig > p ? Math.round(((orig - p) / orig) * 100) : 0;
-                                                setEditForm({ ...editForm, originalPrice: orig, discountPercent: disc });
-                                            }}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Số lượng tồn kho
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={editForm.stock}
-                                            onChange={(e) => setEditForm({ ...editForm, stock: parseInt(e.target.value) || 0 })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                        />
+                                        <p className="text-xs text-gray-400 mt-1">Hiển thị: {formatVND(editForm.price)}</p>
                                     </div>
 
                                     <div>
@@ -1965,132 +1835,66 @@ export default function ProductList() {
                                         </label>
                                         <select
                                             value={editForm.status}
-                                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProductStatus })}
+                                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value as BackendProductStatus })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                         >
-                                            <option value="IN_STOCK">Còn hàng (In Stock)</option>
-                                            <option value="LOW_STOCK">Sắp hết hàng (Low Stock)</option>
-                                            <option value="OUT_OF_STOCK">Hết hàng (Out of Stock)</option>
-                                            <option value="DISCONTINUED">Ngừng kinh doanh</option>
+                                            <option value="ACTIVE">✅ Đang bán (Active)</option>
+                                            <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
+                                            <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
                                         </select>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Huy hiệu nhãn
-                                        </label>
-                                        <select
-                                            value={editForm.badge || ''}
-                                            onChange={(e) => setEditForm({ ...editForm, badge: (e.target.value || null) as any })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                        >
-                                            <option value="">Không gắn nhãn</option>
-                                            <option value="HOT">HOT</option>
-                                            <option value="NEW">NEW</option>
-                                            <option value="SALE">SALE</option>
-                                            <option value="BEST">BEST</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-3 pt-6">
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={editForm.isFeatured}
-                                                onChange={(e) => setEditForm({ ...editForm, isFeatured: e.target.checked })}
-                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                            />
-                                            <span className="text-sm font-medium text-gray-700">Sản phẩm Nổi bật</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 3: HÌNH ẢNH */}
-                        {activeEditTab === 'media' && (
-                            <div className="space-y-5">
-                                <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
-                                    <div className="flex flex-col sm:flex-row items-center gap-6">
-                                        <div className="w-32 h-32 rounded-2xl bg-white border border-gray-200 shadow-sm p-2 flex items-center justify-center shrink-0 overflow-hidden">
-                                            <img
-                                                src={editForm.image}
-                                                alt="Preview"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        </div>
-                                        <div className="space-y-2 text-center sm:text-left">
-                                            <input
-                                                ref={editImageInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={(e) => handleImageFileChange(e, true)}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => editImageInputRef.current?.click()}
-                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                                            >
-                                                <Upload className="w-4 h-4" />
-                                                Đổi ảnh sản phẩm
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        URL ảnh đại diện
-                                    </label>
-                                    <input
-                                        type="url"
-                                        value={editForm.image}
-                                        onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 4: SEO & MÔ TẢ */}
-                        {activeEditTab === 'seo' && (
-                            <div className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Meta Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.metaTitle || ''}
-                                        onChange={(e) => setEditForm({ ...editForm, metaTitle: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Meta Description
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={editForm.metaDescription || ''}
-                                        onChange={(e) => setEditForm({ ...editForm, metaDescription: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Mô tả chi tiết
+                                        Mô tả chi tiết sản phẩm
                                     </label>
                                     <textarea
                                         rows={4}
-                                        value={editForm.description || ''}
+                                        value={editForm.description}
                                         onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: HÌNH ẢNH (Phần 1: Ảnh đại diện | Phần 2: Ảnh sản phẩm tối đa 10) */}
+                        {activeEditTab === 'media' && (
+                            <ProductMediaTab
+                                avatarUrl={editForm.image}
+                                avatarFile={editSelectedFile}
+                                onAvatarUrlChange={(url) => {
+                                    setEditSelectedFile(null);
+                                    setEditForm((prev) => (prev ? { ...prev, image: url } : null));
+                                }}
+                                onAvatarFileSelect={(file) => handleAvatarFileSelect(file, true)}
+                                onAvatarReset={() => {
+                                    setEditSelectedFile(null);
+                                    setEditForm((prev) => (prev ? { ...prev, image: DEFAULT_PRODUCT_IMAGE } : null));
+                                }}
+                                gallery={editGallery}
+                                onAddGalleryFiles={(files) => handleAddGalleryFiles(files, true)}
+                                onAddGalleryUrl={(url) => handleAddGalleryUrl(url, true)}
+                                onRemoveGalleryItem={(id) => handleRemoveGalleryItem(id, true)}
+                            />
+                        )}
+
+                        {/* TAB 4: THÔNG SỐ KỸ THUẬT */}
+                        {activeEditTab === 'specs' && (
+                            <div className="space-y-4">
+                                <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
+                                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                                        Thông số kỹ thuật chi tiết (Specification)
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-3">
+                                        Ghi rõ thông số phần cứng, hiệu năng, cổng giao tiếp, độ phân giải hoặc tiêu chuẩn kỹ thuật của sản phẩm.
+                                    </p>
+                                    <textarea
+                                        rows={8}
+                                        value={editForm.specification}
+                                        onChange={(e) => setEditForm({ ...editForm, specification: e.target.value })}
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono text-gray-800 transition-all leading-relaxed bg-white"
                                     />
                                 </div>
                             </div>
@@ -2107,7 +1911,7 @@ export default function ProductList() {
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
                     title={selectedProduct.name}
-                    description={`SKU: ${selectedProduct.sku} • Danh mục: ${selectedProduct.category}`}
+                    description={`ID: #${selectedProduct.numericId} • SKU: ${selectedProduct.sku}`}
                     size="2xl"
                     tabs={detailModalTabs}
                     activeTab={activeDetailTab}
@@ -2116,7 +1920,7 @@ export default function ProductList() {
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                <span>Thêm vào hệ thống: {selectedProduct.createdAt}</span>
+                                <span>Thêm vào: {selectedProduct.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <button
@@ -2149,11 +1953,14 @@ export default function ProductList() {
                                     src={selectedProduct.image}
                                     alt={selectedProduct.name}
                                     className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                                    }}
                                 />
                             </div>
                             <div className="space-y-2 text-center sm:text-left min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                                    {renderBadge(selectedProduct.badge)}
+                                    {renderTypeBadge(selectedProduct.productType)}
                                     <span className="font-mono text-xs font-bold text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200">
                                         {selectedProduct.sku}
                                     </span>
@@ -2168,11 +1975,6 @@ export default function ProductList() {
                                     <span className="text-xl font-extrabold text-rose-600">
                                         {formatVND(selectedProduct.price)}
                                     </span>
-                                    {selectedProduct.originalPrice > selectedProduct.price && (
-                                        <span className="text-xs text-gray-400 line-through">
-                                            {formatVND(selectedProduct.originalPrice)}
-                                        </span>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -2183,21 +1985,25 @@ export default function ProductList() {
                                 {/* Stats Matrix */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Số lượng kho</span>
-                                        <span className="text-lg font-bold text-gray-900 mt-0.5 block">{selectedProduct.stock} sản phẩm</span>
+                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Mã ID</span>
+                                        <span className="text-lg font-bold text-gray-900 mt-0.5 block">#{selectedProduct.numericId}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Đã bán</span>
-                                        <span className="text-lg font-bold text-emerald-600 mt-0.5 block">{selectedProduct.salesCount} chiếc</span>
+                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Danh mục</span>
+                                        <span className="text-sm font-bold text-blue-600 mt-1 block truncate">{selectedProduct.category}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Bảo hành</span>
-                                        <span className="text-sm font-bold text-gray-800 mt-1 block">{selectedProduct.warranty}</span>
+                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Thương hiệu</span>
+                                        <span className="text-sm font-bold text-gray-800 mt-1 block truncate">{selectedProduct.brand}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
                                         <span className="text-[11px] font-medium text-gray-400 block uppercase">Trạng thái</span>
                                         <span className="text-sm font-bold text-emerald-600 mt-1 block">
-                                            {selectedProduct.status === 'IN_STOCK' ? 'Còn hàng' : 'Hết hàng'}
+                                            {selectedProduct.status === 'ACTIVE'
+                                                ? 'Đang bán'
+                                                : selectedProduct.status === 'OUT_OF_STOCK'
+                                                    ? 'Hết hàng'
+                                                    : 'Đang ẩn'}
                                         </span>
                                     </div>
                                 </div>
@@ -2221,114 +2027,101 @@ export default function ProductList() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-500 font-medium">Đường dẫn sản phẩm:</span>
-                                        <div className="flex items-center gap-2">
-                                            <code className="font-mono text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
-                                                /san-pham/{selectedProduct.slug}
-                                            </code>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleCopy(`https://pcstore.vn/san-pham/${selectedProduct.slug}`, 'Đường dẫn sản phẩm')}
-                                                className="p-1 hover:bg-white rounded text-blue-600 transition-colors"
-                                                title="Sao chép Link"
-                                            >
-                                                <Copy className="w-3.5 h-3.5" />
-                                            </button>
+                                    {selectedProduct.slug && (
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-gray-500 font-medium">Đường dẫn sản phẩm:</span>
+                                            <div className="flex items-center gap-2">
+                                                <code className="font-mono text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
+                                                    /san-pham/{selectedProduct.slug}
+                                                </code>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopy(`https://pcstore.vn/san-pham/${selectedProduct.slug}`, 'Đường dẫn sản phẩm')}
+                                                    className="p-1 hover:bg-white rounded text-blue-600 transition-colors"
+                                                    title="Sao chép Link"
+                                                >
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Description */}
                                 <div>
                                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                                        Mô tả chi tiết & Điểm nhấn công nghệ
+                                        Mô tả chi tiết sản phẩm
                                     </h4>
-                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100">
+                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
                                         {selectedProduct.description}
                                     </p>
                                 </div>
                             </div>
                         )}
 
+
+
+                        {/* TAB 3: BỘ SƯU TẬP ẢNH */}
+                        {activeDetailTab === 'gallery' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2.5">
+                                        Ảnh đại diện chính
+                                    </h4>
+                                    <div className="w-36 h-36 rounded-2xl bg-white border border-gray-200 p-2 shadow-sm flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src={selectedProduct.image}
+                                            alt={selectedProduct.name}
+                                            className="w-full h-full object-contain"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-2.5">
+                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                            Ảnh sản phẩm chi tiết ({selectedProduct.gallery.length} ảnh)
+                                        </h4>
+                                    </div>
+
+                                    {selectedProduct.gallery.length === 0 ? (
+                                        <div className="p-6 text-center rounded-xl bg-gray-50 border border-dashed border-gray-200 text-xs text-gray-500">
+                                            Chưa có thêm ảnh chi tiết nào cho sản phẩm này.
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                            {selectedProduct.gallery.map((img, idx) => (
+                                                <div key={idx} className="relative aspect-square rounded-xl bg-white border border-gray-200 p-2 shadow-sm flex items-center justify-center overflow-hidden group hover:shadow-md transition-all">
+                                                    <span className="absolute top-1.5 left-1.5 z-10 bg-gray-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                                                        #{idx + 1}
+                                                    </span>
+                                                    <img
+                                                        src={img}
+                                                        alt={`Product ${idx + 1}`}
+                                                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         {/* TAB 2: THÔNG SỐ KỸ THUẬT */}
                         {activeDetailTab === 'specs' && (
                             <div className="space-y-4">
                                 <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-3">
                                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">
-                                        Bảng thông số phần cứng chi tiết
+                                        Thông số kỹ thuật chi tiết
                                     </h4>
-                                    <div className="divide-y divide-gray-100 text-xs">
-                                        <div className="py-2.5 flex items-center justify-between">
-                                            <span className="text-gray-500">Mã sản phẩm / SKU:</span>
-                                            <span className="font-mono font-bold text-gray-800">{selectedProduct.sku}</span>
-                                        </div>
-                                        <div className="py-2.5 flex items-center justify-between">
-                                            <span className="text-gray-500">Thương hiệu:</span>
-                                            <span className="font-semibold text-blue-600">{selectedProduct.brand}</span>
-                                        </div>
-                                        <div className="py-2.5 flex items-center justify-between">
-                                            <span className="text-gray-500">Danh mục phân loại:</span>
-                                            <span className="font-medium text-gray-800">{selectedProduct.category}</span>
-                                        </div>
-                                        <div className="py-2.5 flex items-center justify-between">
-                                            <span className="text-gray-500">Cấu hình vắn tắt:</span>
-                                            <span className="font-medium text-gray-800 text-right">{selectedProduct.shortSpecs}</span>
-                                        </div>
-                                        <div className="py-2.5 flex items-center justify-between">
-                                            <span className="text-gray-500">Chính sách bảo hành:</span>
-                                            <span className="font-semibold text-emerald-600">{selectedProduct.warranty}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 3: BỘ SƯU TẬP ẢNH */}
-                        {activeDetailTab === 'gallery' && (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {selectedProduct.gallery.map((img, idx) => (
-                                        <div key={idx} className="aspect-square rounded-xl bg-white border border-gray-200 p-2 shadow-sm flex items-center justify-center overflow-hidden hover:scale-105 transition-transform duration-200">
-                                            <img
-                                                src={img}
-                                                alt={`Gallery ${idx}`}
-                                                className="w-full h-full object-contain"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* TAB 4: MÔ PHỎNG SEO GOOGLE */}
-                        {activeDetailTab === 'seo' && (
-                            <div className="space-y-4 font-sans">
-                                <div className="p-5 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-3">
-                                    <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">
-                                        <Globe className="w-4 h-4 text-blue-600" />
-                                        Mô phỏng hiển thị trên Google Search
-                                    </div>
-
-                                    <div className="space-y-1.5 pt-1">
-                                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                                            <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[10px] text-blue-600 font-bold">
-                                                P
-                                            </div>
-                                            <span>https://pcstore.vn</span>
-                                            <span className="text-gray-400">›</span>
-                                            <span>san-pham</span>
-                                            <span className="text-gray-400">›</span>
-                                            <span className="text-gray-500 font-medium">{selectedProduct.slug}</span>
-                                        </div>
-
-                                        <h4 className="text-lg text-blue-800 font-medium hover:underline cursor-pointer">
-                                            {selectedProduct.metaTitle || `${selectedProduct.name} Chính Hãng Giá Tốt | PCStore`}
-                                        </h4>
-
-                                        <p className="text-xs text-gray-600 leading-relaxed">
-                                            {selectedProduct.metaDescription || selectedProduct.description}
-                                        </p>
+                                    <div className="text-sm text-gray-800 bg-gray-50/70 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                                        {selectedProduct.specification || 'Chưa cập nhật bảng thông số kỹ thuật cho sản phẩm này.'}
                                     </div>
                                 </div>
                             </div>

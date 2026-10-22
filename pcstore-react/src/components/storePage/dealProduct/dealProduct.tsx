@@ -15,8 +15,14 @@ interface DealProductProps {
 }
 
 function DealProduct({ deals: initialDeals }: DealProductProps) {
-    const [dealsList] = useState<DealProductCardProps[]>(initialDeals || []);
-    const [loading] = useState<boolean>(!initialDeals || initialDeals.length === 0);
+    const [dealsList, setDealsList] = useState<DealProductCardProps[]>(initialDeals || []);
+    const [loading] = useState<boolean>(false);
+
+    useEffect(() => {
+        if (initialDeals) {
+            setDealsList(initialDeals);
+        }
+    }, [initialDeals]);
 
     // Dynamic timer state (Remaining time until end of day)
     const [timeLeft, setTimeLeft] = useState({ hours: "00", minutes: "00", seconds: "00" });

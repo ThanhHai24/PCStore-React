@@ -104,38 +104,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                     <span className={product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0) ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold'}>
                         {product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0)
                             ? `Còn hàng ${product.stockQuantity !== undefined ? `(Còn ${product.stockQuantity} sản phẩm)` : ''}`
-                            : 'Hết hàng (0 sản phẩm)'}
+                            : 'Hết hàng'}
                     </span>
                 </div>
             </div>
 
 
             {/* FLASH SALE Box */}
-            <div className="border-2 border-red-500 rounded-2xl overflow-hidden bg-white shadow-sm">
-                {/* Flash Sale Header */}
-                <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2.5 flex items-center justify-between">
-                    <div className="flex items-center space-x-2 font-black text-sm uppercase tracking-wider">
-                        <span className="text-lg">🔥</span>
-                        <span>FLASH SALE</span>
-                    </div>
-                    <div className="flex items-center space-x-1.5 text-xs">
-                        <span className="font-semibold">Kết thúc sau</span>
-                        <div className="flex items-center space-x-1 font-bold text-red-600">
-                            <span className="bg-white px-1.5 py-0.5 rounded text-[11px] min-w-[22px] text-center">
-                                {String(timeLeft.hours).padStart(2, '0')}
-                            </span>
-                            <span className="text-white">:</span>
-                            <span className="bg-white px-1.5 py-0.5 rounded text-[11px] min-w-[22px] text-center">
-                                {String(timeLeft.minutes).padStart(2, '0')}
-                            </span>
-                            <span className="text-white">:</span>
-                            <span className="bg-white px-1.5 py-0.5 rounded text-[11px] min-w-[22px] text-center">
-                                {String(timeLeft.seconds).padStart(2, '0')}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
+            <div className="border-1 border-red-300 rounded-2xl overflow-hidden bg-white shadow-sm">
                 {/* Flash Sale Price Content */}
                 <div className="p-4 space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
@@ -159,12 +135,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                         )}
                     </div>
 
-                    {product.installmentPrice && (
+                    {/* {product.installmentPrice && (
                         <div className="text-xs text-gray-600">
                             <span>Hoặc </span>
                             <span className="text-gray-900 font-bold">{product.installmentPrice}</span>
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
 

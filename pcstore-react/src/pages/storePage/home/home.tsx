@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
@@ -6,7 +6,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Cpu,
-    PcCase,
     Gamepad2,
     Monitor,
     Briefcase,
@@ -15,19 +14,22 @@ import {
     CircuitBoard,
     MemoryStick,
     HardDrive,
-    Loader2
+    Laptop,
+    Loader2,
+    AlertCircle,
+    RefreshCw
 } from 'lucide-react';
 import DealProduct from '../../../components/storePage/dealProduct/dealProduct';
 import BoxProductCategory from '../../../components/storePage/boxProductCategory/boxProductCategory';
 import type { ProductCardProps } from '../../../components/storePage/boxProductCategory/productCard';
 import type { DealProductCardProps } from '../../../components/storePage/dealProduct/dealProductCard';
-// import {
-//     getProducts,
-//     formatProductToCardProps,
-//     formatProductToDealCardProps
-// } from '../../services/productService';
-// import type { ApiProduct } from '../../types/apiProduct';
-
+import {
+    getProducts,
+    formatProductToCardProps,
+    formatProductToDealCardProps,
+} from '../../../services/productService';
+import { categoryService } from '../../../services/categoryService';
+import type { ProductResponse } from '../../../types/adminProduct';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -49,292 +51,163 @@ const slideBanners = [
     banner6, banner7, banner8, banner9, banner10, banner11
 ];
 
-import cleanPcImg from '../../../assets/images/products/clean_pc.png';
-import pcImg from '../../../assets/images/products/pc.jpg';
-import rtxImg from '../../../assets/images/products/rtx.png';
-
-const MOCK_DEALS: DealProductCardProps[] = [
-    {
-        id: 'deal-1',
-        title: 'PC GAMING MIKU RYZEN 7 7700 / RTX 4060 8GB / RAM 32GB / SSD 1TB',
-        price: '19.990.000đ',
-        marketPrice: '24.990.000đ',
-        discountPercent: '-20%',
-        sold: 8,
-        total: 10,
-        image: cleanPcImg,
-        link: '/product/deal-1'
-    },
-    {
-        id: 'deal-2',
-        title: 'PC GAMING INTEL I5 13400F / RTX 4060 Ti 8GB / RAM 16GB / SSD 512GB',
-        price: '17.490.000đ',
-        marketPrice: '20.990.000đ',
-        discountPercent: '-17%',
-        sold: 15,
-        total: 20,
-        image: pcImg,
-        link: '/product/deal-2'
-    },
-    {
-        id: 'deal-3',
-        title: 'VGA ASUS ROG STRIX RTX 4080 SUPER 16GB GDDR6X',
-        price: '32.990.000đ',
-        marketPrice: '36.500.000đ',
-        discountPercent: '-10%',
-        sold: 5,
-        total: 12,
-        image: rtxImg,
-        link: '/product/deal-3'
-    },
-    {
-        id: 'deal-4',
-        title: 'PC ULTRA AI WORKSTATION RYZEN 9 7950X / RTX 4090 24GB / RAM 64GB',
-        price: '79.990.000đ',
-        marketPrice: '89.990.000đ',
-        discountPercent: '-11%',
-        sold: 3,
-        total: 5,
-        image: cleanPcImg,
-        link: '/product/deal-4'
-    },
-    {
-        id: 'deal-5',
-        title: 'PC VĂN PHÒNG CORE I3 12100 / RAM 16GB / SSD 256GB',
-        price: '5.990.000đ',
-        marketPrice: '7.500.000đ',
-        discountPercent: '-20%',
-        sold: 18,
-        total: 25,
-        image: pcImg,
-        link: '/product/deal-5'
-    }
-];
-
-const MOCK_PC_GAMING: ProductCardProps[] = [
-    {
-        id: 'gaming-1',
-        title: 'PC GAMING Core i5 12400F / RTX 3060 12GB / RAM 16GB / SSD 512GB',
-        price: '12.990.000đ',
-        marketPrice: '15.500.000đ',
-        discountPercent: '-16%',
-        badge: 'HOT',
-        banner: { type: 'hot', title: 'BEST SELLER', badgeText: 'HOT' },
-        promotion: { prefix: 'Tặng ', highlight: 'Bàn phím cơ & Chuột Gaming', prefixColor: 'red', highlightColor: 'blue' },
-        inStock: true,
-        image: cleanPcImg
-    },
-    {
-        id: 'gaming-2',
-        title: 'PC GAMING RYZEN 5 5600 / GTX 1660 Super 6GB / RAM 16GB / SSD 256GB',
-        price: '9.990.000đ',
-        marketPrice: '11.990.000đ',
-        discountPercent: '-17%',
-        badge: 'HOT',
-        promotion: 'Tặng lót chuột phím cơ cao cấp',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'gaming-3',
-        title: 'PC GAMING Miku White Ryzen 7 7700X / RTX 4070 Super 12GB / RAM 32GB DDR5',
-        price: '27.990.000đ',
-        marketPrice: '31.990.000đ',
-        discountPercent: '-13%',
-        badge: 'NEW',
-        banner: { type: 'sale', title: 'GIÁ SỐC', badgeText: 'GIÁ' },
-        promotion: { prefix: 'Voucher ', highlight: 'Giảm ngay 500k', prefixColor: 'black', highlightColor: 'red' },
-        inStock: true,
-        image: cleanPcImg
-    },
-    {
-        id: 'gaming-4',
-        title: 'PC GAMING Core i7 14700F / RTX 4070 Ti Super 16GB / RAM 32GB DDR5',
-        price: '39.990.000đ',
-        marketPrice: '44.500.000đ',
-        discountPercent: '-10%',
-        badge: 'HOT',
-        promotion: 'Miễn phí giao hàng toàn quốc',
-        inStock: true,
-        image: pcImg
-    }
-];
-
-const MOCK_PC_DO_HOA: ProductCardProps[] = [
-    {
-        id: 'dohoa-1',
-        title: 'PC Đồ Họa Render Core i7 13700K / RTX 4070 12GB / RAM 32GB / SSD 1TB',
-        price: '34.990.000đ',
-        marketPrice: '39.000.000đ',
-        discountPercent: '-10%',
-        badge: 'HOT',
-        promotion: 'Tặng tản nhiệt nước AIO 360mm',
-        inStock: true,
-        image: cleanPcImg
-    },
-    {
-        id: 'dohoa-2',
-        title: 'Server Máy Ảo Dual Xeon E5 2696 v4 / RAM 64GB / GTX 1060 6GB',
-        price: '14.500.000đ',
-        marketPrice: '17.000.000đ',
-        discountPercent: '-15%',
-        promotion: 'Bảo hành 1 đổi 1 trong 12 tháng',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'dohoa-3',
-        title: 'PC Workstation Dual RTX 4090 24GB / AMD Threadripper PRO 5995WX / RAM 128GB',
-        price: '159.000.000đ',
-        marketPrice: '175.000.000đ',
-        discountPercent: '-9%',
-        badge: 'NEW',
-        promotion: 'Hỗ trợ lắp đặt tận nơi',
-        inStock: true,
-        image: cleanPcImg
-    }
-];
-
-const MOCK_PC_VAN_PHONG: ProductCardProps[] = [
-    {
-        id: 'vp-1',
-        title: 'PC Văn Phòng Slim Intel Core i3 12100 / RAM 8GB / SSD 256GB / Main H610',
-        price: '4.990.000đ',
-        marketPrice: '6.200.000đ',
-        discountPercent: '-20%',
-        promotion: 'Tặng combo phím chuột văn phòng',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'vp-2',
-        title: 'PC Văn Phòng Premium Core i5 13400 / RAM 16GB / SSD 512GB / Wifi Bluetooth',
-        price: '8.490.000đ',
-        marketPrice: '9.990.000đ',
-        discountPercent: '-15%',
-        promotion: 'Tặng USB Wifi tốc độ cao',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'vp-3',
-        title: 'PC Đồng Bộ HP ProTower 280 G9 i5 12500 / RAM 16GB / SSD 512GB',
-        price: '11.290.000đ',
-        marketPrice: '13.000.000đ',
-        discountPercent: '-13%',
-        promotion: 'Bảo hành chính hãng 3 năm',
-        inStock: true,
-        image: pcImg
-    }
-];
-
-const MOCK_MINI_PC: ProductCardProps[] = [
-    {
-        id: 'mini-1',
-        title: 'Mini PC Intel NUC 13 Pro Kit Core i5 1340P / RAM 16GB / SSD 512GB',
-        price: '9.990.000đ',
-        marketPrice: '12.000.000đ',
-        discountPercent: '-17%',
-        promotion: 'Thiết kế siêu nhỏ gọn 4x4 inch',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'mini-2',
-        title: 'Mini PC Minisforum UM790 Pro AMD Ryzen 9 7940HS / RAM 32GB / SSD 1TB',
-        price: '14.990.000đ',
-        marketPrice: '17.500.000đ',
-        discountPercent: '-14%',
-        badge: 'NEW',
-        promotion: 'Đồ họa AMD Radeon 780M cực mạnh',
-        inStock: true,
-        image: pcImg
-    }
-];
-
-const MOCK_PC_AI: ProductCardProps[] = [
-    {
-        id: 'ai-1',
-        title: 'PC AI Workstation Ryzen 9 7950X / RTX 4090 24GB / RAM 64GB DDR5 / SSD 2TB',
-        price: '84.990.000đ',
-        marketPrice: '95.000.000đ',
-        discountPercent: '-11%',
-        badge: 'HOT',
-        banner: { type: 'hot', title: 'AI POWERED', badgeText: 'AI' },
-        promotion: 'Cài sẵn môi trường PyTorch & CUDA API',
-        inStock: true,
-        image: cleanPcImg
-    },
-    {
-        id: 'ai-2',
-        title: 'PC AI LLM Dual RTX 4080 Super 16GB / Core i9 14900K / RAM 128GB DDR5',
-        price: '109.990.000đ',
-        marketPrice: '125.000.000đ',
-        discountPercent: '-12%',
-        badge: 'NEW',
-        promotion: 'Tối ưu chạy LLM DeepSeek / Llama 3 local',
-        inStock: true,
-        image: cleanPcImg
-    }
-];
-
-const MOCK_RAM: ProductCardProps[] = [
-    {
-        id: 'ram-1',
-        title: 'RAM Corsair Vengeance RGB 32GB (2x16GB) DDR5 6000MHz White',
-        price: '3.290.000đ',
-        marketPrice: '3.800.000đ',
-        discountPercent: '-13%',
-        promotion: 'Hỗ trợ Intel XMP 3.0 & AMD EXPO',
-        inStock: true,
-        image: pcImg
-    },
-    {
-        id: 'ram-2',
-        title: 'RAM Kingston FURY Beast 16GB (1x16GB) DDR4 3200MHz',
-        price: '990.000đ',
-        marketPrice: '1.250.000đ',
-        discountPercent: '-21%',
-        promotion: 'Bảo hành chính hãng 36 tháng',
-        inStock: true,
-        image: pcImg
-    }
-];
-
-const MOCK_VGA: ProductCardProps[] = [
-    {
-        id: 'vga-1',
-        title: 'Card Màn Hình ASUS ROG Strix GeForce RTX 4080 Super 16GB GDDR6X',
-        price: '33.990.000đ',
-        marketPrice: '37.500.000đ',
-        discountPercent: '-9%',
-        badge: 'HOT',
-        promotion: 'Tặng giá đỡ VGA ROG cao cấp',
-        inStock: true,
-        image: rtxImg
-    },
-    {
-        id: 'vga-2',
-        title: 'Card Màn Hình Gigabyte GeForce RTX 4060 EAGLE OC 8GB GDDR6',
-        price: '7.890.000đ',
-        marketPrice: '8.990.000đ',
-        discountPercent: '-12%',
-        promotion: 'Tản nhiệt 3 quạt Windforce hiệu năng cao',
-        inStock: true,
-        image: rtxImg
-    }
-];
-
 export const Home: React.FC = () => {
-    const [loading] = useState<boolean>(false);
-    const [dealProducts] = useState<DealProductCardProps[]>(MOCK_DEALS);
-    const [pcGamingProducts] = useState<ProductCardProps[]>(MOCK_PC_GAMING);
-    const [pcDoHoaProducts] = useState<ProductCardProps[]>(MOCK_PC_DO_HOA);
-    const [pcVanPhongProducts] = useState<ProductCardProps[]>(MOCK_PC_VAN_PHONG);
-    const [pcAiProducts] = useState<ProductCardProps[]>(MOCK_PC_AI);
-    const [ramProducts] = useState<ProductCardProps[]>(MOCK_RAM);
-    const [vgaProducts] = useState<ProductCardProps[]>(MOCK_VGA);
-    const [miniPcProducts] = useState<ProductCardProps[]>(MOCK_MINI_PC);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const [dealProducts, setDealProducts] = useState<DealProductCardProps[]>([]);
+    const [pcGamingProducts, setPcGamingProducts] = useState<ProductCardProps[]>([]);
+    const [laptopProducts, setLaptopProducts] = useState<ProductCardProps[]>([]);
+    const [pcDoHoaProducts, setPcDoHoaProducts] = useState<ProductCardProps[]>([]);
+    const [pcVanPhongProducts, setPcVanPhongProducts] = useState<ProductCardProps[]>([]);
+    const [pcAiProducts, setPcAiProducts] = useState<ProductCardProps[]>([]);
+    const [vgaProducts, setVgaProducts] = useState<ProductCardProps[]>([]);
+    const [ramProducts, setRamProducts] = useState<ProductCardProps[]>([]);
+    const [cpuProducts, setCpuProducts] = useState<ProductCardProps[]>([]);
+    const [linhKienProducts, setLinhKienProducts] = useState<ProductCardProps[]>([]);
+    const [allProductsCount, setAllProductsCount] = useState<number>(0);
+
+    const fetchHomeData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Lấy danh mục và danh sách sản phẩm song song từ API
+            const [categoriesRes, productsRes] = await Promise.allSettled([
+                categoryService.getCategories(),
+                getProducts({ size: 100, sort: ['id,desc'] }),
+            ]);
+
+            // Xây dựng map ID danh mục -> tên danh mục
+            const categoryMap = new Map<number, string>();
+            if (categoriesRes.status === 'fulfilled' && categoriesRes.value?.content) {
+                categoriesRes.value.content.forEach((cat) => {
+                    categoryMap.set(cat.id, cat.name);
+                });
+            }
+
+            if (productsRes.status === 'rejected') {
+                throw new Error(productsRes.reason?.message || 'Không thể tải danh sách sản phẩm');
+            }
+
+            const rawProducts: ProductResponse[] = productsRes.value?.content || [];
+            setAllProductsCount(rawProducts.length);
+
+            // 1. Phân bổ sản phẩm khuyến mãi (Deal / Flash Sale)
+            // Lấy các sản phẩm có giá hoặc tối đa 8 sản phẩm đầu tiên
+            const dealList = rawProducts
+                .slice(0, 10)
+                .map(formatProductToDealCardProps);
+            setDealProducts(dealList);
+
+            // 2. Phân loại sản phẩm vào các nhóm box category
+            const gamingList: ProductCardProps[] = [];
+            const laptopList: ProductCardProps[] = [];
+            const doHoaList: ProductCardProps[] = [];
+            const vanPhongList: ProductCardProps[] = [];
+            const aiList: ProductCardProps[] = [];
+            const vgaList: ProductCardProps[] = [];
+            const ramList: ProductCardProps[] = [];
+            const cpuList: ProductCardProps[] = [];
+            const linhKienList: ProductCardProps[] = [];
+
+            rawProducts.forEach((prod) => {
+                const prodName = (prod.name || '').toLowerCase();
+                const prodSlug = (prod.slug || '').toLowerCase();
+                const prodType = (prod.productType || '').toUpperCase();
+                const primaryCat = prod.primaryCategoryId ? (categoryMap.get(prod.primaryCategoryId) || '').toLowerCase() : '';
+                const allCats = (prod.categoryIds || []).map((id) => (categoryMap.get(id) || '').toLowerCase()).join(' ');
+                const text = `${prodName} ${prodSlug} ${prodType} ${primaryCat} ${allCats}`;
+
+                const card = formatProductToCardProps(prod);
+
+                // Laptop
+                if (prodType === 'LAPTOP' || text.includes('laptop') || primaryCat.includes('laptop')) {
+                    laptopList.push(card);
+                    return;
+                }
+
+                // Card đồ họa (VGA)
+                if (
+                    prod.primaryCategoryId === 10006 ||
+                    primaryCat.includes('card đồ họa') ||
+                    text.includes('vga') ||
+                    text.includes('rtx') ||
+                    text.includes('gtx') ||
+                    text.includes('gpu') ||
+                    text.includes('radeon')
+                ) {
+                    vgaList.push(card);
+                    return;
+                }
+
+                // RAM
+                if (prod.primaryCategoryId === 10004 || primaryCat.includes('ram') || text.includes('ram')) {
+                    ramList.push(card);
+                    return;
+                }
+
+                // CPU
+                if (prod.primaryCategoryId === 10002 || primaryCat.includes('cpu') || text.includes('cpu') || text.includes('intel core') || text.includes('ryzen')) {
+                    cpuList.push(card);
+                    return;
+                }
+
+                // PC Đồ họa / Workstation
+                if (text.includes('đồ họa') || text.includes('workstation') || text.includes('render') || text.includes('máy ảo') || text.includes('server')) {
+                    doHoaList.push(card);
+                    return;
+                }
+
+                // PC Văn phòng
+                if (text.includes('văn phòng') || text.includes('đồng bộ') || text.includes('slim')) {
+                    vanPhongList.push(card);
+                    return;
+                }
+
+                // PC AI
+                if (text.includes('ai') || text.includes('trí tuệ nhân tạo') || text.includes('deepseek')) {
+                    aiList.push(card);
+                    return;
+                }
+
+                // PC Gaming & Bộ nâng cấp PC
+                if (
+                    prodType === 'PC' ||
+                    prod.primaryCategoryId === 10009 ||
+                    text.includes('pc') ||
+                    text.includes('gaming') ||
+                    text.includes('nâng cấp') ||
+                    text.includes('máy tính')
+                ) {
+                    gamingList.push(card);
+                    return;
+                }
+
+                // Linh kiện khác (Mainboard, SSD, Màn hình, Case, Nguồn, Phụ kiện...)
+                linhKienList.push(card);
+            });
+
+            setPcGamingProducts(gamingList);
+            setLaptopProducts(laptopList);
+            setPcDoHoaProducts(doHoaList);
+            setPcVanPhongProducts(vanPhongList);
+            setPcAiProducts(aiList);
+            setVgaProducts(vgaList);
+            setRamProducts(ramList);
+            setCpuProducts(cpuList);
+            setLinhKienProducts(linhKienList);
+        } catch (err) {
+            console.error('Lỗi khi tải dữ liệu sản phẩm trang chủ:', err);
+            setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi kết nối máy chủ');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchHomeData();
+    }, [fetchHomeData]);
 
     return (
         <div className="max-w-[1250px] mx-auto px-4 py-6 space-y-8">
@@ -399,8 +272,8 @@ export const Home: React.FC = () => {
                 </div>
             </section>
 
-            {/* Daily Deals Section */}
-            <DealProduct deals={dealProducts} />
+            {/* Daily Deals Section (Hiển thị khi có sản phẩm deals) */}
+            {dealProducts.length > 0 && <DealProduct deals={dealProducts} />}
 
             {/* Outstanding Categories Bar */}
             <div className="box-category-outstanding space-y-4">
@@ -412,6 +285,7 @@ export const Home: React.FC = () => {
                 <div className="list-category-outstanding grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
                     {[
                         { title: 'PC Gaming', icon: <Gamepad2 className="w-6 h-6" />, href: '/category/pc-gaming' },
+                        { title: 'Laptop', icon: <Laptop className="w-6 h-6 text-indigo-600" />, href: '/category/laptop' },
                         { title: 'PC Đồ Họa', icon: <Monitor className="w-6 h-6" />, href: '/category/pc-do-hoa' },
                         { title: 'PC Văn Phòng', icon: <Briefcase className="w-6 h-6" />, href: '/category/pc-van-phong' },
                         { title: 'PC AI', icon: <Sparkles className="w-6 h-6 text-amber-500" />, href: '/category/pc-ai' },
@@ -420,7 +294,6 @@ export const Home: React.FC = () => {
                         { title: 'Mainboard', icon: <CircuitBoard className="w-6 h-6" />, href: '/category/mainboard-bo-mach-chu' },
                         { title: 'RAM Bộ Nhớ', icon: <MemoryStick className="w-6 h-6" />, href: '/category/ram-bo-nho-trong' },
                         { title: 'Ổ Cứng SSD', icon: <HardDrive className="w-6 h-6" />, href: '/category/o-cung-hdd-ssd' },
-                        { title: 'Vỏ Case', icon: <PcCase className="w-6 h-6" />, href: '/category/case-vo-may-tinh' },
                     ].map((cat, idx) => (
                         <Link
                             key={idx}
@@ -438,93 +311,160 @@ export const Home: React.FC = () => {
                 </div>
             </div>
 
+            {/* Trạng thái Loading / Error / Empty / Nội dung sản phẩm */}
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-3">
-                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    <span className="text-gray-500 text-sm font-medium">Đang tải danh sách sản phẩm...</span>
+                <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white rounded-2xl border border-gray-100 shadow-xs">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <span className="text-gray-600 text-sm font-medium">Đang tải danh sách sản phẩm từ hệ thống...</span>
+                </div>
+            ) : error ? (
+                <div className="flex flex-col items-center justify-center py-16 px-6 bg-red-50/50 rounded-2xl border border-red-200 text-center space-y-4">
+                    <AlertCircle className="w-12 h-12 text-red-500" />
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">Không thể tải dữ liệu sản phẩm</h3>
+                        <p className="text-sm text-gray-500 mt-1 max-w-md">{error}</p>
+                    </div>
+                    <button
+                        onClick={fetchHomeData}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        Thử lại
+                    </button>
+                </div>
+            ) : allProductsCount === 0 ? (
+                <div className="py-20 text-center bg-white rounded-2xl border border-gray-100 p-8 shadow-xs">
+                    <h3 className="text-lg font-bold text-gray-800">Chưa có sản phẩm nào trong hệ thống</h3>
+                    <p className="text-sm text-gray-500 mt-1">Các sản phẩm sau khi được tạo trong trang Quản Trị sẽ tự động xuất hiện tại đây.</p>
                 </div>
             ) : (
                 <>
-                    {/* Box Product Category - PC GAMING */}
-                    <BoxProductCategory
-                        title="PC GAMING"
-                        tabs={[
-                            { name: "Chọn PC Gaming Theo Giá", link: "/category/pc-gaming" },
-                        ]}
-                        tabContent={pcGamingProducts}
-                        viewAllLink="/category/pc-gaming"
-                    />
+                    {/* Box Product Category - PC GAMING & BỘ NÂNG CẤP */}
+                    {pcGamingProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="PC GAMING & BỘ MÁY TÍNH"
+                            tabs={[
+                                { name: "PC Gaming", link: "/category/pc-gaming" },
+                                { name: "Bộ Nâng Cấp PC", link: "/category/bo-nang-cap-pc" },
+                                { name: "Build PC", link: "/build-pc" },
+                            ]}
+                            tabContent={pcGamingProducts}
+                            viewAllLink="/category/pc-gaming"
+                        />
+                    )}
+
+                    {/* Box Product Category - LAPTOP & MÁY TÍNH XÁCH TAY */}
+                    {laptopProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="LAPTOP & MÁY TÍNH XÁCH TAY"
+                            tabs={[
+                                { name: "Laptop ASUS", link: "/category/laptop?search=ASUS" },
+                                { name: "Laptop Dell", link: "/category/laptop?search=Dell" },
+                                { name: "Laptop HP", link: "/category/laptop?search=HP" },
+                                { name: "Laptop Lenovo", link: "/category/laptop?search=Lenovo" },
+                                { name: "Laptop MSI", link: "/category/laptop?search=MSI" },
+                            ]}
+                            tabContent={laptopProducts}
+                            viewAllLink="/category/laptop"
+                        />
+                    )}
 
                     {/* Box Product Category - PC ĐỒ HỌA */}
-                    <BoxProductCategory
-                        title="PC ĐỒ HỌA - LÀM VIỆC"
-                        tabs={[
-                            { name: "Server - Máy Ảo Hóa", link: "/category/pc-do-hoa?search=Server" },
-                            { name: "Máy Tính Đồng Bộ", link: "/category/pc-do-hoa?search=Đồng%20bộ" },
-                            { name: "Máy Tính Đồ Họa", link: "/category/pc-do-hoa" },
-                            { name: "Build PC Custom", link: "/build-pc" },
-                        ]}
-                        tabContent={pcDoHoaProducts}
-                        viewAllLink="/category/pc-do-hoa"
-                    />
+                    {pcDoHoaProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="PC ĐỒ HỌA - LÀM VIỆC"
+                            tabs={[
+                                { name: "Server - Máy Ảo Hóa", link: "/category/pc-do-hoa?search=Server" },
+                                { name: "Máy Tính Đồng Bộ", link: "/category/pc-do-hoa?search=Đồng%20bộ" },
+                                { name: "Máy Tính Đồ Họa", link: "/category/pc-do-hoa" },
+                                { name: "Build PC Custom", link: "/build-pc" },
+                            ]}
+                            tabContent={pcDoHoaProducts}
+                            viewAllLink="/category/pc-do-hoa"
+                        />
+                    )}
 
                     {/* Box Product Category - PC VĂN PHÒNG */}
-                    <BoxProductCategory
-                        title="PC VĂN PHÒNG"
-                        tabs={[
-                            { name: "PC Văn Phòng Giá Rẻ", link: "/category/pc-van-phong" },
-                        ]}
-                        tabContent={pcVanPhongProducts}
-                        viewAllLink="/category/pc-van-phong"
-                    />
-
-                    {/* Box Product Category - MINI PC */}
-                    {miniPcProducts.length > 0 && (
+                    {pcVanPhongProducts.length > 0 && (
                         <BoxProductCategory
-                            title="MINI PC"
+                            title="PC VĂN PHÒNG"
                             tabs={[
-                                { name: "Mini PC Intel", link: "/category/mini-pc?search=Intel" },
-                                { name: "Mini PC AMD", link: "/category/mini-pc?search=AMD" },
+                                { name: "PC Văn Phòng Giá Rẻ", link: "/category/pc-van-phong" },
                             ]}
-                            tabContent={miniPcProducts}
-                            viewAllLink="/category/mini-pc"
+                            tabContent={pcVanPhongProducts}
+                            viewAllLink="/category/pc-van-phong"
                         />
                     )}
 
                     {/* Box Product Category - PC AI */}
-                    <BoxProductCategory
-                        title="PC AI - TRÍ TUỆ NHÂN TẠO"
-                        tabs={[
-                            { name: "PC AI Workstation", link: "/category/pc-ai" },
-                        ]}
-                        tabContent={pcAiProducts}
-                        viewAllLink="/category/pc-ai"
-                    />
-
-                    {/* Box Product Category - RAM - BỘ NHỚ TRONG */}
-                    <BoxProductCategory
-                        title="RAM - BỘ NHỚ TRONG"
-                        tabs={[
-                            { name: "RAM DDR5", link: "/category/ram-bo-nho-trong?search=DDR5" },
-                            { name: "RAM DDR4", link: "/category/ram-bo-nho-trong?search=DDR4" },
-                            { name: "RAM 32GB", link: "/category/ram-bo-nho-trong?search=32GB" },
-                            { name: "RAM 16GB", link: "/category/ram-bo-nho-trong?search=16GB" },
-                        ]}
-                        tabContent={ramProducts}
-                        viewAllLink="/category/ram-bo-nho-trong"
-                    />
+                    {pcAiProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="PC AI - TRÍ TUỆ NHÂN TẠO"
+                            tabs={[
+                                { name: "PC AI Workstation", link: "/category/pc-ai" },
+                            ]}
+                            tabContent={pcAiProducts}
+                            viewAllLink="/category/pc-ai"
+                        />
+                    )}
 
                     {/* Box Product Category - VGA - CARD ĐỒ HỌA */}
                     {vgaProducts.length > 0 && (
                         <BoxProductCategory
                             title="VGA - CARD ĐỒ HỌA"
                             tabs={[
-                                { name: "NVIDIA RTX 50 Series", link: "/category/vga-card-do-hoa?search=RTX%2050" },
-                                { name: "NVIDIA RTX 40 Series", link: "/category/vga-card-do-hoa?search=RTX%2040" },
+                                { name: "NVIDIA RTX Series", link: "/category/vga-card-do-hoa?search=RTX" },
+                                { name: "NVIDIA GTX", link: "/category/vga-card-do-hoa?search=GTX" },
                                 { name: "AMD Radeon", link: "/category/vga-card-do-hoa?search=Radeon" },
                             ]}
                             tabContent={vgaProducts}
                             viewAllLink="/category/vga-card-do-hoa"
+                        />
+                    )}
+
+                    {/* Box Product Category - RAM - BỘ NHỚ TRONG */}
+                    {ramProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="RAM - BỘ NHỚ TRONG"
+                            tabs={[
+                                { name: "RAM DDR5", link: "/category/ram-bo-nho-trong?search=DDR5" },
+                                { name: "RAM DDR4", link: "/category/ram-bo-nho-trong?search=DDR4" },
+                                { name: "RAM 16GB", link: "/category/ram-bo-nho-trong?search=16GB" },
+                                { name: "RAM 32GB", link: "/category/ram-bo-nho-trong?search=32GB" },
+                            ]}
+                            tabContent={ramProducts}
+                            viewAllLink="/category/ram-bo-nho-trong"
+                        />
+                    )}
+
+                    {/* Box Product Category - CPU - BỘ VI XỬ LÝ */}
+                    {cpuProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="CPU - BỘ VI XỬ LÝ"
+                            tabs={[
+                                { name: "Intel Core i5", link: "/category/cpu-bo-vi-xu-ly?search=Core%20i5" },
+                                { name: "Intel Core i7", link: "/category/cpu-bo-vi-xu-ly?search=Core%20i7" },
+                                { name: "AMD Ryzen 5", link: "/category/cpu-bo-vi-xu-ly?search=Ryzen%205" },
+                                { name: "AMD Ryzen 7", link: "/category/cpu-bo-vi-xu-ly?search=Ryzen%207" },
+                            ]}
+                            tabContent={cpuProducts}
+                            viewAllLink="/category/cpu-bo-vi-xu-ly"
+                        />
+                    )}
+
+                    {/* Box Product Category - LINH KIỆN & PHỤ KIỆN */}
+                    {linhKienProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="LINH KIỆN & PHỤ KIỆN MÁY TÍNH"
+                            tabs={[
+                                { name: "Mainboard", link: "/category/mainboard-bo-mach-chu" },
+                                { name: "Ổ Cứng SSD", link: "/category/o-cung-hdd-ssd" },
+                                { name: "Màn Hình", link: "/category/man-hinh" },
+                                { name: "Nguồn Máy Tính", link: "/category/psu-nguon-may-tinh" },
+                                { name: "Vỏ Case", link: "/category/case-vo-may-tinh" },
+                            ]}
+                            tabContent={linhKienProducts}
+                            viewAllLink="/category/linh-kien"
                         />
                     )}
                 </>

@@ -44,6 +44,10 @@ export const API_ENDPOINTS = {
     BRAND_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/brands/${id}`,
     BRAND_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/brands/${id}/status`,
     BRAND_BY_SLUG: (slug: string) => `${API_BASE_URL}/api/admin/brands/by-slug/${slug}`,
+    PRODUCTS: `${API_BASE_URL}/api/admin/products`,
+    PRODUCT_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/products/${id}`,
+    PRODUCT_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/products/${id}/status`,
+    PRODUCT_BY_SLUG: (slug: string) => `${API_BASE_URL}/api/admin/products/by-slug/${slug}`,
   },
   CATEGORIES: {
     LIST: `${API_BASE_URL}/api/categories`,

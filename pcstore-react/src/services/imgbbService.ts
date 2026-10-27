@@ -1,13 +1,4 @@
-/**
- * Dịch vụ tải ảnh lên ImgBB (ImgBB Image Upload Service)
- * Tài liệu API: https://api.imgbb.com/
- */
 
-// ============================================================================
-// CẤU HÌNH API KEY IMGBB
-// Bạn có thể điền API key tại file .env: VITE_IMGBB_API_KEY="your_api_key_here"
-// Hoặc điền tạm trực tiếp vào biến IMGBB_API_KEY_FALLBACK bên dưới.
-// ============================================================================
 export const IMGBB_API_KEY_FALLBACK = 'eb6f7a446f476715af2c6cc0701de314';
 
 /**
@@ -33,9 +24,7 @@ export const validateImageFile = (
   return { valid: true };
 };
 
-/**
- * Lấy API key ImgBB từ biến môi trường hoặc biến fallback
- */
+
 export const getImgbbApiKey = (): string => {
   const envKey =
     import.meta.env.VITE_IMGBB_API_KEY ||

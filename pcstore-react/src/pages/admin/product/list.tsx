@@ -34,6 +34,13 @@ import { adminBrandService } from '../../../services/adminBrandService';
 import type { CategoryResponse } from '../../../types/adminCategory';
 import type { BrandResponse } from '../../../types/adminBrand';
 import type { ProductResponse, BackendProductStatus, ProductType } from '../../../types/adminProduct';
+import { DynamicSpecForm } from '../../../components/admin/DynamicSpecForm';
+import {
+    detectProductTypeFromCategory,
+    getSpecTemplateForCategory,
+    mergeSpecsWithTemplate,
+    cleanEmptySpecsForSaving,
+} from '../../../config/specTemplates';
 
 export interface ProductImageItem {
     id: string;
@@ -204,7 +211,7 @@ function ProductMediaTab({
                             )}
                         </div>
 
-                        <div>
+                        {/* <div>
                             <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                                 Đường dẫn URL ảnh:
                             </label>
@@ -220,7 +227,7 @@ function ProductMediaTab({
                             <p className="text-[11px] text-gray-400 mt-1">
                                 Hỗ trợ định dạng JPG, PNG, WebP.
                             </p>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>
@@ -275,7 +282,7 @@ function ProductMediaTab({
 
                             <div className="h-4 w-px bg-gray-300 hidden sm:block" />
 
-                            <div className="flex-1 flex items-center gap-2">
+                            {/* <div className="flex-1 flex items-center gap-2">
                                 <input
                                     type="url"
                                     placeholder="Nhập URL ảnh sản phẩm"
@@ -298,7 +305,7 @@ function ProductMediaTab({
                                     <Plus className="w-3.5 h-3.5" />
                                     Thêm ảnh
                                 </button>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 ) : (
@@ -700,7 +707,15 @@ export default function ProductList() {
     const handleOpenEdit = (p: AdminProductItem, e?: React.MouseEvent) => {
         e?.stopPropagation();
         setSelectedProduct(p);
-        setEditForm({ ...p });
+
+        // If product has no specification, auto-populate template based on its category
+        let spec = p.specification;
+        if (!spec || !spec.trim() || spec.trim() === '[]') {
+            const catName = p.category || categories.find((c) => c.id === Number(p.primaryCategoryId))?.name || '';
+            spec = getSpecTemplateForCategory(catName).defaultSpecsJson;
+        }
+
+        setEditForm({ ...p, specification: spec });
         setEditSelectedFile(null);
         setEditGallery(
             (p.gallery || []).map((url, idx) => ({
@@ -885,7 +900,7 @@ export default function ProductList() {
                 brandId: brandIdNum,
                 primaryCategoryId: catIdNum,
                 categoryIds: catIdNum ? [catIdNum] : [],
-                specification: editForm.specification,
+                specification: cleanEmptySpecsForSaving(editForm.specification),
                 description: editForm.description,
             });
 
@@ -984,24 +999,29 @@ export default function ProductList() {
                 brandId: brandIdNum,
                 primaryCategoryId: catIdNum,
                 categoryIds: catIdNum ? [catIdNum] : [],
-                specification: addForm.specification,
+                specification: cleanEmptySpecsForSaving(addForm.specification),
                 description: addForm.description,
             });
 
             showToast(`Đã thêm mới thành công sản phẩm "${addForm.name}"`, 'success');
             setIsAddModalOpen(false);
 
-            // Reset Add Form & Gallery
+            // Reset Add Form & Gallery with default category specs template
+            const resetCat = categories[0];
+            const resetCatName = resetCat?.name || '';
+            const resetProductType = detectProductTypeFromCategory(resetCatName);
+            const resetSpecs = getSpecTemplateForCategory(resetCatName).defaultSpecsJson;
+
             setAddForm({
                 name: '',
                 sku: '',
                 slug: '',
                 brandId: brands[0]?.id || '',
-                primaryCategoryId: categories[0]?.id || '',
-                productType: 'COMPONENT',
+                primaryCategoryId: resetCat?.id || '',
+                productType: resetProductType,
                 price: 1000000,
                 status: 'ACTIVE',
-                specification: '',
+                specification: resetSpecs,
                 description: '',
                 image: DEFAULT_PRODUCT_IMAGE,
             });
@@ -1250,16 +1270,21 @@ export default function ProductList() {
                     <button
                         type="button"
                         onClick={() => {
+                            const defaultCat = categories[0];
+                            const defaultCatName = defaultCat?.name || '';
+                            const autoProductType = detectProductTypeFromCategory(defaultCatName);
+                            const defaultSpecs = getSpecTemplateForCategory(defaultCatName).defaultSpecsJson;
+
                             setAddForm({
                                 name: '',
                                 sku: `SP-${Date.now().toString(36).slice(-5).toUpperCase()}`,
                                 slug: '',
                                 brandId: brands[0]?.id || '',
-                                primaryCategoryId: categories[0]?.id || '',
-                                productType: 'COMPONENT',
+                                primaryCategoryId: defaultCat?.id || '',
+                                productType: autoProductType,
                                 price: 1000000,
                                 status: 'ACTIVE',
-                                specification: '',
+                                specification: defaultSpecs,
                                 description: '',
                                 image: DEFAULT_PRODUCT_IMAGE,
                             });
@@ -1451,7 +1476,7 @@ export default function ProductList() {
                             <div>
                                 <div className="flex items-center justify-between mb-1.5">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Đường dẫn tĩnh (Slug URL) <span className="text-rose-500">*</span>
+                                        Đường dẫn tĩnh <span className="text-rose-500">*</span>
                                     </label>
                                     <button
                                         type="button"
@@ -1500,9 +1525,9 @@ export default function ProductList() {
                                         onChange={(e) => setAddForm({ ...addForm, productType: e.target.value as ProductType })}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                     >
-                                        <option value="COMPONENT">🧩 Linh kiện máy tính (COMPONENT)</option>
-                                        <option value="LAPTOP">💻 Máy tính xách tay (LAPTOP)</option>
-                                        <option value="PC">🖥️ Máy tính để bàn / Desktop (PC)</option>
+                                        <option value="COMPONENT">Linh kiện máy tính</option>
+                                        <option value="LAPTOP">Máy tính xách tay</option>
+                                        <option value="PC">Máy tính để bàn / Desktop</option>
                                     </select>
                                 </div>
                             </div>
@@ -1516,7 +1541,21 @@ export default function ProductList() {
                                     </label>
                                     <select
                                         value={addForm.primaryCategoryId}
-                                        onChange={(e) => setAddForm({ ...addForm, primaryCategoryId: e.target.value })}
+                                        onChange={(e) => {
+                                            const catId = e.target.value;
+                                            const selectedCat = categories.find((c) => String(c.id) === String(catId));
+                                            const catName = selectedCat?.name || '';
+                                            const autoProductType = detectProductTypeFromCategory(catName);
+                                            const templateInfo = getSpecTemplateForCategory(catName);
+                                            const mergedSpecs = mergeSpecsWithTemplate(addForm.specification, templateInfo.items);
+
+                                            setAddForm((prev) => ({
+                                                ...prev,
+                                                primaryCategoryId: catId,
+                                                productType: autoProductType,
+                                                specification: mergedSpecs,
+                                            }));
+                                        }}
                                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                     >
                                         <option value="">-- Chọn danh mục --</option>
@@ -1626,23 +1665,13 @@ export default function ProductList() {
 
                     {/* TAB 4: THÔNG SỐ KỸ THUẬT */}
                     {activeAddTab === 'specs' && (
-                        <div className="space-y-4">
-                            <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
-                                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                                    Thông số kỹ thuật chi tiết (Specification)
-                                </label>
-                                <p className="text-xs text-gray-500 mb-3">
-                                    Ghi rõ thông số phần cứng, hiệu năng, cổng giao tiếp, độ phân giải hoặc tiêu chuẩn kỹ thuật của sản phẩm.
-                                </p>
-                                <textarea
-                                    rows={8}
-                                    placeholder="Ví dụ:&#10;- Chipset: Intel B760&#10;- Socket: LGA1700&#10;- RAM: 32GB DDR5 6000MHz&#10;- VGA: RTX 4070 Ti Super 16GB&#10;- Lưu trữ: 1TB NVMe PCIe 4.0"
-                                    value={addForm.specification}
-                                    onChange={(e) => setAddForm({ ...addForm, specification: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono text-gray-800 transition-all leading-relaxed bg-white"
-                                />
-                            </div>
-                        </div>
+                        <DynamicSpecForm
+                            value={addForm.specification}
+                            onChange={(newSpec) => setAddForm({ ...addForm, specification: newSpec })}
+                            productType={addForm.productType}
+                            categoryName={categories.find((c) => String(c.id) === String(addForm.primaryCategoryId))?.name || ''}
+                            availableProducts={products}
+                        />
                     )}
                 </div>
             </AdminModal>
@@ -1736,9 +1765,9 @@ export default function ProductList() {
                                             onChange={(e) => setEditForm({ ...editForm, productType: e.target.value as ProductType })}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                         >
-                                            <option value="COMPONENT">🧩 Linh kiện máy tính (COMPONENT)</option>
-                                            <option value="LAPTOP">💻 Máy tính xách tay (LAPTOP)</option>
-                                            <option value="PC">🖥️ Máy tính để bàn / Desktop (PC)</option>
+                                            <option value="COMPONENT">Linh kiện máy tính</option>
+                                            <option value="LAPTOP">Máy tính xách tay</option>
+                                            <option value="PC">Máy tính để bàn</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1777,7 +1806,25 @@ export default function ProductList() {
                                         </label>
                                         <select
                                             value={editForm.primaryCategoryId ?? ''}
-                                            onChange={(e) => setEditForm({ ...editForm, primaryCategoryId: e.target.value ? Number(e.target.value) : null })}
+                                            onChange={(e) => {
+                                                const catId = e.target.value ? Number(e.target.value) : null;
+                                                const selectedCat = categories.find((c) => c.id === catId);
+                                                const catName = selectedCat?.name || '';
+                                                const autoProductType = detectProductTypeFromCategory(catName);
+                                                const templateInfo = getSpecTemplateForCategory(catName);
+
+                                                setEditForm((prev) => {
+                                                    if (!prev) return null;
+                                                    const mergedSpecs = mergeSpecsWithTemplate(prev.specification, templateInfo.items);
+                                                    return {
+                                                        ...prev,
+                                                        primaryCategoryId: catId,
+                                                        category: catName,
+                                                        productType: prev.productType === 'COMPONENT' && autoProductType !== 'COMPONENT' ? autoProductType : prev.productType,
+                                                        specification: mergedSpecs,
+                                                    };
+                                                });
+                                            }}
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
                                         >
                                             <option value="">-- Chọn danh mục --</option>
@@ -1882,22 +1929,13 @@ export default function ProductList() {
 
                         {/* TAB 4: THÔNG SỐ KỸ THUẬT */}
                         {activeEditTab === 'specs' && (
-                            <div className="space-y-4">
-                                <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50">
-                                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                                        Thông số kỹ thuật chi tiết (Specification)
-                                    </label>
-                                    <p className="text-xs text-gray-500 mb-3">
-                                        Ghi rõ thông số phần cứng, hiệu năng, cổng giao tiếp, độ phân giải hoặc tiêu chuẩn kỹ thuật của sản phẩm.
-                                    </p>
-                                    <textarea
-                                        rows={8}
-                                        value={editForm.specification}
-                                        onChange={(e) => setEditForm({ ...editForm, specification: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono text-gray-800 transition-all leading-relaxed bg-white"
-                                    />
-                                </div>
-                            </div>
+                            <DynamicSpecForm
+                                value={editForm.specification}
+                                onChange={(newSpec) => setEditForm({ ...editForm, specification: newSpec })}
+                                productType={editForm.productType}
+                                categoryName={categories.find((c) => c.id === Number(editForm.primaryCategoryId))?.name || editForm.category || ''}
+                                availableProducts={products}
+                            />
                         )}
                     </div>
                 </AdminModal>
@@ -2115,16 +2153,14 @@ export default function ProductList() {
                         )}
                         {/* TAB 2: THÔNG SỐ KỸ THUẬT */}
                         {activeDetailTab === 'specs' && (
-                            <div className="space-y-4">
-                                <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm space-y-3">
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider pb-2 border-b border-gray-100">
-                                        Thông số kỹ thuật chi tiết
-                                    </h4>
-                                    <div className="text-sm text-gray-800 bg-gray-50/70 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
-                                        {selectedProduct.specification || 'Chưa cập nhật bảng thông số kỹ thuật cho sản phẩm này.'}
-                                    </div>
-                                </div>
-                            </div>
+                            <DynamicSpecForm
+                                value={selectedProduct.specification}
+                                onChange={() => { }}
+                                productType={selectedProduct.productType}
+                                categoryName={selectedProduct.category || categories.find((c) => c.id === Number(selectedProduct.primaryCategoryId))?.name || ''}
+                                readOnly={true}
+                                availableProducts={products}
+                            />
                         )}
                     </div>
                 </AdminModal>

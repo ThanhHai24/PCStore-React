@@ -33,11 +33,7 @@ export interface Product {
     seconds: number;
   };
   promotions: string[];
-  quickSpecs?: {
-    cpu?: string;
-    vga?: string;
-    ram?: string;
-  };
+  quickSpecs?: Record<string, string | undefined>;
   specsTable: SpecItem[];
   descriptionHtml?: string;
   category?: string;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, CheckCircle2, Scale, ShoppingCart } from 'lucide-react';
+import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, Scale, ShoppingCart } from 'lucide-react';
 import type { Product } from '../../../types/product';
 import { useCart } from '../../../context/CartContext';
 
@@ -13,7 +13,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     const { addToCart } = useCart();
     const [quantity, setQuantity] = useState<number>(1);
     const [selectedStorage] = useState<string>('');
-    const [addedToast, setAddedToast] = useState<boolean>(false);
 
     const maxStock = product.stockQuantity ?? 10;
 
@@ -48,8 +47,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
     const handleAddToCart = () => {
         addToCart(product, quantity, selectedStorage || undefined);
-        setAddedToast(true);
-        setTimeout(() => setAddedToast(false), 3000);
     };
 
     const handleBuyNow = () => {
@@ -59,13 +56,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
     return (
         <div className="space-y-4 text-gray-800 relative">
-            {/* Toast Notification */}
-            {addedToast && (
-                <div className="fixed top-20 right-4 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-2 animate-bounce">
-                    <CheckCircle2 className="w-5 h-5" />
-                    <span className="text-xs font-bold">Đã thêm {quantity} sản phẩm vào giỏ hàng!</span>
-                </div>
-            )}
 
             {/* Title */}
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug">
@@ -158,39 +148,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                     ))}
                 </ul>
             </div>
-
-            {/* Quick Specs Summary (CPU, VGA, RAM) */}
-            {product.quickSpecs && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                    {product.quickSpecs.cpu && (
-                        <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
-                            <div className="flex items-center space-x-1.5 font-bold text-gray-500 mb-1">
-                                <Cpu className="w-4 h-4 text-blue-600" />
-                                <span>CPU</span>
-                            </div>
-                            <p className="text-blue-700 font-bold line-clamp-2">{product.quickSpecs.cpu}</p>
-                        </div>
-                    )}
-                    {product.quickSpecs.vga && (
-                        <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
-                            <div className="flex items-center space-x-1.5 font-bold text-gray-500 mb-1">
-                                <Monitor className="w-4 h-4 text-blue-600" />
-                                <span>VGA</span>
-                            </div>
-                            <p className="text-blue-700 font-bold line-clamp-2">{product.quickSpecs.vga}</p>
-                        </div>
-                    )}
-                    {product.quickSpecs.ram && (
-                        <div className="bg-gray-50 border border-gray-200 p-2.5 rounded-lg">
-                            <div className="flex items-center space-x-1.5 font-bold text-gray-500 mb-1">
-                                <HardDrive className="w-4 h-4 text-blue-600" />
-                                <span>RAM</span>
-                            </div>
-                            <p className="text-blue-700 font-bold line-clamp-2">{product.quickSpecs.ram}</p>
-                        </div>
-                    )}
-                </div>
-            )}
 
             {/* Quantity & Action Buttons Row */}
             <div className="space-y-3 pt-2">

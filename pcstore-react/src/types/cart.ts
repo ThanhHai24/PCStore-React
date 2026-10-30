@@ -18,12 +18,20 @@ export interface CustomerInfo {
   invoiceRequired?: boolean;
 }
 
+export interface CartToastInfo {
+  product: Product;
+  quantity: number;
+  selectedVariant?: string;
+}
+
 export interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product, quantity?: number, selectedVariant?: string) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (productId: string | number, selectedVariant?: string) => void;
+  updateQuantity: (productId: string | number, quantity: number, selectedVariant?: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  cartToast: CartToastInfo | null;
+  dismissToast: () => void;
 }

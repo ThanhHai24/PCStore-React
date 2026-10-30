@@ -21,6 +21,8 @@ import {
     Truck
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { useCart } from '../../../context/CartContext';
+import defaultPcImg from '../../../assets/images/products/pc.jpg';
 // import { getProducts } from '../../services/productService';
 // import type { ApiProduct } from '../../types/apiProduct';
 
@@ -293,8 +295,9 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
 
 export const Header: React.FC = () => {
     const navigate = useNavigate();
-    // const { totalItems: cartCount } = useCart();
+    const { totalItems, items, totalPrice } = useCart();
     const { user } = useAuth();
+    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
@@ -700,20 +703,103 @@ export const Header: React.FC = () => {
                         </Link>
 
                         {/* 4. GIỎ HÀNG */}
-                        <Link
-                            to="/cart"
-                            className="relative flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
+                        <div
+                            className="relative"
+                            onMouseEnter={() => setIsMiniCartOpen(true)}
+                            onMouseLeave={() => setIsMiniCartOpen(false)}
                         >
-                            <div className="relative">
-                                <ShoppingCart className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
-                                <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600 shadow">
-                                    2
+                            <Link
+                                to="/cart"
+                                className="relative flex flex-col items-center justify-center p-2 px-2.5 rounded-lg hover:bg-white/10 transition-all text-center group"
+                            >
+                                <div className="relative">
+                                    <ShoppingCart className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                                    {totalItems > 0 && (
+                                        <span className="absolute -top-1.5 -right-2.5 bg-red-600 text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-in zoom-in-50 duration-200">
+                                            {totalItems > 99 ? '99+' : totalItems}
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
+                                    Giỏ Hàng
                                 </span>
-                            </div>
-                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
-                                Giỏ Hàng
-                            </span>
-                        </Link>
+                            </Link>
+
+                            {/* Mini Cart Hover Dropdown */}
+                            {isMiniCartOpen && (
+                                <div className="absolute right-0 top-full pt-2 w-80 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                                    <div className="bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 p-4 space-y-3">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                            <span className="font-extrabold text-xs text-gray-900 uppercase">
+                                                Giỏ hàng ({totalItems})
+                                            </span>
+                                            <Link
+                                                to="/cart"
+                                                onClick={() => setIsMiniCartOpen(false)}
+                                                className="text-[11px] font-semibold text-blue-600 hover:underline"
+                                            >
+                                                Xem chi tiết →
+                                            </Link>
+                                        </div>
+
+                                        {items.length === 0 ? (
+                                            <div className="py-6 text-center text-xs text-gray-500 space-y-2">
+                                                <div className="text-2xl">🛒</div>
+                                                <p className="font-medium">Chưa có sản phẩm trong giỏ</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                                                    {items.slice(0, 3).map((item, idx) => (
+                                                        <div
+                                                            key={`${item.product.id}_${item.selectedVariant || idx}`}
+                                                            className="flex items-center space-x-2.5 text-xs pb-2 border-b border-gray-50 last:border-0"
+                                                        >
+                                                            <img
+                                                                src={item.product.images?.[0] || defaultPcImg}
+                                                                alt={item.product.title}
+                                                                className="w-10 h-10 object-contain rounded border border-gray-100 bg-gray-50 shrink-0"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-bold text-gray-800 truncate leading-snug">
+                                                                    {item.product.title}
+                                                                </p>
+                                                                <div className="flex items-center justify-between text-[11px] text-gray-500 mt-0.5">
+                                                                    <span>SL: {item.quantity}</span>
+                                                                    <span className="font-bold text-red-600">
+                                                                        {((item.product.numericPrice || 0) * item.quantity).toLocaleString('vi-VN')}đ
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {items.length > 3 && (
+                                                        <p className="text-[11px] text-center text-gray-400 italic">
+                                                            + và {items.length - 3} sản phẩm khác
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="border-t border-gray-100 pt-2.5 flex items-center justify-between text-xs">
+                                                    <span className="text-gray-600 font-medium">Tổng tiền:</span>
+                                                    <span className="font-black text-red-600 text-sm">
+                                                        {totalPrice.toLocaleString('vi-VN')}đ
+                                                    </span>
+                                                </div>
+
+                                                <Link
+                                                    to="/cart"
+                                                    onClick={() => setIsMiniCartOpen(false)}
+                                                    className="block w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors"
+                                                >
+                                                    Vào giỏ hàng & Thanh toán
+                                                </Link>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* 5. TÀI KHOẢN / USER */}
                         <Link
@@ -740,9 +826,11 @@ export const Header: React.FC = () => {
                     <div className="flex lg:hidden items-center space-x-2 shrink-0">
                         <Link to="/cart" className="relative p-2 text-white hover:bg-white/10 rounded-lg">
                             <ShoppingCart className="w-6 h-6" />
-                            <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-blue-600">
-                                2
-                            </span>
+                            {totalItems > 0 && (
+                                <span className="absolute top-0 right-0 bg-red-600 text-white text-[9px] font-black min-w-[16px] h-[16px] px-0.5 rounded-full flex items-center justify-center border-2 border-blue-600 shadow-md">
+                                    {totalItems > 99 ? '99+' : totalItems}
+                                </span>
+                            )}
                         </Link>
                         <Link
                             to="/account"

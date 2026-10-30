@@ -164,6 +164,7 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                         <SearchBar
                             value={searchQuery}
                             onChange={activeSearchChange}
+                            onSearch={onSearch}
                             placeholder={searchPlaceholder}
                             className={searchBarClassName || "w-full sm:w-96 md:w-[70%] lg:w-[80%]"}
                         />

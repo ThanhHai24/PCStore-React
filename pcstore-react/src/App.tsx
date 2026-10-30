@@ -21,6 +21,12 @@ import CategoryList from './pages/admin/category/list';
 import BrandList from './pages/admin/brand/list';
 import ProductList from './pages/admin/product/list';
 import SupplierList from './pages/admin/supplier/list';
+import PurchaseOrderList from './pages/admin/purchaseOrder/list';
+import GoodsReceiptList from './pages/admin/goodsReceipt/list';
+import ProductSerialList from './pages/admin/serial/list';
+import WarehouseInventoryList from './pages/admin/inventory/list';
+import SupplierReturnList from './pages/admin/supplierReturn/list';
+import OrderList from './pages/admin/order/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -34,9 +40,9 @@ function ScrollToTop() {
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <CartProvider>
           <ScrollToTop />
           <Routes>
             {/* User Storefront Routes */}
@@ -69,11 +75,34 @@ function App() {
               <Route path="products" element={<ProductList />} />
               <Route path="supplier" element={<SupplierList />} />
               <Route path="suppliers" element={<SupplierList />} />
+              <Route path="import" element={<PurchaseOrderList />} />
+              <Route path="imports" element={<PurchaseOrderList />} />
+              <Route path="purchase-orders" element={<PurchaseOrderList />} />
+              <Route path="purchase-order" element={<PurchaseOrderList />} />
+              <Route path="import-ticket" element={<GoodsReceiptList />} />
+              <Route path="import-tickets" element={<GoodsReceiptList />} />
+              <Route path="goods-receipt" element={<GoodsReceiptList />} />
+              <Route path="goods-receipts" element={<GoodsReceiptList />} />
+              <Route path="warehouse/inbound" element={<GoodsReceiptList />} />
+              <Route path="warehouse/supplier-returns" element={<SupplierReturnList />} />
+              <Route path="warehouse/supplier-return" element={<SupplierReturnList />} />
+              <Route path="supplier-returns" element={<SupplierReturnList />} />
+              <Route path="supplier-return" element={<SupplierReturnList />} />
+              <Route path="sales/orders" element={<OrderList />} />
+              <Route path="order" element={<OrderList />} />
+              <Route path="orders" element={<OrderList />} />
+              <Route path="warehouse/inventory" element={<WarehouseInventoryList />} />
+              <Route path="warehouse/products" element={<WarehouseInventoryList />} />
+              <Route path="inventory" element={<WarehouseInventoryList />} />
+              <Route path="warehouse/serials" element={<ProductSerialList />} />
+              <Route path="warehouse/serial" element={<ProductSerialList />} />
+              <Route path="serials" element={<ProductSerialList />} />
+              <Route path="serial" element={<ProductSerialList />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </CartProvider>
-    </AuthProvider>
+        </CartProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

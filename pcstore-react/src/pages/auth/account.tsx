@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     User as UserIcon,
     Lock,
@@ -7,24 +7,29 @@ import {
     EyeOff,
     LogOut,
     Shield,
-    Phone,
     UserCheck,
     KeyRound,
     CheckCircle2,
     AlertCircle,
     Loader2,
     Building,
-    Upload,
     Camera,
-    Trash2,
-    Link as LinkIcon,
+    Package,
+    Truck,
+    Calendar,
+    RefreshCw,
+    X,
+    AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { uploadImage, validateImageFile } from '../../services/imgbbService';
+import { orderService } from '../../services/orderService';
+import type { OrderResponse, OrderStatus } from '../../types/order';
 
 export const Account: React.FC = () => {
     const { user, logout, updateProfile, changePassword, loading } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Redirect to /login if not logged in
     useEffect(() => {
@@ -33,8 +38,17 @@ export const Account: React.FC = () => {
         }
     }, [user, loading, navigate]);
 
-    // Profile View tabs: 'info' | 'edit' | 'password'
-    const [activeTab, setActiveTab] = useState<'info' | 'edit' | 'password'>('info');
+    // Profile View tabs: 'info' | 'orders' | 'edit' | 'password'
+    const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'edit' | 'password'>('info');
+
+    // Auto-switch tab based on query param (?tab=orders)
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (tab === 'orders' || tab === 'edit' || tab === 'password' || tab === 'info') {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
 
     // Edit Profile state
     const [fullName, setFullName] = useState(user?.fullName || '');
@@ -48,10 +62,16 @@ export const Account: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-    const [uploadError, setUploadError] = useState<string | null>(null);
-    const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [showUrlInput, setShowUrlInput] = useState(false);
+    const [, setUploadError] = useState<string | null>(null);
+    const [, setUploadSuccessMsg] = useState<string | null>(null);
+
+    // Orders state
+    const [myOrders, setMyOrders] = useState<OrderResponse[]>([]);
+    const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(false);
+    const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderResponse | null>(null);
+    const [cancelModalOrder, setCancelModalOrder] = useState<OrderResponse | null>(null);
+    const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
+    const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Update edit state whenever user changes
     useEffect(() => {
@@ -73,6 +93,34 @@ export const Account: React.FC = () => {
         };
     }, [previewUrl]);
 
+    // Load customer orders when 'orders' tab is active
+    const fetchCustomerOrders = async () => {
+        setIsLoadingOrders(true);
+        setOrderActionMsg(null);
+        try {
+            const data = await orderService.getMyOrders({
+                page: 0,
+                size: 50,
+                sort: ['createdDate,desc'],
+            });
+            setMyOrders(data.content || []);
+        } catch (err: any) {
+            console.error('Lỗi khi tải danh sách đơn hàng:', err);
+            setOrderActionMsg({
+                type: 'error',
+                text: err.message || 'Không thể tải danh sách đơn hàng. Vui lòng thử lại sau!',
+            });
+        } finally {
+            setIsLoadingOrders(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'orders' && user) {
+            fetchCustomerOrders();
+        }
+    }, [activeTab, user]);
+
     const handleFileSelect = (file: File) => {
         const validation = validateImageFile(file, 32);
         if (!validation.valid) {
@@ -80,7 +128,6 @@ export const Account: React.FC = () => {
             return;
         }
 
-        // Dọn dẹp blob url cũ trước đó nếu có
         if (previewUrl && previewUrl.startsWith('blob:')) {
             URL.revokeObjectURL(previewUrl);
         }
@@ -93,15 +140,6 @@ export const Account: React.FC = () => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            handleFileSelect(file);
-        }
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        const file = e.dataTransfer.files?.[0];
         if (file) {
             handleFileSelect(file);
         }
@@ -120,7 +158,6 @@ export const Account: React.FC = () => {
             fileInputRef.current.value = '';
         }
     };
-
 
     // Change Password state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -145,7 +182,6 @@ export const Account: React.FC = () => {
         let finalAvatar = avatar;
 
         try {
-            // NẾU CÓ ẢNH ĐƯỢC CHỌN TỪ MÁY: BÂY GIỜ MỚI TIẾN HÀNH ĐẨY LÊN IMGBB
             if (selectedAvatarFile) {
                 setIsUploadingAvatar(true);
                 try {
@@ -220,6 +256,96 @@ export const Account: React.FC = () => {
         }
     };
 
+    // Customer cancel pending order
+    const handleConfirmCancelOrder = async () => {
+        if (!cancelModalOrder) return;
+        setIsCancellingOrder(true);
+        setOrderActionMsg(null);
+        try {
+            await orderService.cancelOrder(cancelModalOrder.id);
+            setOrderActionMsg({
+                type: 'success',
+                text: `Đã hủy đơn hàng ${cancelModalOrder.code} thành công!`,
+            });
+            setCancelModalOrder(null);
+            await fetchCustomerOrders();
+        } catch (err: any) {
+            setOrderActionMsg({
+                type: 'error',
+                text: err.message || 'Không thể hủy đơn hàng này. Vui lòng liên hệ bộ phận hỗ trợ!',
+            });
+        } finally {
+            setIsCancellingOrder(false);
+        }
+    };
+
+    const formatVND = (price: number) => {
+        return price.toLocaleString('vi-VN') + ' đ';
+    };
+
+    const formatDateTime = (dateStr?: string | null) => {
+        if (!dateStr) return '---';
+        try {
+            const d = new Date(dateStr);
+            return d.toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        } catch {
+            return dateStr;
+        }
+    };
+
+    const renderOrderStatusBadge = (status: OrderStatus) => {
+        switch (status) {
+            case 'PENDING':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        Chờ xác nhận (COD)
+                    </span>
+                );
+            case 'CONFIRMED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        Đã xác nhận
+                    </span>
+                );
+            case 'PROCESSING':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                        Đang đóng gói/giao
+                    </span>
+                );
+            case 'COMPLETED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Hoàn tất
+                    </span>
+                );
+            case 'CANCELLED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">
+                        Đã hủy
+                    </span>
+                );
+            case 'RETURNED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-800 border border-gray-200">
+                        Đã hoàn trả
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-700">
+                        {status}
+                    </span>
+                );
+        }
+    };
+
     if (loading || !user) {
         return (
             <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
@@ -259,8 +385,9 @@ export const Account: React.FC = () => {
                             <span className="text-[10px] font-semibold mt-0.5">Đổi ảnh</span>
                         </button>
                         <span
-                            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
-                                }`}
+                            className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white ${
+                                user.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}
                             title={`Trạng thái: ${user.status}`}
                         />
                     </div>
@@ -275,34 +402,66 @@ export const Account: React.FC = () => {
                     </div>
 
                     <div className="w-full pt-4 border-t border-gray-100 space-y-2">
+                        {/* Tab 1: Info */}
                         <button
                             onClick={() => setActiveTab('info')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'info'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                                activeTab === 'info'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                         >
                             <UserCheck className="w-4 h-4" />
                             <span>Thông tin tài khoản</span>
                         </button>
 
+                        {/* Tab 2: Orders */}
+                        <button
+                            onClick={() => setActiveTab('orders')}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                                activeTab === 'orders'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <Package className="w-4 h-4" />
+                                <span>Đơn hàng của tôi</span>
+                            </div>
+                            {myOrders.length > 0 && (
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                        activeTab === 'orders'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-blue-100 text-blue-700'
+                                    }`}
+                                >
+                                    {myOrders.length}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Tab 3: Edit */}
                         <button
                             onClick={() => setActiveTab('edit')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'edit'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                                activeTab === 'edit'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                         >
                             <UserIcon className="w-4 h-4" />
                             <span>Chỉnh sửa thông tin</span>
                         </button>
 
+                        {/* Tab 4: Password */}
                         <button
                             onClick={() => setActiveTab('password')}
-                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'password'
-                                ? 'bg-blue-600 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                            className={`w-full flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                                activeTab === 'password'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
                         >
                             <KeyRound className="w-4 h-4" />
                             <span>Đổi mật khẩu</span>
@@ -333,6 +492,7 @@ export const Account: React.FC = () => {
 
                 {/* Right Main Content Panel */}
                 <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                    {/* TAB: INFO */}
                     {activeTab === 'info' && (
                         <div className="space-y-6">
                             <div>
@@ -369,6 +529,146 @@ export const Account: React.FC = () => {
                         </div>
                     )}
 
+                    {/* TAB: MY ORDERS */}
+                    {activeTab === 'orders' && (
+                        <div className="space-y-5">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                        <Package className="w-5 h-5 text-blue-600" />
+                                        <span>Lịch Sử Đơn Hàng Của Bạn</span>
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        Theo dõi tiến độ xử lý và chi tiết các đơn hàng bạn đã đặt
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={fetchCustomerOrders}
+                                    disabled={isLoadingOrders}
+                                    className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                                    title="Tải lại đơn hàng"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${isLoadingOrders ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
+
+                            {orderActionMsg && (
+                                <div
+                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs animate-in fade-in ${
+                                        orderActionMsg.type === 'success'
+                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                            : 'bg-red-50 text-red-700 border border-red-200'
+                                    }`}
+                                >
+                                    {orderActionMsg.type === 'success' ? (
+                                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                                    ) : (
+                                        <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+                                    )}
+                                    <span>{orderActionMsg.text}</span>
+                                </div>
+                            )}
+
+                            {isLoadingOrders ? (
+                                <div className="py-12 flex flex-col items-center justify-center space-y-2">
+                                    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                                    <p className="text-xs text-gray-500">Đang tải danh sách đơn hàng...</p>
+                                </div>
+                            ) : myOrders.length === 0 ? (
+                                <div className="py-12 text-center space-y-3 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                                    <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                                        📦
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-800">Bạn chưa có đơn hàng nào</p>
+                                    <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                                        Hãy dạo quanh cửa hàng và lựa chọn các linh kiện, dàn PC gaming ưng ý nhé!
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/')}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-5 rounded-xl shadow-xs transition-colors"
+                                    >
+                                        Mua sắm ngay
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {myOrders.map((ord) => (
+                                        <div
+                                            key={ord.id}
+                                            className="p-4 rounded-2xl border border-gray-200 hover:border-blue-300 transition-all bg-white hover:shadow-xs space-y-3"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="font-extrabold text-sm text-blue-950 font-mono">
+                                                        {ord.code}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400">•</span>
+                                                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                        <Calendar className="w-3 h-3 text-gray-400" />
+                                                        {formatDateTime(ord.createdDate)}
+                                                    </span>
+                                                </div>
+                                                <div>{renderOrderStatusBadge(ord.status)}</div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                                <div>
+                                                    <span className="text-gray-400 text-[11px] block">Người nhận:</span>
+                                                    <span className="font-semibold text-gray-900">
+                                                        {ord.recipientName} ({ord.recipientPhone})
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-gray-400 text-[11px] block">Địa chỉ giao:</span>
+                                                    <span className="font-medium text-gray-700 line-clamp-1">
+                                                        {ord.address}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center justify-between pt-2 border-t border-gray-100 gap-2">
+                                                <div>
+                                                    <span className="text-[11px] text-gray-500">
+                                                        Tổng thanh toán (COD):{' '}
+                                                    </span>
+                                                    <span className="text-sm font-black text-red-600">
+                                                        {formatVND(ord.finalAmount)}
+                                                    </span>
+                                                    <span className="text-[11px] text-gray-400 ml-1.5">
+                                                        ({ord.items?.length || 0} món)
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center space-x-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedOrderDetail(ord)}
+                                                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                                    >
+                                                        Xem chi tiết
+                                                    </button>
+
+                                                    {ord.status === 'PENDING' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setCancelModalOrder(ord)}
+                                                            className="text-xs bg-red-50 hover:bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-colors cursor-pointer"
+                                                        >
+                                                            Hủy đơn
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB: EDIT PROFILE */}
                     {activeTab === 'edit' && (
                         <div className="space-y-6">
                             <div>
@@ -378,10 +678,11 @@ export const Account: React.FC = () => {
 
                             {profileMsg && (
                                 <div
-                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${profileMsg.type === 'success'
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-red-50 text-red-600 border border-red-200'
-                                        }`}
+                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
+                                        profileMsg.type === 'success'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : 'bg-red-50 text-red-600 border border-red-200'
+                                    }`}
                                 >
                                     {profileMsg.type === 'success' ? (
                                         <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -394,7 +695,9 @@ export const Account: React.FC = () => {
 
                             <form onSubmit={handleUpdateProfile} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Họ và tên</label>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                        Họ và tên <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                         type="text"
                                         value={fullName}
@@ -406,144 +709,41 @@ export const Account: React.FC = () => {
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Số điện thoại</label>
-                                    <div className="relative">
-                                        <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                                        <input
-                                            type="text"
-                                            value={phone}
-                                            onChange={(e) => setPhone(e.target.value)}
-                                            placeholder="0987654321"
-                                            className="w-full text-xs pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        />
-                                    </div>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        className="w-full text-xs px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                        placeholder="0912345678"
+                                    />
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-2">
-                                        Ảnh Đại Diện (Avatar)
-                                    </label>
-
-                                    {/* Upload container */}
-                                    <div className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex flex-col sm:flex-row items-center gap-5">
-                                        {/* Avatar preview with loader */}
-                                        <div className="relative group shrink-0">
-                                            {previewUrl || avatar ? (
-                                                <img
-                                                    src={previewUrl || avatar}
-                                                    alt="Avatar preview"
-                                                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-                                                />
-                                            ) : (
-                                                <div className="w-24 h-24 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-extrabold text-3xl rounded-full flex items-center justify-center shadow-md border-4 border-white">
-                                                    {fullName ? fullName.charAt(0).toUpperCase() : 'U'}
-                                                </div>
-                                            )}
-
-                                            {isUploadingAvatar && (
-                                                <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center text-white backdrop-blur-[2px]">
-                                                    <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-                                                    <span className="text-[10px] mt-1 font-semibold text-center px-1">Đang tải lên...</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Upload Controls */}
-                                        <div className="flex-1 w-full space-y-2.5">
-                                            <input
-                                                type="file"
-                                                ref={fileInputRef}
-                                                onChange={handleFileChange}
-                                                accept="image/*"
-                                                className="hidden"
-                                            />
-
-                                            {/* Drag and drop box */}
-                                            <div
-                                                onDragOver={(e) => {
-                                                    e.preventDefault();
-                                                    setIsDragging(true);
-                                                }}
-                                                onDragLeave={() => setIsDragging(false)}
-                                                onDrop={handleDrop}
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition-all ${isDragging
-                                                    ? 'border-blue-500 bg-blue-50/60 scale-[1.01]'
-                                                    : 'border-gray-300 hover:border-blue-500 hover:bg-white bg-gray-50'
-                                                    }`}
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Ảnh đại diện</label>
+                                    <div className="flex items-center space-x-3">
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileChange}
+                                            accept="image/*"
+                                            className="hidden"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
+                                        >
+                                            Chọn ảnh từ máy
+                                        </button>
+                                        {(avatar || selectedAvatarFile) && (
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveAvatar}
+                                                className="text-xs text-red-600 hover:underline cursor-pointer"
                                             >
-                                                <div className="flex flex-col items-center justify-center space-y-1">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-0.5">
-                                                        <Upload className="w-4 h-4" />
-                                                    </div>
-                                                    <p className="text-xs font-semibold text-gray-700">
-                                                        Bấm để chọn ảnh từ máy tính hoặc kéo thả ảnh vào đây
-                                                    </p>
-                                                    <p className="text-[11px] text-gray-400">
-                                                        Hỗ trợ PNG, JPG, WEBP, GIF (Chỉ xem trước, bấm "Lưu Thay Đổi" để tải lên ImgBB)
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Status message */}
-                                            {uploadError && (
-                                                <div className="p-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs flex items-center space-x-2">
-                                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                                    <span>{uploadError}</span>
-                                                </div>
-                                            )}
-                                            {uploadSuccessMsg && (
-                                                <div className="p-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs flex items-center space-x-2">
-                                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                                                    <span>{uploadSuccessMsg}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Action bar */}
-                                            <div className="flex items-center justify-between text-xs pt-0.5">
-                                                {(avatar || previewUrl) ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRemoveAvatar}
-                                                        className="inline-flex items-center space-x-1 text-red-600 hover:text-red-700 font-medium text-xs cursor-pointer py-1 px-2 rounded-lg hover:bg-red-50 transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        <span>Xóa ảnh hiện tại</span>
-                                                    </button>
-                                                ) : <span />}
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowUrlInput(!showUrlInput)}
-                                                    className="inline-flex items-center space-x-1 text-gray-500 hover:text-blue-600 font-medium text-xs cursor-pointer py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                                >
-                                                    <LinkIcon className="w-3.5 h-3.5" />
-                                                    <span>{showUrlInput ? 'Ẩn link ảnh' : 'Nhập URL trực tiếp'}</span>
-                                                </button>
-                                            </div>
-
-                                            {/* Direct URL input if expanded */}
-                                            {showUrlInput && (
-                                                <div className="pt-1.5 space-y-1">
-                                                    <input
-                                                        type="text"
-                                                        value={avatar}
-                                                        onChange={(e) => {
-                                                            if (previewUrl && previewUrl.startsWith('blob:')) {
-                                                                URL.revokeObjectURL(previewUrl);
-                                                            }
-                                                            setSelectedAvatarFile(null);
-                                                            setAvatar(e.target.value);
-                                                            setPreviewUrl(e.target.value);
-                                                        }}
-                                                        placeholder="https://i.ibb.co/... hoặc link ảnh bất kỳ"
-                                                        className="w-full text-xs px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                                    />
-                                                    <p className="text-[10px] text-gray-400">
-                                                        Liên kết ảnh đại diện sẽ được lưu vào tài khoản
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
+                                                Gỡ ảnh
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -567,6 +767,7 @@ export const Account: React.FC = () => {
                         </div>
                     )}
 
+                    {/* TAB: PASSWORD */}
                     {activeTab === 'password' && (
                         <div className="space-y-6">
                             <div>
@@ -576,10 +777,11 @@ export const Account: React.FC = () => {
 
                             {passMsg && (
                                 <div
-                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${passMsg.type === 'success'
-                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                        : 'bg-red-50 text-red-600 border border-red-200'
-                                        }`}
+                                    className={`p-3 rounded-xl flex items-center space-x-2 text-xs ${
+                                        passMsg.type === 'success'
+                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                            : 'bg-red-50 text-red-600 border border-red-200'
+                                    }`}
                                 >
                                     {passMsg.type === 'success' ? (
                                         <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -666,6 +868,181 @@ export const Account: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Modal Chi Tiết Đơn Hàng */}
+            {selectedOrderDetail && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setSelectedOrderDetail(null);
+                        }
+                    }}
+                >
+                    <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-4 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div>
+                                <h3 className="text-base font-extrabold text-gray-900 font-mono">
+                                    Chi tiết đơn #{selectedOrderDetail.code}
+                                </h3>
+                                <p className="text-[11px] text-gray-400">
+                                    Thời gian tạo: {formatDateTime(selectedOrderDetail.createdDate)}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOrderDetail(null)}
+                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-between bg-blue-50/60 p-3 rounded-xl border border-blue-100 text-xs">
+                            <span className="text-gray-600">Trạng thái:</span>
+                            {renderOrderStatusBadge(selectedOrderDetail.status)}
+                        </div>
+
+                        <div className="space-y-2 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs text-gray-700">
+                            <div className="font-bold text-gray-900 text-[11px] uppercase tracking-wide flex items-center gap-1.5 border-b border-gray-200 pb-1">
+                                <Truck className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Địa chỉ & Thông tin người nhận</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <div>
+                                    <span className="text-gray-400 text-[10px] block">Người nhận:</span>
+                                    <span className="font-bold text-gray-900">{selectedOrderDetail.recipientName}</span>
+                                </div>
+                                <div>
+                                    <span className="text-gray-400 text-[10px] block">Số điện thoại:</span>
+                                    <span className="font-bold text-blue-700">{selectedOrderDetail.recipientPhone}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <span className="text-gray-400 text-[10px] block">Địa chỉ nhận hàng:</span>
+                                <span className="font-medium text-gray-800">{selectedOrderDetail.address}</span>
+                            </div>
+                            {selectedOrderDetail.note && (
+                                <div>
+                                    <span className="text-gray-400 text-[10px] block">Ghi chú:</span>
+                                    <span className="italic text-gray-600">{selectedOrderDetail.note}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Danh sách sản phẩm */}
+                        <div className="space-y-2 text-xs">
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wide">
+                                Danh sách sản phẩm ({selectedOrderDetail.items?.length || 0})
+                            </h4>
+                            <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                                {selectedOrderDetail.items?.map((it) => (
+                                    <div key={it.id} className="p-3 flex items-center justify-between gap-3 bg-white">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-gray-800 truncate">
+                                                {it.productName || `Sản phẩm #${it.productId}`}
+                                            </p>
+                                            <div className="flex items-center space-x-2 text-[11px] text-gray-500 mt-0.5">
+                                                <span>Đơn giá: {formatVND(it.unitPrice)}</span>
+                                                <span>•</span>
+                                                <span>SL: x{it.quantity}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right shrink-0 font-black text-gray-900">
+                                            {formatVND(it.subtotal || it.unitPrice * it.quantity)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Tổng kết tiền */}
+                        <div className="space-y-1.5 pt-2 border-t border-gray-100 text-xs">
+                            <div className="flex justify-between text-gray-500">
+                                <span>Tạm tính tiền hàng:</span>
+                                <span className="font-semibold text-gray-800">{formatVND(selectedOrderDetail.totalAmount)}</span>
+                            </div>
+                            {selectedOrderDetail.discountAmount > 0 && (
+                                <div className="flex justify-between text-emerald-600">
+                                    <span>Khuyến mãi giảm giá:</span>
+                                    <span>-{formatVND(selectedOrderDetail.discountAmount)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-gray-500">
+                                <span>Phí vận chuyển:</span>
+                                <span className="text-emerald-600 font-bold">Miễn phí toàn quốc</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-black text-gray-900 pt-2 border-t border-gray-100">
+                                <span>Tổng tiền COD thanh toán:</span>
+                                <span className="text-red-600 text-base">{formatVND(selectedOrderDetail.finalAmount)}</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOrderDetail(null)}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase tracking-wide transition-colors cursor-pointer"
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Xác Nhận Hủy Đơn Hàng */}
+            {cancelModalOrder && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setCancelModalOrder(null);
+                        }
+                    }}
+                >
+                    <div className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-gray-100">
+                        <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                            <AlertTriangle className="w-7 h-7" />
+                        </div>
+
+                        <div>
+                            <h3 className="text-base font-black text-gray-900">
+                                Xác nhận hủy đơn hàng #{cancelModalOrder.code}?
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                                Bạn có chắc chắn muốn hủy đơn hàng này không? Sau khi hủy, đơn hàng sẽ chuyển sang trạng thái Đã hủy và không thể hoàn tác.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setCancelModalOrder(null)}
+                                disabled={isCancellingOrder}
+                                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wide transition-colors cursor-pointer"
+                            >
+                                Giữ lại đơn
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmCancelOrder}
+                                disabled={isCancellingOrder}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs uppercase tracking-wider transition-colors shadow flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                                {isCancellingOrder ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Đang hủy...</span>
+                                    </>
+                                ) : (
+                                    <span>Xác nhận hủy</span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -1,5 +1,7 @@
-import { Flame } from "lucide-react";
+import { Flame, ShoppingCart } from "lucide-react";
 import defaultPcImg from "../../../assets/images/products/pc.jpg";
+import { useCart } from "../../../context/CartContext";
+import type { Product } from "../../../types/product";
 
 export interface DealProductCardProps {
     id?: string | number;
@@ -14,6 +16,7 @@ export interface DealProductCardProps {
 }
 
 export function DealProductCard({
+    id,
     image,
     title,
     price,
@@ -25,7 +28,36 @@ export function DealProductCard({
 }: DealProductCardProps) {
     if (!title || !price) return null;
 
+    const { addToCart } = useCart();
     const percentage = total > 0 ? Math.min(100, Math.max(0, (sold / total) * 100)) : 50;
+
+    const handleQuickAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const numericPrice = Number(String(price).replace(/[^\d]/g, '')) || 0;
+        const productObj: Product = {
+            id: String(id || title),
+            title,
+            images: [image || defaultPcImg],
+            price,
+            numericPrice,
+            marketPrice,
+            discountPercent,
+            inStock: true,
+            stockQuantity: total - sold > 0 ? total - sold : 10,
+            warrantyInfo: '36 Tháng',
+            rating: 5,
+            reviewCount: 15,
+            viewCount: 200,
+            commentCount: 8,
+            purchaseCount: sold || 10,
+            promotions: ['Khuyến mãi Flash Sale giá sốc'],
+            specsTable: [],
+        };
+
+        addToCart(productObj, 1);
+    };
 
     return (
         <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 w-full h-full border border-gray-100">
@@ -62,8 +94,19 @@ export function DealProductCard({
                         )}
                     </div>
 
-                    <div className="text-[#d02c2c] text-xl sm:text-2xl font-extrabold mb-3 tracking-tight">
-                        {price}
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="text-[#d02c2c] text-xl sm:text-2xl font-extrabold tracking-tight">
+                            {price}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleQuickAddToCart}
+                            title="Thêm vào giỏ hàng"
+                            className="p-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md active:scale-95 transition-all cursor-pointer"
+                            aria-label="Thêm vào giỏ hàng"
+                        >
+                            <ShoppingCart className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {total > 0 && (

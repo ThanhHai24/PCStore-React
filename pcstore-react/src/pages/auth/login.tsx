@@ -14,7 +14,9 @@ export const Login: React.FC = () => {
     const { user, login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const from = (location.state as any)?.from;
+    const searchParams = new URLSearchParams(location.search);
+    const redirectParam = searchParams.get('redirect');
+    const from = (location.state as any)?.from || redirectParam;
 
     // If already logged in, redirect to appropriate page
     useEffect(() => {

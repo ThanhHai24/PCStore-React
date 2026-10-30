@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, ShoppingCart } from "lucide-react";
 import defaultPcImg from "../../../assets/images/products/pc.jpg";
+import { useCart } from "../../../context/CartContext";
+import type { Product } from "../../../types/product";
 
 export interface PromotionInfo {
     prefix?: string;
@@ -43,7 +45,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     inStock = true,
     link,
 }) => {
+    const { addToCart } = useCart();
     const targetLink = link && link !== "#" ? link : `/product/${id || "pc-miku-ryzen7"}`;
+
+    const handleQuickAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!inStock) return;
+
+        const numericPrice = Number(String(price).replace(/[^\d]/g, '')) || 0;
+        const productObj: Product = {
+            id: String(id || title),
+            title,
+            images: [image || defaultPcImg],
+            price,
+            numericPrice,
+            marketPrice,
+            discountPercent,
+            badge,
+            inStock: inStock ?? true,
+            stockQuantity: 15,
+            warrantyInfo: '36 Tháng',
+            rating: 5,
+            reviewCount: 10,
+            viewCount: 100,
+            commentCount: 5,
+            purchaseCount: 20,
+            promotions: typeof promotion === 'string' ? [promotion] : [],
+            specsTable: [],
+        };
+
+        addToCart(productObj, 1);
+    };
 
     return (
         <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-3 border border-gray-200 hover:shadow-lg transition-all duration-300 w-full h-full">
@@ -141,10 +174,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     </div>
                 </div>
 
-                {/* Stock Status */}
-                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-1 text-[12px] font-medium text-emerald-600">
-                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>{inStock ? "Còn hàng" : "Hết hàng"}</span>
+                {/* Stock Status & Quick Add Button */}
+                <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[12px]">
+                    <div className={`flex items-center gap-1 font-medium ${inStock ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>{inStock ? "Còn hàng" : "Hết hàng"}</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleQuickAddToCart}
+                        disabled={!inStock}
+                        title={inStock ? "Thêm vào giỏ hàng" : "Hết hàng"}
+                        className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
+                            inStock
+                                ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white shadow-sm active:scale-90 cursor-pointer'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        aria-label="Thêm vào giỏ hàng"
+                    >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                    </button>
                 </div>
             </div>
         </div>

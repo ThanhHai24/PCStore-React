@@ -91,9 +91,24 @@ export default function HandoverList() {
     // Active View Tab: 'waiting_handover' (Đơn chờ bàn giao) | 'handed_over' (Đã bàn giao & Theo dõi ĐVVC ngoài)
     const [activeTab, setActiveTab] = useState<'waiting_handover' | 'handed_over'>('waiting_handover');
 
-    // Search & Filter
+    // Search & Filter states
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
     const [carrierFilter, setCarrierFilter] = useState('ALL');
+    const [typeFilter, setTypeFilter] = useState('ALL');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(10);
+
+    // Debounce search query
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
 
     // Stepper workflow toggle
     const [showWorkflowGuide, setShowWorkflowGuide] = useState(true);
@@ -108,7 +123,7 @@ export default function HandoverList() {
     const [driverName, setDriverName] = useState('Nguyễn Văn Tuấn');
     const [driverPhone, setDriverPhone] = useState('0988.112.334');
     const [licensePlate, setLicensePlate] = useState('29C-881.92');
-    const [handoverStaff, setHandoverStaff] = useState('Lê Kho Vận (Thủ kho)');
+    const [handoverStaff, setHandoverStaff] = useState(user?.fullName || 'Lê Kho Vận (Thủ kho)');
     const [handoverNotes, setHandoverNotes] = useState('Bàn giao kiện hàng nguyên vẹn tem niêm phong kèm 01 phiếu đóng gói và chứng từ giao hàng có chữ ký hai bên.');
     const [shippingFee, setShippingFee] = useState<number>(45000);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,40 +165,108 @@ export default function HandoverList() {
         loadData();
     }, [loadData]);
 
-    // Lọc danh sách theo tab hiện tại
+    // Lọc danh sách theo tab và các điều kiện lọc
     const filteredRecords = useMemo(() => {
         return fulfillments.filter((r) => {
-            // Bộ lọc search
-            const q = searchQuery.toLowerCase().trim();
-            const matchSearch =
-                !q ||
-                r.orderCode.toLowerCase().includes(q) ||
-                r.customerName.toLowerCase().includes(q) ||
-                r.customerPhone.includes(q) ||
-                r.carrierInfo?.trackingNumber.toLowerCase().includes(q) ||
-                r.carrierInfo?.carrierName.toLowerCase().includes(q);
-
-            if (!matchSearch) return false;
-
-            // Bộ lọc carrier
-            if (carrierFilter !== 'ALL' && r.carrierInfo?.carrierName !== carrierFilter) {
-                return false;
-            }
-
-            // Theo Tab
+            // 1. Theo Tab
             if (activeTab === 'waiting_handover') {
-                return r.fulfillmentStatus === 'PACKED_WAITING_HANDOVER';
+                if (r.fulfillmentStatus !== 'PACKED_WAITING_HANDOVER') return false;
             } else {
-                return (
+                const isHandedOverStage =
                     r.fulfillmentStatus === 'HANDED_OVER_TO_CARRIER' ||
                     r.fulfillmentStatus === 'SHIPPING_IN_TRANSIT' ||
                     r.fulfillmentStatus === 'OUT_FOR_DELIVERY' ||
                     r.fulfillmentStatus === 'DELIVERED_SUCCESS' ||
-                    r.fulfillmentStatus === 'COMPLETED'
-                );
+                    r.fulfillmentStatus === 'COMPLETED';
+
+                if (!isHandedOverStage) return false;
+
+                // Bộ lọc trạng thái vận chuyển cụ thể trong tab Đã bàn giao
+                if (statusFilter !== 'ALL') {
+                    if (statusFilter === 'COMPLETED') {
+                        if (r.fulfillmentStatus !== 'COMPLETED' && r.fulfillmentStatus !== 'DELIVERED_SUCCESS') {
+                            return false;
+                        }
+                    } else if (statusFilter === 'HANDED_OVER_TO_CARRIER') {
+                        if (r.fulfillmentStatus !== 'HANDED_OVER_TO_CARRIER' && r.fulfillmentStatus !== 'SHIPPING_IN_TRANSIT') {
+                            return false;
+                        }
+                    } else if (r.fulfillmentStatus !== statusFilter) {
+                        return false;
+                    }
+                }
+
+                // Bộ lọc ĐVVC ngoài
+                if (carrierFilter !== 'ALL' && r.carrierInfo?.carrierName !== carrierFilter) {
+                    return false;
+                }
             }
+
+            // 2. Bộ lọc hình thức mua
+            if (typeFilter !== 'ALL' && r.orderType !== typeFilter) {
+                return false;
+            }
+
+            // 3. Bộ lọc tìm kiếm từ khóa
+            const q = debouncedSearch.toLowerCase().trim();
+            if (q) {
+                const matchOrderCode = r.orderCode?.toLowerCase().includes(q);
+                const matchCustomer = r.customerName?.toLowerCase().includes(q);
+                const matchCustomerPhone = r.customerPhone?.includes(q);
+                const matchRecipient = r.recipientName?.toLowerCase().includes(q);
+                const matchRecipientPhone = r.recipientPhone?.includes(q);
+                const matchAddress = r.address?.toLowerCase().includes(q);
+                const matchTracking = r.carrierInfo?.trackingNumber?.toLowerCase().includes(q);
+                const matchCarrierName = r.carrierInfo?.carrierName?.toLowerCase().includes(q);
+                const matchDriverName = r.carrierInfo?.driverName?.toLowerCase().includes(q);
+                const matchDriverPhone = r.carrierInfo?.driverPhone?.includes(q);
+                const matchSerial = r.assignedSerials?.some((s) => s.serialNumber?.toLowerCase().includes(q));
+
+                if (
+                    !matchOrderCode &&
+                    !matchCustomer &&
+                    !matchCustomerPhone &&
+                    !matchRecipient &&
+                    !matchRecipientPhone &&
+                    !matchAddress &&
+                    !matchTracking &&
+                    !matchCarrierName &&
+                    !matchDriverName &&
+                    !matchDriverPhone &&
+                    !matchSerial
+                ) {
+                    return false;
+                }
+            }
+
+            // 4. Bộ lọc khoảng ngày
+            if (fromDate) {
+                const recTime = new Date(r.createdAt).getTime();
+                const fromTime = new Date(`${fromDate}T00:00:00`).getTime();
+                if (!isNaN(recTime) && !isNaN(fromTime) && recTime < fromTime) {
+                    return false;
+                }
+            }
+
+            if (toDate) {
+                const recTime = new Date(r.createdAt).getTime();
+                const toTime = new Date(`${toDate}T23:59:59`).getTime();
+                if (!isNaN(recTime) && !isNaN(toTime) && recTime > toTime) {
+                    return false;
+                }
+            }
+
+            return true;
         });
-    }, [fulfillments, activeTab, searchQuery, carrierFilter]);
+    }, [fulfillments, activeTab, statusFilter, carrierFilter, typeFilter, debouncedSearch, fromDate, toDate]);
+
+    // Phân trang danh sách bàn giao
+    const totalElements = filteredRecords.length;
+    const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
+    const paginatedRecords = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredRecords.slice(start, start + pageSize);
+    }, [filteredRecords, currentPage, pageSize]);
 
     // Thống kê nhanh
     const stats = useMemo(() => {
@@ -214,7 +297,7 @@ export default function HandoverList() {
         setDriverName('Nguyễn Văn Tuấn (Tài xế giao vận)');
         setDriverPhone('0988.112.334');
         setLicensePlate('29C-881.92');
-        setHandoverStaff(record.warehouseStaffName || 'Lê Kho Vận (Thủ kho)');
+        setHandoverStaff(user?.fullName || record.warehouseStaffName || 'Lê Kho Vận (Thủ kho)');
         setShippingFee(45000);
         setIsHandoverModalOpen(true);
     };
@@ -360,7 +443,7 @@ export default function HandoverList() {
         },
         {
             key: 'customer',
-            header: 'Người nhận & Địa chỉ',
+            header: 'Thông tin giao hàng',
             render: (rec) => (
                 <div className="space-y-1 max-w-xs">
                     <div className="font-semibold text-gray-800 flex items-center gap-1.5 text-xs">
@@ -377,13 +460,13 @@ export default function HandoverList() {
         },
         {
             key: 'carrier',
-            header: 'ĐVVC ngoài & Mã vận đơn',
+            header: 'Thông tin vận chuyển',
             render: (rec) => {
                 if (!rec.carrierInfo) {
                     return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                             <Clock className="w-3 h-3" />
-                            <span>Chờ bàn giao ĐVVC ngoài</span>
+                            <span>Chờ bàn giao ĐVVC</span>
                         </span>
                     );
                 }
@@ -397,36 +480,12 @@ export default function HandoverList() {
                         <div className="flex items-center gap-1 font-mono text-[11px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200 w-fit">
                             <span>{rec.carrierInfo.trackingNumber}</span>
                         </div>
-                        {rec.carrierInfo.driverName && (
-                            <div className="text-[10px] text-gray-500">
-                                Shipper: {rec.carrierInfo.driverName} ({rec.carrierInfo.driverPhone})
-                            </div>
-                        )}
+
                     </div>
                 );
             },
         },
-        {
-            key: 'assignedSerials',
-            header: 'Serial trong kiện hàng',
-            render: (rec) => (
-                <div className="space-y-1">
-                    <span className="text-xs font-semibold text-gray-700">
-                        {rec.assignedSerials.length} sản phẩm
-                    </span>
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                        {rec.assignedSerials.map((s) => (
-                            <span
-                                key={s.serialNumber}
-                                className="font-mono text-[10px] bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded border border-slate-200"
-                            >
-                                {s.serialNumber}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            ),
-        },
+
         {
             key: 'status',
             header: 'Trạng thái quy trình',
@@ -440,9 +499,6 @@ export default function HandoverList() {
                             <Box className="w-3 h-3" />
                             <span>{conf.label}</span>
                         </span>
-                        <div className="text-[11px] text-gray-500 italic">
-                            {conf.description.slice(0, 45)}...
-                        </div>
                     </div>
                 );
             },
@@ -485,7 +541,7 @@ export default function HandoverList() {
                                 title="Theo dõi lộ trình từ đối tác vận chuyển ngoài"
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Lộ trình ĐVVC</span>
+                                <span>Chi tiết vận chuyển</span>
                             </button>
 
                             <button
@@ -506,21 +562,101 @@ export default function HandoverList() {
         },
     ];
 
-    // Filter fields
-    const filterFields: FilterField[] = [
-        {
-            id: 'carrier',
-            label: 'Đơn vị vận chuyển ngoài',
-            type: 'select',
-            options: [
-                { label: 'Tất cả ĐVVC', value: 'ALL' },
-                ...POPULAR_LOGISTICS_CARRIERS.map((c) => ({
+    // Filter fields configuration for AdminFilter
+    const filterFields: FilterField[] = useMemo(() => {
+        const fields: FilterField[] = [];
+
+        // Nếu ở tab Đã bàn giao, hiển thị thêm bộ lọc trạng thái vận chuyển và ĐVVC
+        if (activeTab === 'handed_over') {
+            fields.push({
+                id: 'status',
+                label: 'Trạng thái vận chuyển',
+                type: 'select',
+                placeholder: 'Tất cả trạng thái',
+                icon: Clock,
+                options: [
+                    { label: 'Đã bàn giao ĐVVC (HANDED_OVER_TO_CARRIER)', value: 'HANDED_OVER_TO_CARRIER' },
+                    { label: 'Đang phát hàng (OUT_FOR_DELIVERY)', value: 'OUT_FOR_DELIVERY' },
+                    { label: 'Giao thành công & Hoàn tất (COMPLETED)', value: 'COMPLETED' },
+                ],
+            });
+
+            fields.push({
+                id: 'carrier',
+                label: 'Đơn vị vận chuyển',
+                type: 'select',
+                placeholder: 'Tất cả ĐVVC',
+                icon: Truck,
+                options: POPULAR_LOGISTICS_CARRIERS.map((c) => ({
                     label: c.name,
                     value: c.name,
                 })),
+            });
+        }
+
+        fields.push({
+            id: 'type',
+            label: 'Hình thức mua',
+            type: 'select',
+            placeholder: 'Tất cả hình thức',
+            icon: Tag,
+            options: [
+                { label: 'Trực tuyến (ONLINE)', value: 'ONLINE' },
+                { label: 'Bán tại quầy (IN_STORE)', value: 'IN_STORE' },
             ],
-        },
-    ];
+        });
+
+        fields.push({
+            id: 'fromDate',
+            label: 'Từ ngày đặt',
+            type: 'date',
+            icon: Calendar,
+        });
+
+        fields.push({
+            id: 'toDate',
+            label: 'Đến ngày đặt',
+            type: 'date',
+            icon: Calendar,
+        });
+
+        return fields;
+    }, [activeTab]);
+
+    // Filter values passed to AdminFilter (chỉ truyền các giá trị đang kích hoạt thực tế)
+    const filterValues = useMemo(() => {
+        const vals: Record<string, any> = {};
+        if (activeTab === 'handed_over') {
+            if (statusFilter && statusFilter !== 'ALL') vals.status = statusFilter;
+            if (carrierFilter && carrierFilter !== 'ALL') vals.carrier = carrierFilter;
+        }
+        if (typeFilter && typeFilter !== 'ALL') vals.type = typeFilter;
+        if (fromDate) vals.fromDate = fromDate;
+        if (toDate) vals.toDate = toDate;
+        return vals;
+    }, [activeTab, statusFilter, carrierFilter, typeFilter, fromDate, toDate]);
+
+    // Xử lý thay đổi bộ lọc
+    const handleFilterChange = (newValues: Record<string, any>) => {
+        setCarrierFilter(newValues.carrier || 'ALL');
+        setStatusFilter(newValues.status || 'ALL');
+        setTypeFilter(newValues.type || 'ALL');
+        setFromDate(newValues.fromDate || '');
+        setToDate(newValues.toDate || '');
+        setCurrentPage(1);
+    };
+
+    // Đặt lại toàn bộ bộ lọc
+    const handleResetFilters = () => {
+        setSearchQuery('');
+        setDebouncedSearch('');
+        setCarrierFilter('ALL');
+        setStatusFilter('ALL');
+        setTypeFilter('ALL');
+        setFromDate('');
+        setToDate('');
+        setCurrentPage(1);
+    };
 
     return (
         <div className="space-y-6">
@@ -535,29 +671,16 @@ export default function HandoverList() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý đơn bàn giao (Handover to Carrier)
+                                Quản lý đơn bàn giao
                             </h1>
-                            <p className="text-sm text-gray-500">
-                                Giai đoạn 3 Bước 5: Bàn giao kiện hàng hoàn chỉnh cho ĐVVC là dịch vụ ngoài hệ thống (Viettel Post, GHTK, GHN...)
-                            </p>
+
                         </div>
                     </div>
                 </div>
 
                 {/* Header Actions */}
                 <div className="flex items-center gap-2.5 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border transition-all cursor-pointer ${
-                            showWorkflowGuide
-                                ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                        }`}
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Sơ đồ nghiệp vụ 4 giai đoạn</span>
-                    </button>
+
 
                     <button
                         type="button"
@@ -568,80 +691,24 @@ export default function HandoverList() {
                         <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-purple-600' : ''}`} />
                         <span className="hidden sm:inline">Làm mới</span>
                     </button>
-
-                    <button
-                        type="button"
-                        onClick={() => navigate('/admin/shipping/deliveries')}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-all cursor-pointer shadow-sm shadow-purple-600/30"
-                    >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Quản lý đơn giao hàng (Giai đoạn 4)</span>
-                    </button>
                 </div>
             </div>
 
             {/* ======================================================== */}
-            {/* WORKFLOW GUIDE BANNER (LƯU Ý: ĐVVC NGOÀI HỆ THỐNG)        */}
-            {/* ======================================================== */}
-            {showWorkflowGuide && (
-                <div className="bg-gradient-to-br from-slate-900 to-purple-950 text-white p-6 rounded-2xl shadow-md border border-slate-800 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                        <div className="flex items-center gap-2.5">
-                            <Truck className="w-5 h-5 text-amber-400" />
-                            <h2 className="text-base font-bold text-white tracking-wide">
-                                BÀN GIAO & VẬN CHUYỂN NGOÀI HỆ THỐNG (THIRD-PARTY LOGISTICS - 3PL)
-                            </h2>
-                        </div>
-                        <span className="text-xs text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full font-mono border border-amber-400/30">
-                            ĐVVC là dịch vụ ngoài hệ thống
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
-                            <span className="font-mono font-bold text-purple-300 bg-purple-400/20 px-2 py-0.5 rounded text-[11px]">
-                                GĐ 3 - BƯỚC 5 (KHO)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Bàn giao đơn hàng cho ĐVVC</h3>
-                            <p className="text-slate-300 leading-relaxed">
-                                Nhân viên kho bàn giao kiện hàng đã niêm phong cùng chứng từ giao hàng. Nhập mã vận đơn do ĐVVC ngoài cấp và thông tin tài xế tiếp nhận.
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
-                            <span className="font-mono font-bold text-blue-300 bg-blue-400/20 px-2 py-0.5 rounded text-[11px]">
-                                GĐ 4 - BƯỚC 1 (ĐVVC NGOÀI)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Tiếp nhận & Vận chuyển</h3>
-                            <p className="text-slate-300 leading-relaxed">
-                                Đơn vị vận chuyển ngoài nhận kiện hàng và chứng từ thông qua thông điệp tiếp nhận, tiến hành lộ trình phát hàng qua mạng lưới bưu cục.
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
-                            <span className="font-mono font-bold text-emerald-300 bg-emerald-400/20 px-2 py-0.5 rounded text-[11px]">
-                                GĐ 4 - BƯỚC 2 & 3 (GIAO NHẬN)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Bàn giao & Khách nhận hàng</h3>
-                            <p className="text-slate-300 leading-relaxed">
-                                Shipper ĐVVC giao hàng tới địa chỉ. Khách hàng kiểm tra ngoại quan kiện hàng, xác nhận nhận hàng thành công và kết thúc quy trình bán hàng.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ======================================================== */}
-            {/* STAT CARDS                                               */}
+            {/* STAT CARDS (CLICK TO FILTER)                             */}
             {/* ======================================================== */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
-                    onClick={() => setActiveTab('waiting_handover')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
-                        activeTab === 'waiting_handover'
-                            ? 'bg-purple-50/70 border-purple-300 ring-2 ring-purple-500/20'
-                            : 'bg-white border-gray-100 hover:border-gray-200'
-                    }`}
+                    onClick={() => {
+                        setActiveTab('waiting_handover');
+                        setStatusFilter('ALL');
+                        setCurrentPage(1);
+                    }}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'waiting_handover'
+                        ? 'bg-purple-50/70 border-purple-300 ring-2 ring-purple-500/20'
+                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
+                    title="Bấm để lọc đơn chờ bàn giao cho ĐVVC"
                 >
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Chờ bàn giao ĐVVC</p>
@@ -654,12 +721,20 @@ export default function HandoverList() {
                 </div>
 
                 <div
-                    onClick={() => setActiveTab('handed_over')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
-                        activeTab === 'handed_over'
-                            ? 'bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-500/20'
-                            : 'bg-white border-gray-100 hover:border-gray-200'
-                    }`}
+                    onClick={() => {
+                        setActiveTab('handed_over');
+                        setStatusFilter(
+                            activeTab === 'handed_over' && statusFilter === 'HANDED_OVER_TO_CARRIER'
+                                ? 'ALL'
+                                : 'HANDED_OVER_TO_CARRIER'
+                        );
+                        setCurrentPage(1);
+                    }}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && (statusFilter === 'HANDED_OVER_TO_CARRIER' || statusFilter === 'ALL')
+                        ? 'bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-500/20'
+                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
+                    title="Bấm để lọc đơn đã bàn giao cho ĐVVC"
                 >
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đã bàn giao ĐVVC ngoài</p>
@@ -671,7 +746,22 @@ export default function HandoverList() {
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+                <div
+                    onClick={() => {
+                        setActiveTab('handed_over');
+                        setStatusFilter(
+                            activeTab === 'handed_over' && statusFilter === 'OUT_FOR_DELIVERY'
+                                ? 'ALL'
+                                : 'OUT_FOR_DELIVERY'
+                        );
+                        setCurrentPage(1);
+                    }}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && statusFilter === 'OUT_FOR_DELIVERY'
+                        ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-500/20'
+                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
+                    title="Bấm để lọc đơn đang phát hàng tới khách"
+                >
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang phát hàng tới khách</p>
                         <p className="text-2xl font-bold text-amber-600">{stats.outForDelivery}</p>
@@ -682,7 +772,22 @@ export default function HandoverList() {
                     </div>
                 </div>
 
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+                <div
+                    onClick={() => {
+                        setActiveTab('handed_over');
+                        setStatusFilter(
+                            activeTab === 'handed_over' && statusFilter === 'COMPLETED'
+                                ? 'ALL'
+                                : 'COMPLETED'
+                        );
+                        setCurrentPage(1);
+                    }}
+                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && statusFilter === 'COMPLETED'
+                        ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-500/20'
+                        : 'bg-white border-gray-100 hover:border-gray-200'
+                        }`}
+                    title="Bấm để lọc đơn đã giao thành công & hoàn tất"
+                >
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Giao thành công & Hoàn tất</p>
                         <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
@@ -700,15 +805,18 @@ export default function HandoverList() {
             <div className="flex border-b border-gray-200 gap-4">
                 <button
                     type="button"
-                    onClick={() => setActiveTab('waiting_handover')}
-                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-                        activeTab === 'waiting_handover'
-                            ? 'border-purple-600 text-purple-700'
-                            : 'border-transparent text-gray-500 hover:text-gray-800'
-                    }`}
+                    onClick={() => {
+                        setActiveTab('waiting_handover');
+                        setStatusFilter('ALL');
+                        setCurrentPage(1);
+                    }}
+                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'waiting_handover'
+                        ? 'border-purple-600 text-purple-700'
+                        : 'border-transparent text-gray-500 hover:text-gray-800'
+                        }`}
                 >
                     <Package className="w-4 h-4" />
-                    <span>Đơn chờ bàn giao cho ĐVVC</span>
+                    <span>Đơn chờ bàn giao</span>
                     <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-bold">
                         {stats.waitingHandover}
                     </span>
@@ -716,15 +824,18 @@ export default function HandoverList() {
 
                 <button
                     type="button"
-                    onClick={() => setActiveTab('handed_over')}
-                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
-                        activeTab === 'handed_over'
-                            ? 'border-purple-600 text-purple-700'
-                            : 'border-transparent text-gray-500 hover:text-gray-800'
-                    }`}
+                    onClick={() => {
+                        setActiveTab('handed_over');
+                        setStatusFilter('ALL');
+                        setCurrentPage(1);
+                    }}
+                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'handed_over'
+                        ? 'border-purple-600 text-purple-700'
+                        : 'border-transparent text-gray-500 hover:text-gray-800'
+                        }`}
                 >
                     <Truck className="w-4 h-4" />
-                    <span>Đã bàn giao & Theo dõi lộ trình ĐVVC ngoài</span>
+                    <span>Đã bàn giao</span>
                     <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-bold">
                         {stats.handedOver + stats.outForDelivery + stats.completed}
                     </span>
@@ -737,27 +848,41 @@ export default function HandoverList() {
             <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 space-y-4">
                 <AdminFilter
                     searchQuery={searchQuery}
-                    onSearchChange={(q) => setSearchQuery(q)}
-                    onSearch={(q) => setSearchQuery(q)}
-                    searchPlaceholder="Tìm kiếm theo mã đơn, mã vận đơn, khách hàng, số điện thoại..."
-                    fields={filterFields}
-                    values={{ carrier: carrierFilter }}
-                    onFilterChange={(vals) => setCarrierFilter(vals.carrier || 'ALL')}
-                    onReset={() => {
-                        setSearchQuery('');
-                        setCarrierFilter('ALL');
+                    onSearchChange={(q) => {
+                        setSearchQuery(q);
+                        setCurrentPage(1);
                     }}
+                    onSearch={(q) => {
+                        setSearchQuery(q);
+                        setDebouncedSearch(q);
+                        setCurrentPage(1);
+                    }}
+                    searchPlaceholder="Tìm kiếm theo mã đơn, mã vận đơn, khách hàng, số điện thoại, tài xế..."
+                    fields={filterFields}
+                    values={filterValues}
+                    onFilterChange={handleFilterChange}
+                    onReset={handleResetFilters}
                 />
 
                 <AdminTable
                     columns={columns}
-                    data={filteredRecords}
+                    data={paginatedRecords}
                     loading={isLoading}
                     rowKey="orderId"
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalElements}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 15, 20, 50]}
+                    onPageChange={(page) => setCurrentPage(page)}
+                    onPageSizeChange={(newSize) => {
+                        setPageSize(newSize);
+                        setCurrentPage(1);
+                    }}
                     emptyText={
                         activeTab === 'waiting_handover'
-                            ? 'Hiện không có kiện hàng nào đang chờ bàn giao cho ĐVVC'
-                            : 'Chưa có đơn hàng nào đã bàn giao'
+                            ? 'Hiện không có kiện hàng nào đang chờ bàn giao cho ĐVVC phù hợp với bộ lọc'
+                            : 'Chưa có đơn hàng nào đã bàn giao phù hợp với bộ lọc'
                     }
                 />
             </div>
@@ -765,166 +890,98 @@ export default function HandoverList() {
             {/* ======================================================== */}
             {/* MODAL BÀN GIAO ĐƠN HÀNG CHO ĐVVC NGOÀI HỆ THỐNG          */}
             {/* ======================================================== */}
-            {isHandoverModalOpen && targetRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
-                        <AdminModalHeader
-                            title={`Bàn giao đơn hàng cho ĐVVC: ${targetRecord.orderCode}`}
-                            subtitle="Đơn vị vận chuyển là đối tác dịch vụ bên ngoài hệ thống"
-                            icon={Truck}
-                            onClose={() => setIsHandoverModalOpen(false)}
-                        />
-
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
-                            {/* Chọn ĐVVC ngoài hệ thống */}
-                            <div>
-                                <AdminLabel className="!font-bold">
-                                    1. Chọn Đơn vị vận chuyển đối tác (Ngoài hệ thống):
-                                </AdminLabel>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {POPULAR_LOGISTICS_CARRIERS.map((c) => (
-                                        <div
-                                            key={c.code}
-                                            onClick={() => handleCarrierChange(c.name)}
-                                            className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
-                                                selectedCarrier === c.name
-                                                    ? 'bg-purple-50 border-purple-500 ring-2 ring-purple-500/20'
-                                                    : 'bg-white border-gray-200 hover:border-gray-300'
-                                            }`}
-                                        >
-                                            <div>
-                                                <div className="font-bold text-gray-900">{c.name}</div>
-                                                <div className="text-[10px] text-gray-500">
-                                                    Hotline: {c.hotline} • Dự kiến: {c.estimatedHours}
-                                                </div>
-                                            </div>
-                                            {selectedCarrier === c.name && (
-                                                <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Mã vận đơn (Tracking Code) */}
-                            <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-200 space-y-2">
-                                <AdminLabel required className="!text-purple-950 !font-bold">
-                                    2. Mã vận đơn (Tracking Number do ĐVVC ngoài cấp)
-                                </AdminLabel>
-                                <AdminInput
-                                    type="text"
-                                    value={trackingNumber}
-                                    onChange={(e) => setTrackingNumber(e.target.value)}
-                                    placeholder="Nhập mã vận đơn (VD: VTP-8849201948VN, GHTK-990142851)..."
-                                    className="font-mono font-bold"
-                                />
-                                <p className="text-[11px] text-gray-500">
-                                    Mã này dùng để khách hàng và nhân viên tra cứu lộ trình vận chuyển từ đối tác giao vận bên ngoài.
-                                </p>
-                            </div>
-
-                            {/* Thông tin tài xế ĐVVC tiếp nhận */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <AdminLabel>
-                                        Tên tài xế / Shipper tiếp nhận:
-                                    </AdminLabel>
-                                    <AdminInput
-                                        type="text"
-                                        value={driverName}
-                                        onChange={(e) => setDriverName(e.target.value)}
-                                    />
-                                </div>
-
-                                <div>
-                                    <AdminLabel>
-                                        Số điện thoại tài xế:
-                                    </AdminLabel>
-                                    <AdminInput
-                                        type="text"
-                                        value={driverPhone}
-                                        onChange={(e) => setDriverPhone(e.target.value)}
-                                        className="font-mono"
-                                    />
-                                </div>
-
-                                <div>
-                                    <AdminLabel>
-                                        Biển số xe giao nhận (nếu có):
-                                    </AdminLabel>
-                                    <AdminInput
-                                        type="text"
-                                        value={licensePlate}
-                                        onChange={(e) => setLicensePlate(e.target.value)}
-                                        className="font-mono"
-                                    />
-                                </div>
-
-                                <div>
-                                    <AdminLabel>
-                                        Cước phí vận chuyển (VND):
-                                    </AdminLabel>
-                                    <AdminInput
-                                        type="number"
-                                        value={shippingFee}
-                                        onChange={(e) => setShippingFee(Number(e.target.value))}
-                                        className="font-bold"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Thông tin thủ kho bàn giao */}
-                            <div>
-                                <AdminLabel>
-                                    Nhân viên kho thực hiện bàn giao:
-                                </AdminLabel>
-                                <AdminInput
-                                    type="text"
-                                    value={handoverStaff}
-                                    onChange={(e) => setHandoverStaff(e.target.value)}
-                                    className="font-semibold"
-                                />
-                            </div>
-
-                            <div>
-                                <AdminLabel>
-                                    Ghi chú biên bản bàn giao:
-                                </AdminLabel>
-                                <AdminTextarea
-                                    rows={2}
-                                    value={handoverNotes}
-                                    onChange={(e) => setHandoverNotes(e.target.value)}
-                                />
-                            </div>
+            <AdminModal
+                isOpen={isHandoverModalOpen && !!targetRecord}
+                onClose={() => setIsHandoverModalOpen(false)}
+                title={`Bàn giao đơn hàng cho ĐVVC: ${targetRecord?.orderCode || ''}`}
+                subtitle="Đơn vị vận chuyển là đối tác dịch vụ bên ngoài hệ thống"
+                icon={Truck}
+                size="xl"
+                footer={
+                    <div className="flex items-center justify-end gap-2 w-full">
+                        <AdminButton
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setIsHandoverModalOpen(false)}
+                        >
+                            Hủy
+                        </AdminButton>
+                        <AdminButton
+                            type="button"
+                            variant="primary"
+                            onClick={handleConfirmHandover}
+                            isLoading={isSubmitting}
+                            className="!bg-purple-600 hover:!bg-purple-700 shadow-purple-600/30"
+                        >
+                            Xác nhận bàn giao
+                        </AdminButton>
+                    </div>
+                }
+            >
+                {targetRecord && (
+                    <div className="space-y-4 text-xs">
+                        {/* Chọn ĐVVC ngoài hệ thống - Thẻ select */}
+                        <div>
+                            <AdminSelect
+                                label="Chọn Đơn vị vận chuyển:"
+                                required
+                                value={selectedCarrier}
+                                onChange={(e) => handleCarrierChange(e.target.value)}
+                                className="font-semibold"
+                                helperText={(() => {
+                                    const c = POPULAR_LOGISTICS_CARRIERS.find((item) => item.name === selectedCarrier);
+                                    return c ? `Hotline đối tác: ${c.hotline} • Thời gian toàn trình ước tính: ${c.estimatedHours}` : undefined;
+                                })()}
+                            >
+                                {POPULAR_LOGISTICS_CARRIERS.map((c) => (
+                                    <option key={c.code} value={c.name}>
+                                        {c.name} ({c.code}) - Hotline: {c.hotline}
+                                    </option>
+                                ))}
+                            </AdminSelect>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
-                            <span className="text-xs text-gray-500">
-                                Đơn sẽ chuyển sang trạng thái "Đã bàn giao cho ĐVVC" (GĐ 3 Bước 5).
-                            </span>
-                            <div className="flex gap-2">
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => setIsHandoverModalOpen(false)}
-                                >
-                                    Hủy
-                                </AdminButton>
-                                <AdminButton
-                                    type="button"
-                                    variant="primary"
-                                    onClick={handleConfirmHandover}
-                                    isLoading={isSubmitting}
-                                    icon={Truck}
-                                    className="!bg-purple-600 hover:!bg-purple-700 shadow-purple-600/30"
-                                >
-                                    Xác nhận bàn giao & In biên bản
-                                </AdminButton>
-                            </div>
+                        {/* Mã vận đơn (Tracking Code) */}
+                        <div>
+                            <AdminLabel required className="!text-purple-950 !font-bold">
+                                Mã vận đơn:
+                            </AdminLabel>
+                            <AdminInput
+                                type="text"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                placeholder="Nhập mã vận đơn (VD: VTP-8849201948VN, GHTK-990142851)..."
+                                className="font-mono font-bold"
+                            />
+                        </div>
+
+                        {/* Thông tin thủ kho bàn giao */}
+                        <div>
+                            <AdminLabel>
+                                Nhân viên kho thực hiện bàn giao:
+                            </AdminLabel>
+                            <AdminInput
+                                type="text"
+                                value={handoverStaff}
+                                onChange={(e) => setHandoverStaff(e.target.value)}
+                                className="font-semibold bg-gray-50 text-gray-700"
+                                helperText="Tự động cập nhật theo tài khoản nhân viên đang đăng nhập"
+                            />
+                        </div>
+
+                        <div>
+                            <AdminLabel>
+                                Ghi chú biên bản bàn giao:
+                            </AdminLabel>
+                            <AdminTextarea
+                                rows={2}
+                                value={handoverNotes}
+                                onChange={(e) => setHandoverNotes(e.target.value)}
+                            />
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </AdminModal>
 
             {/* ======================================================== */}
             {/* MODAL IN BIÊN BẢN BÀN GIAO HÀNG HÓA CHO ĐVVC             */}
@@ -1073,7 +1130,7 @@ export default function HandoverList() {
                                 <div className="flex items-center justify-between border-b pb-2">
                                     <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
                                         <Clock className="w-4 h-4 text-purple-600" />
-                                        Tiến trình lộ trình giao hàng (Cập nhật từ ĐVVC ngoài)
+                                        Tiến trình giao hàng
                                     </h3>
                                     <AdminButton
                                         type="button"
@@ -1122,8 +1179,7 @@ export default function HandoverList() {
                                     onClick={() => handleConfirmCustomerDelivery(trackingRecord)}
                                     className="!bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-1.5"
                                 >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    <span>Khách đã nhận hàng & Hoàn tất (SOLD)</span>
+                                    <span>Hoàn tất đơn hàng</span>
                                 </AdminButton>
                             )}
                             <AdminButton

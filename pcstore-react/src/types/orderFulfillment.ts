@@ -156,8 +156,8 @@ export interface FulfillmentStatusConfig {
 export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentStatusConfig> = {
   PENDING_REVIEW: {
     stage: 2,
-    stageName: 'GĐ 2: Thẩm định đơn hàng',
-    label: 'Chờ thẩm định tồn kho',
+    stageName: 'Kiểm tra đơn hàng',
+    label: 'Chờ kiểm tra tồn kho',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-500/10',
     textColor: 'text-amber-700',
     description: 'Đơn mới khởi tạo từ khách hàng, nhân viên bán hàng cần kiểm tra tồn kho khả dụng để quyết định xử lý.',
@@ -165,7 +165,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   OUT_OF_STOCK_CANCELLED: {
     stage: 2,
-    stageName: 'GĐ 2: Hết hàng - Hủy đơn',
+    stageName: 'Hết hàng - Hủy đơn',
     label: 'Hết hàng - Đã hủy đơn',
     badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 ring-rose-500/10',
     textColor: 'text-rose-700',
@@ -174,7 +174,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   READY_TO_PACK: {
     stage: 2,
-    stageName: 'GĐ 2: Đã thẩm định',
+    stageName: 'Đã xác nhận',
     label: 'Chờ kho đóng gói',
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/10',
     textColor: 'text-blue-700',
@@ -183,16 +183,16 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   PACKING_IN_PROGRESS: {
     stage: 3,
-    stageName: 'GĐ 3: Soạn hàng FIFO',
-    label: 'Đang soạn hàng & Quét Serial',
+    stageName: 'Chuẩn bị hàng',
+    label: 'Đang chuẩn bị hàng',
     badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 ring-indigo-500/10',
     textColor: 'text-indigo-700',
-    description: 'Nhân viên kho đang lấy hàng theo nguyên tắc FIFO (nhập trước xuất trước) và quét mã Serial định danh.',
+    description: 'Nhân viên kho đang lấy hàng và quét mã Serial định danh.',
     responsibleRole: 'Nhân viên kho',
   },
   PACKED_WAITING_HANDOVER: {
     stage: 3,
-    stageName: 'GĐ 3: Đóng gói hoàn tất',
+    stageName: 'Đóng gói hoàn tất',
     label: 'Chờ bàn giao ĐVVC',
     badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/10',
     textColor: 'text-purple-700',
@@ -201,7 +201,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   HANDED_OVER_TO_CARRIER: {
     stage: 3,
-    stageName: 'GĐ 3->4: Bàn giao ĐVVC',
+    stageName: 'Bàn giao ĐVVC',
     label: 'Đã bàn giao cho ĐVVC',
     badgeClass: 'bg-cyan-50 text-cyan-700 border-cyan-200 ring-cyan-500/10',
     textColor: 'text-cyan-700',
@@ -210,7 +210,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   SHIPPING_IN_TRANSIT: {
     stage: 4,
-    stageName: 'GĐ 4: Vận chuyển',
+    stageName: 'Đang Vận chuyển',
     label: 'Đang trung chuyển bưu cục',
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 ring-sky-500/10',
     textColor: 'text-sky-700',
@@ -219,7 +219,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   OUT_FOR_DELIVERY: {
     stage: 4,
-    stageName: 'GĐ 4: Đang phát hàng',
+    stageName: 'Đang phát hàng',
     label: 'Shipper đang giao tới khách',
     badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-500/10',
     textColor: 'text-amber-700',
@@ -228,7 +228,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   DELIVERED_SUCCESS: {
     stage: 4,
-    stageName: 'GĐ 4: Khách nhận hàng',
+    stageName: 'Khách nhận hàng',
     label: 'Khách hàng đã nhận hàng',
     badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/10',
     textColor: 'text-emerald-700',
@@ -237,7 +237,7 @@ export const FULFILLMENT_STATUS_MAP: Record<OrderFulfillmentStatus, FulfillmentS
   },
   COMPLETED: {
     stage: 4,
-    stageName: 'GĐ 4: Hoàn tất quy trình',
+    stageName: 'Hoàn tất quy trình',
     label: 'Hoàn tất quy trình bán hàng',
     badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 ring-emerald-600/20',
     textColor: 'text-emerald-800',

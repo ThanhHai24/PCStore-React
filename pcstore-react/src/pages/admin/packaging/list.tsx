@@ -675,7 +675,7 @@ export default function PackagingList() {
             const count = activeSerials.filter((s) => s.productId === item.productId).length;
             if (count < item.quantity) {
                 toast.error(
-                    `Sản phẩm "${item.productName}" cần ${item.quantity} serial, hiện mới quét ${count}. Vui lòng quét đủ serial theo nguyên tắc FIFO!`
+                    `Sản phẩm "${item.productName}" cần ${item.quantity} serial, hiện mới quét ${count}. Vui lòng quét đủ serial!`
                 );
                 return;
             }
@@ -775,7 +775,7 @@ export default function PackagingList() {
                                 <span
                                     key={s.serialNumber}
                                     className="font-mono text-[10px] bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded border border-slate-200"
-                                    title={`Ngày nhập: ${s.receiptDate || 'FIFO'} | Phiếu: ${s.goodsReceiptCode || 'GR'}`}
+                                    title={`Ngày nhập: ${s.receiptDate} | Phiếu: ${s.goodsReceiptCode || 'GR'}`}
                                 >
                                     {s.serialNumber}
                                 </span>
@@ -924,7 +924,7 @@ export default function PackagingList() {
                         ? 'border-indigo-400 ring-2 ring-indigo-400/20 bg-indigo-50/20'
                         : 'border-gray-100 hover:border-indigo-200'
                         } flex items-center justify-between`}
-                    title="Bấm để lọc đơn đang soạn hàng FIFO"
+                    title="Bấm để lọc đơn đang soạn hàng"
                 >
                     <div className="space-y-1">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang xử lý</p>
@@ -1297,7 +1297,7 @@ export default function PackagingList() {
                                         Hệ thống bán lẻ & Phân phối máy tính cao cấp
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                        Địa chỉ: 285 CMT8, Phường 12, Quận 10, TP. Hồ Chí Minh • Hotline: 1900 8888
+                                        Địa chỉ: ABC • Hotline: 1900 8888
                                     </p>
                                 </div>
                                 <div className="text-right">
@@ -1343,8 +1343,8 @@ export default function PackagingList() {
                                         <tr>
                                             <th className="p-2 text-left border-b">#</th>
                                             <th className="p-2 text-left border-b">Tên sản phẩm</th>
-                                            <th className="p-2 text-left border-b">Mã Serial định danh</th>
-                                            <th className="p-2 text-left border-b">Ngày nhập (FIFO)</th>
+                                            <th className="p-2 text-left border-b">Mã Serial</th>
+                                            <th className="p-2 text-left border-b">Ngày nhập</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 font-mono text-[11px]">

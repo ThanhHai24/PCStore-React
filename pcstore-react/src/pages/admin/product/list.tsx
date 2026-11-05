@@ -156,7 +156,7 @@ function ProductMediaTab({
     return (
         <div className="space-y-6">
             {/*ẢNH ĐẠI DIỆN*/}
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+            <div className="rounded-md border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
@@ -241,7 +241,7 @@ function ProductMediaTab({
             </div>
 
             {/*ẢNH SẢN PHẨM */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+            <div className="rounded-md border border-gray-200 bg-white p-5 shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
@@ -751,7 +751,7 @@ export default function ProductList() {
             setAddSelectedFile(file);
             setAddForm((prev) => ({ ...prev, image: objectUrl }));
         }
-        showToast(`Đã chọn ảnh đại diện "${file.name}". Bấm "Lưu" để tải ảnh lên ImgBB.`, 'info');
+        showToast(`Đã chọn ảnh đại diện "${file.name}".`, 'info');
     };
 
     // Gallery Item Handlers (Thêm nhiều ảnh tối đa 10, xóa ảnh)
@@ -788,7 +788,7 @@ export default function ProductList() {
             } else {
                 setAddGallery((prev) => [...prev, ...newItems]);
             }
-            showToast(`Đã thêm ${newItems.length} ảnh sản phẩm xem trước. Bấm "Lưu" để tải lên hệ thống.`, 'info');
+            showToast(`Đã thêm ${newItems.length} ảnh sản phẩm xem trước.`, 'info');
         }
     };
 
@@ -847,7 +847,7 @@ export default function ProductList() {
                 finalAvatarUrl = await uploadImage(editSelectedFile);
                 setEditSelectedFile(null);
             } catch (err: any) {
-                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
+                showToast(`Tải ảnh đại diện lên thất bại: ${err.message}`, 'error');
                 setIsUploadingProductImage(false);
                 setIsSubmitting(false);
                 return;
@@ -882,7 +882,7 @@ export default function ProductList() {
                 }
             }
         } catch (err: any) {
-            showToast(`Tải ảnh sản phẩm lên ImgBB thất bại: ${err.message}`, 'error');
+            showToast(`Tải ảnh sản phẩm lên thất bại: ${err.message}`, 'error');
             setIsUploadingProductImage(false);
             setIsSubmitting(false);
             return;
@@ -945,7 +945,7 @@ export default function ProductList() {
                 finalAvatarUrl = await uploadImage(addSelectedFile);
                 setAddSelectedFile(null);
             } catch (err: any) {
-                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
+                showToast(`Tải ảnh đại diện lên thất bại: ${err.message}`, 'error');
                 setIsUploadingProductImage(false);
                 setIsSubmitting(false);
                 return;
@@ -980,7 +980,7 @@ export default function ProductList() {
                 }
             }
         } catch (err: any) {
-            showToast(`Tải ảnh sản phẩm lên ImgBB thất bại: ${err.message}`, 'error');
+            showToast(`Tải ảnh sản phẩm lên thất bại: ${err.message}`, 'error');
             setIsUploadingProductImage(false);
             setIsSubmitting(false);
             return;
@@ -1430,9 +1430,9 @@ export default function ProductList() {
                         onCancel={() => setIsAddModalOpen(false)}
                         onSubmit={handleAddSubmit}
                         isSubmitting={isSubmitting || isUploadingProductImage}
-                        submittingText={isUploadingProductImage ? "Đang tải ảnh lên ImgBB..." : "Đang lưu sản phẩm..."}
-                        submitText="Tạo sản phẩm"
-                        submitIcon={Plus}
+                        submittingText={isUploadingProductImage ? "Đang tải ảnh lên..." : "Đang lưu sản phẩm..."}
+                        submitText="Lưu"
+
                     />
                 }
             >
@@ -1549,9 +1549,9 @@ export default function ProductList() {
                                     value={addForm.status}
                                     onChange={(e) => setAddForm({ ...addForm, status: e.target.value as BackendProductStatus })}
                                 >
-                                    <option value="ACTIVE">✅ Đang bán (Active)</option>
-                                    <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
-                                    <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
+                                    <option value="ACTIVE">Đang bán</option>
+                                    <option value="OUT_OF_STOCK">Hết hàng</option>
+                                    <option value="INACTIVE">Đang ẩn</option>
                                 </AdminSelect>
                             </div>
 
@@ -1617,7 +1617,7 @@ export default function ProductList() {
                             onCancel={() => setIsEditModalOpen(false)}
                             onSubmit={handleSaveEdit}
                             isSubmitting={isSubmitting || isUploadingProductImage}
-                            submittingText={isUploadingProductImage ? "Đang tải ảnh lên ImgBB..." : "Đang lưu thay đổi..."}
+                            submittingText={isUploadingProductImage ? "Đang tải ảnh lên..." : "Đang lưu thay đổi..."}
                             submitText="Lưu thay đổi"
                             submitIcon={Check}
                         />

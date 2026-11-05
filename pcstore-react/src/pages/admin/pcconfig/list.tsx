@@ -19,6 +19,8 @@ import {
     Layers,
     AlertCircle,
     PcCase,
+    Package,
+    DollarSign,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
@@ -129,6 +131,46 @@ export const isPCCategory = (catName?: string) => {
     );
 };
 
+/**
+ * Trích xuất danh sách ảnh từ chuỗi JSON specification và đối chiếu catalog linh kiện
+ */
+export const getComponentImagesWithCatalog = (
+    specJson: string,
+    catalog: any[] = []
+): Array<{ key: string; name: string; image: string }> => {
+    try {
+        if (!specJson || !specJson.trim()) return [];
+        const parsed = JSON.parse(specJson);
+        if (!Array.isArray(parsed)) return [];
+        const list: Array<{ key: string; name: string; image: string }> = [];
+        const seenImages = new Set<string>();
+
+        for (const item of parsed) {
+            let img = item.productImage || item.imageUrl || item.image;
+            if (!img && item.productId && catalog && catalog.length > 0) {
+                const found = catalog.find((c: any) => String(c.id ?? c.numericId) === String(item.productId));
+                if (found) {
+                    img = found.image || found.imageUrl;
+                }
+            }
+            if (img && typeof img === 'string') {
+                const clean = img.split(';')[0].trim();
+                if (clean && !seenImages.has(clean) && !clean.startsWith('blob:')) {
+                    seenImages.add(clean);
+                    list.push({
+                        key: item.key || 'Linh kiện',
+                        name: item.name || '',
+                        image: clean,
+                    });
+                }
+            }
+        }
+        return list;
+    } catch {
+        return [];
+    }
+};
+
 // ============================================================================
 // IMAGE GALLERY COMPONENT
 // ============================================================================
@@ -140,9 +182,10 @@ interface GalleryManagerProps {
     onSelectAvatarFile: (file: File) => void;
     onSetAvatarUrl: (url: string) => void;
     onClearAvatar: () => void;
-    onAddGalleryFiles: (files: FileList) => void;
+    onAddGalleryFiles: (files: FileList | File[]) => void;
     onAddGalleryUrl: (url: string) => void;
     onRemoveGalleryItem: (id: string) => void;
+    componentImages?: Array<{ key: string; name: string; image: string }>;
 }
 
 const GalleryManager: React.FC<GalleryManagerProps> = ({
@@ -156,67 +199,95 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
     onAddGalleryFiles,
     onAddGalleryUrl,
     onRemoveGalleryItem,
+    componentImages = [],
 }) => {
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const galleryInputRef = useRef<HTMLInputElement>(null);
     const [customAvatarUrl, setCustomAvatarUrl] = useState('');
     const [customGalleryUrl, setCustomGalleryUrl] = useState('');
 
+    const handleAvatarFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            onSelectAvatarFile(file);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    const handleGalleryFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            onAddGalleryFiles(e.target.files);
+        }
+        if (e.target) e.target.value = '';
+    };
+
+    const handleCustomAvatarUrlSubmit = () => {
+        if (customAvatarUrl.trim()) {
+            onSetAvatarUrl(customAvatarUrl.trim());
+            setCustomAvatarUrl('');
+        }
+    };
+
+    const handleCustomGalleryUrlSubmit = () => {
+        if (customGalleryUrl.trim()) {
+            onAddGalleryUrl(customGalleryUrl.trim());
+            setCustomGalleryUrl('');
+        }
+    };
+
+    const isGalleryFull = gallery.length >= 10;
+
     return (
         <div className="space-y-6">
             {/* AVATAR SECTION */}
-            <div className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
+            <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                     <div>
-                        <h4 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-blue-600" />
-                            Ảnh đại diện cấu hình PC <span className="text-rose-500">*</span>
+                            Ảnh đại diện cấu hình PC
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                                1 Ảnh chính
+                            </span>
                         </h4>
-                        <p className="text-xs text-gray-500">
-                            Ảnh chính hiển thị trong danh sách và thẻ sản phẩm cấu hình
-                        </p>
                     </div>
                     {isUploading && (
-                        <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium animate-pulse">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 animate-pulse">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tải ảnh...
                         </span>
                     )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-5">
-                    <div className="relative group w-32 h-32 rounded-2xl bg-white border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                    <div className="relative group w-36 h-36 rounded-2xl bg-white border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs p-2">
                         <img
                             src={avatarUrl || DEFAULT_PRODUCT_IMAGE}
                             alt="Avatar Preview"
-                            className="w-full h-full object-contain p-1.5"
+                            className="w-full h-full object-contain"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                             }}
                         />
                         {selectedAvatarFile && (
-                            <span className="absolute bottom-1 right-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                            <span className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
                                 Tệp mới
                             </span>
                         )}
                     </div>
 
-                    <div className="flex-1 w-full space-y-3">
+                    <div className="flex-1 w-full space-y-3.5">
                         <div className="flex flex-wrap items-center gap-2">
                             <input
                                 ref={avatarInputRef}
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                        onSelectAvatarFile(e.target.files[0]);
-                                    }
-                                }}
+                                onChange={handleAvatarFileInput}
                             />
                             <button
                                 type="button"
                                 onClick={() => avatarInputRef.current?.click()}
-                                className="px-3.5 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                                className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
                             >
                                 <Upload className="w-3.5 h-3.5" />
                                 Tải tệp từ máy
@@ -225,58 +296,32 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                                 <button
                                     type="button"
                                     onClick={onClearAvatar}
-                                    className="px-3 py-2 rounded-xl text-gray-500 hover:text-rose-600 hover:bg-rose-50 font-medium text-xs transition-colors"
+                                    className="px-3 py-2 rounded-xl text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 font-medium text-xs transition-colors cursor-pointer"
                                 >
                                     Khôi phục mặc định
                                 </button>
                             )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="url"
-                                placeholder="Hoặc dán URL ảnh trực tiếp..."
-                                value={customAvatarUrl}
-                                onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        if (customAvatarUrl.trim()) {
-                                            onSetAvatarUrl(customAvatarUrl.trim());
-                                            setCustomAvatarUrl('');
-                                        }
-                                    }
-                                }}
-                                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 font-mono"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (customAvatarUrl.trim()) {
-                                        onSetAvatarUrl(customAvatarUrl.trim());
-                                        setCustomAvatarUrl('');
-                                    }
-                                }}
-                                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors"
-                            >
-                                Gán
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* GALLERY SECTION */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
+            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
                     <div>
-                        <h4 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                             <Layers className="w-4 h-4 text-purple-600" />
-                            Thư viện ảnh cấu hình ({gallery.length} ảnh phụ)
+                            Thư viện ảnh cấu hình
+                            <span
+                                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${isGalleryFull
+                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                    : 'bg-purple-50 text-purple-700 border-purple-200'
+                                    }`}
+                            >
+                                {gallery.length} / 10 ảnh
+                            </span>
                         </h4>
-                        <p className="text-xs text-gray-500">
-                            Các ảnh góc chụp case, linh kiện bên trong, mặt sau, benchmark
-                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -286,87 +331,68 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                             accept="image/*"
                             multiple
                             className="hidden"
-                            onChange={(e) => {
-                                if (e.target.files && e.target.files.length > 0) {
-                                    onAddGalleryFiles(e.target.files);
-                                }
-                            }}
+                            onChange={handleGalleryFileInput}
                         />
-                        <button
-                            type="button"
-                            onClick={() => galleryInputRef.current?.click()}
-                            className="px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold transition-colors flex items-center gap-1"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                            Thêm ảnh
-                        </button>
+                        {!isGalleryFull && (
+                            <button
+                                type="button"
+                                onClick={() => galleryInputRef.current?.click()}
+                                className="px-3.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-3xs cursor-pointer active:scale-95"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                Tải ảnh từ máy
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                    <input
-                        type="url"
-                        placeholder="Dán link URL ảnh phụ rồi nhấn Thêm..."
-                        value={customGalleryUrl}
-                        onChange={(e) => setCustomGalleryUrl(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (customGalleryUrl.trim()) {
-                                    onAddGalleryUrl(customGalleryUrl.trim());
-                                    setCustomGalleryUrl('');
-                                }
-                            }
-                        }}
-                        className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 font-mono"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (customGalleryUrl.trim()) {
-                                onAddGalleryUrl(customGalleryUrl.trim());
-                                setCustomGalleryUrl('');
-                            }
-                        }}
-                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl transition-colors shrink-0"
-                    >
-                        Thêm ảnh
-                    </button>
-                </div>
+                {!isGalleryFull ? (
+                    <div className="flex items-center gap-2">
+                    </div>
+                ) : (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Đã đạt tối đa 10 ảnh trong thư viện. Vui lòng xóa bớt ảnh nếu muốn thêm ảnh mới.</span>
+                    </div>
+                )}
+
 
                 {gallery.length === 0 ? (
-                    <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+                    <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/40">
                         <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-xs text-gray-500 font-medium">Chưa có ảnh phụ nào trong thư viện</p>
+                        <p className="text-xs text-gray-600 font-medium">Chưa có ảnh phụ nào trong thư viện</p>
                         <p className="text-[11px] text-gray-400 mt-1">
-                            Nhấn "Thêm ảnh" từ máy tính hoặc dán link URL trực tiếp
+                            Nhấn "Tải ảnh từ máy"
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                         {gallery.map((item, index) => (
                             <div
                                 key={item.id}
-                                className="group relative aspect-square rounded-xl bg-white border border-gray-200 overflow-hidden shadow-2xs hover:shadow-md transition-all"
+                                className="group relative aspect-square rounded-xl bg-white border border-gray-200 p-1.5 shadow-2xs hover:shadow-md transition-all overflow-hidden flex items-center justify-center"
                             >
+                                <span className="absolute top-1.5 left-1.5 z-10 bg-gray-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                                    #{index + 1}
+                                </span>
                                 <img
                                     src={item.url}
                                     alt={`Gallery ${index + 1}`}
-                                    className="w-full h-full object-contain p-1"
+                                    className="w-full h-full object-contain p-0.5"
                                     onError={(e) => {
                                         (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                                     }}
                                 />
                                 {item.file && (
-                                    <span className="absolute top-1 left-1 bg-amber-500 text-white text-[9px] font-bold px-1 rounded shadow-2xs">
+                                    <span className="absolute top-1.5 right-1.5 z-10 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-2xs">
                                         Mới
                                     </span>
                                 )}
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 z-20">
                                     <button
                                         type="button"
                                         onClick={() => onRemoveGalleryItem(item.id)}
-                                        className="p-1.5 rounded-lg bg-white/90 hover:bg-rose-600 text-gray-700 hover:text-white transition-colors shadow-sm"
+                                        className="p-1.5 rounded-lg bg-white/90 hover:bg-rose-600 text-gray-700 hover:text-white transition-colors shadow-sm cursor-pointer"
                                         title="Xóa ảnh này"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -453,6 +479,17 @@ export default function PCConfigList() {
     const [editGallery, setEditGallery] = useState<ProductImageItem[]>([]);
     const [addSelectedFile, setAddSelectedFile] = useState<File | null>(null);
     const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+
+    // Trích xuất danh sách ảnh từ các linh kiện đã chọn trong specification
+    const addComponentImages = useMemo(
+        () => getComponentImagesWithCatalog(addForm.specification, availableComponentProducts),
+        [addForm.specification, availableComponentProducts]
+    );
+
+    const editComponentImages = useMemo(
+        () => getComponentImagesWithCatalog(editForm?.specification || '', availableComponentProducts),
+        [editForm?.specification, availableComponentProducts]
+    );
 
     // Helper: Trích xuất danh sách linh kiện BuildingPcItemRequest từ chuỗi JSON specification
     const extractPcItemsFromSpecs = (specJson: string): BuildingPcItemRequest[] => {
@@ -759,10 +796,21 @@ export default function PCConfigList() {
     };
 
     // Gallery File Handlers
-    const handleAddGalleryFiles = (files: FileList, isEdit: boolean) => {
+    const handleAddGalleryFiles = (files: FileList | File[], isEdit: boolean) => {
+        const currentGallery = isEdit ? editGallery : addGallery;
+        const availableSlots = 10 - currentGallery.length;
+        if (availableSlots <= 0) {
+            showToast('Đã đạt tối đa 10 ảnh trong thư viện. Vui lòng xóa bớt ảnh trước khi thêm.', 'warning');
+            return;
+        }
+
+        const fileArray = Array.from(files).slice(0, availableSlots);
+        if (fileArray.length < files.length) {
+            showToast(`Chỉ có thể thêm tối đa 10 ảnh. Đã nhận ${fileArray.length} ảnh đầu tiên.`, 'info');
+        }
+
         const newItems: ProductImageItem[] = [];
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        for (const file of fileArray) {
             const validation = validateImageFile(file, 32);
             if (!validation.valid) {
                 showToast(`Bỏ qua tệp "${file.name}": ${validation.error}`, 'warning');
@@ -774,16 +822,28 @@ export default function PCConfigList() {
                 file,
             });
         }
-        if (isEdit) {
-            setEditGallery((prev) => [...prev, ...newItems]);
-        } else {
-            setAddGallery((prev) => [...prev, ...newItems]);
+        if (newItems.length > 0) {
+            if (isEdit) {
+                setEditGallery((prev) => [...prev, ...newItems]);
+            } else {
+                setAddGallery((prev) => [...prev, ...newItems]);
+            }
+            showToast(`Đã thêm ${newItems.length} ảnh xem trước vào thư viện.`, 'info');
         }
     };
 
     const handleAddGalleryUrl = (url: string, isEdit: boolean) => {
         const trimmed = url.trim();
-        if (!trimmed) return;
+        if (!trimmed) {
+            showToast('Vui lòng nhập đường dẫn URL ảnh hợp lệ', 'error');
+            return;
+        }
+        const currentGallery = isEdit ? editGallery : addGallery;
+        if (currentGallery.length >= 10) {
+            showToast('Đã đạt tối đa 10 ảnh trong thư viện. Vui lòng xóa bớt ảnh trước khi thêm.', 'warning');
+            return;
+        }
+
         const newItem: ProductImageItem = {
             id: `gal-url-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             url: trimmed,
@@ -793,6 +853,7 @@ export default function PCConfigList() {
         } else {
             setAddGallery((prev) => [...prev, newItem]);
         }
+        showToast('Đã thêm ảnh vào thư viện ảnh PC', 'success');
     };
 
     const handleRemoveGalleryItem = (id: string, isEdit: boolean) => {
@@ -803,6 +864,32 @@ export default function PCConfigList() {
         }
     };
 
+    // Callback khi chọn linh kiện trong tab Specs (load ảnh linh kiện)
+    const handleComponentSelectedInSpecs = (slotKey: string, product: any, isEdit: boolean) => {
+        const rawImg = product.image || product.imageUrl || '';
+        const cleanImg = rawImg ? rawImg.split(';')[0].trim() : '';
+        if (!cleanImg) return;
+
+        if (isEdit) {
+            setEditForm((prev) => {
+                if (!prev) return null;
+                // Nếu ảnh hiện tại là mặc định hoặc linh kiện là Case, tự động gán làm ảnh đại diện
+                if (prev.image === DEFAULT_PRODUCT_IMAGE || !prev.image || slotKey.toUpperCase() === 'CASE') {
+                    return { ...prev, image: cleanImg };
+                }
+                return prev;
+            });
+        } else {
+            setAddForm((prev) => {
+                if (prev.image === DEFAULT_PRODUCT_IMAGE || !prev.image || slotKey.toUpperCase() === 'CASE') {
+                    return { ...prev, image: cleanImg };
+                }
+                return prev;
+            });
+        }
+        showToast(`Đã nạp ảnh linh kiện ${slotKey} (${product.name})`, 'info');
+    };
+
     // Edit Product Submit
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -810,10 +897,12 @@ export default function PCConfigList() {
 
         if (!editForm.name.trim()) {
             showToast('Vui lòng nhập tên cấu hình PC', 'error');
+            setActiveEditTab('basic');
             return;
         }
         if (!editForm.sku.trim()) {
             showToast('Vui lòng nhập mã SKU cấu hình PC', 'error');
+            setActiveEditTab('basic');
             return;
         }
 
@@ -827,10 +916,9 @@ export default function PCConfigList() {
                 finalAvatarUrl = await uploadImage(editSelectedFile);
                 setEditSelectedFile(null);
             } catch (err: any) {
-                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
-                setIsUploadingProductImage(false);
-                setIsSubmitting(false);
-                return;
+                console.error('Lỗi tải ảnh đại diện lên ImgBB:', err);
+                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}. Hệ thống giữ nguyên ảnh hiện tại.`, 'warning');
+                finalAvatarUrl = editForm.image && !editForm.image.startsWith('blob:') ? editForm.image : DEFAULT_PRODUCT_IMAGE;
             } finally {
                 setIsUploadingProductImage(false);
             }
@@ -847,7 +935,12 @@ export default function PCConfigList() {
         try {
             const uploadPromises = editGallery.map(async (item) => {
                 if (item.file) {
-                    return await uploadImage(item.file);
+                    try {
+                        return await uploadImage(item.file);
+                    } catch (err: any) {
+                        console.warn('Lỗi tải 1 ảnh gallery lên ImgBB:', err);
+                        return '';
+                    }
                 }
                 if (item.url && !item.url.startsWith('blob:')) {
                     return item.url;
@@ -862,16 +955,16 @@ export default function PCConfigList() {
                 }
             }
         } catch (err: any) {
-            showToast(`Tải ảnh phụ lên ImgBB thất bại: ${err.message}`, 'error');
-            setIsUploadingProductImage(false);
-            setIsSubmitting(false);
-            return;
+            console.error('Lỗi upload gallery:', err);
         } finally {
             setIsUploadingProductImage(false);
         }
 
-        // 3. Ghép URLs ảnh
-        const cleanedAvatarUrl = (finalAvatarUrl || '').trim() || DEFAULT_PRODUCT_IMAGE;
+        // 3. Ghép URLs ảnh (đảm bảo không chứa link blob)
+        let cleanedAvatarUrl = (finalAvatarUrl || '').trim();
+        if (!cleanedAvatarUrl || cleanedAvatarUrl.startsWith('blob:')) {
+            cleanedAvatarUrl = DEFAULT_PRODUCT_IMAGE;
+        }
         const combinedImageUrl = [cleanedAvatarUrl, ...finalGalleryUrls].filter(Boolean).join(';');
 
         try {
@@ -910,10 +1003,12 @@ export default function PCConfigList() {
         e.preventDefault();
         if (!addForm.name.trim()) {
             showToast('Vui lòng nhập tên cấu hình PC', 'error');
+            setActiveAddTab('basic');
             return;
         }
         if (!addForm.sku.trim()) {
             showToast('Vui lòng nhập mã SKU cấu hình PC', 'error');
+            setActiveAddTab('basic');
             return;
         }
 
@@ -935,10 +1030,9 @@ export default function PCConfigList() {
                 finalAvatarUrl = await uploadImage(addSelectedFile);
                 setAddSelectedFile(null);
             } catch (err: any) {
-                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}`, 'error');
-                setIsUploadingProductImage(false);
-                setIsSubmitting(false);
-                return;
+                console.error('Lỗi tải ảnh đại diện lên ImgBB:', err);
+                showToast(`Tải ảnh đại diện lên ImgBB thất bại: ${err.message}. Hệ thống sử dụng ảnh mặc định.`, 'warning');
+                finalAvatarUrl = DEFAULT_PRODUCT_IMAGE;
             } finally {
                 setIsUploadingProductImage(false);
             }
@@ -955,7 +1049,12 @@ export default function PCConfigList() {
         try {
             const uploadPromises = addGallery.map(async (item) => {
                 if (item.file) {
-                    return await uploadImage(item.file);
+                    try {
+                        return await uploadImage(item.file);
+                    } catch (err: any) {
+                        console.warn('Lỗi tải ảnh phụ lên ImgBB:', err);
+                        return '';
+                    }
                 }
                 if (item.url && !item.url.startsWith('blob:')) {
                     return item.url;
@@ -970,16 +1069,16 @@ export default function PCConfigList() {
                 }
             }
         } catch (err: any) {
-            showToast(`Tải ảnh cấu hình lên ImgBB thất bại: ${err.message}`, 'error');
-            setIsUploadingProductImage(false);
-            setIsSubmitting(false);
-            return;
+            console.error('Lỗi khi tải ảnh thư viện:', err);
         } finally {
             setIsUploadingProductImage(false);
         }
 
-        // 3. Ghép URLs ảnh
-        const cleanedAvatarUrl = (finalAvatarUrl || '').trim() || DEFAULT_PRODUCT_IMAGE;
+        // 3. Ghép URLs ảnh (đảm bảo không gửi link blob)
+        let cleanedAvatarUrl = (finalAvatarUrl || '').trim();
+        if (!cleanedAvatarUrl || cleanedAvatarUrl.startsWith('blob:')) {
+            cleanedAvatarUrl = DEFAULT_PRODUCT_IMAGE;
+        }
         const combinedImageUrl = [cleanedAvatarUrl, ...finalGalleryUrls].filter(Boolean).join(';');
 
         try {
@@ -1203,17 +1302,17 @@ export default function PCConfigList() {
 
     // Modal Tabs Definition
     const modalTabs: ModalTab[] = [
-        { id: 'basic', label: '1. Thông tin chung' },
-        { id: 'pricing', label: '2. Giá & Trạng thái' },
-        { id: 'gallery', label: '3. Hình ảnh cấu hình' },
-        { id: 'specs', label: '4. Linh kiện cấu hình' },
+        { id: 'basic', label: '1. Thông tin chung', icon: Package },
+        { id: 'pricing', label: '2. Giá & Trạng thái', icon: DollarSign },
+        { id: 'gallery', label: '3. Hình ảnh cấu hình', icon: ImageIcon },
+        { id: 'specs', label: '4. Linh kiện cấu hình', icon: Cpu },
     ];
 
     const detailTabs: ModalTab[] = [
-        { id: 'overview', label: 'Tổng quan cấu hình' },
-        { id: 'components', label: 'Danh sách linh kiện PC' },
-        { id: 'gallery', label: 'Thư viện ảnh' },
-        { id: 'description', label: 'Bài viết mô tả' },
+        { id: 'overview', label: 'Tổng quan cấu hình', icon: Eye },
+        { id: 'components', label: 'Danh sách linh kiện PC', icon: Cpu },
+        { id: 'gallery', label: 'Thư viện ảnh', icon: ImageIcon },
+        { id: 'description', label: 'Bài viết mô tả', icon: Layers },
     ];
 
     return (
@@ -1402,6 +1501,7 @@ export default function PCConfigList() {
                         onCancel={() => setIsAddModalOpen(false)}
                         onSubmit={handleAddSubmit}
                         isSubmitting={isSubmitting || isUploadingProductImage}
+                        submittingText={isUploadingProductImage ? 'Đang tải ảnh lên...' : 'Đang tạo cấu hình PC...'}
                         cancelText="Hủy bỏ"
                         submitText="Tạo cấu hình PC"
                     />
@@ -1577,6 +1677,7 @@ export default function PCConfigList() {
                             onAddGalleryFiles={(files) => handleAddGalleryFiles(files, false)}
                             onAddGalleryUrl={(url) => handleAddGalleryUrl(url, false)}
                             onRemoveGalleryItem={(id) => handleRemoveGalleryItem(id, false)}
+                            componentImages={addComponentImages}
                         />
                     )}
 
@@ -1595,6 +1696,7 @@ export default function PCConfigList() {
                                 productType="PC"
                                 categoryName="PC"
                                 availableProducts={availableComponentProducts}
+                                onSelectComponentProduct={(slotKey, prod) => handleComponentSelectedInSpecs(slotKey, prod, false)}
                             />
                         </div>
                     )}
@@ -1619,6 +1721,7 @@ export default function PCConfigList() {
                             onCancel={() => setIsEditModalOpen(false)}
                             onSubmit={handleEditSubmit}
                             isSubmitting={isSubmitting || isUploadingProductImage}
+                            submittingText={isUploadingProductImage ? 'Đang tải ảnh lên...' : 'Đang cập nhật cấu hình...'}
                             cancelText="Hủy bỏ"
                             submitText="Cập nhật cấu hình"
                         />
@@ -1786,6 +1889,7 @@ export default function PCConfigList() {
                                 onAddGalleryFiles={(files) => handleAddGalleryFiles(files, true)}
                                 onAddGalleryUrl={(url) => handleAddGalleryUrl(url, true)}
                                 onRemoveGalleryItem={(id) => handleRemoveGalleryItem(id, true)}
+                                componentImages={editComponentImages}
                             />
                         )}
 
@@ -1804,6 +1908,7 @@ export default function PCConfigList() {
                                     productType="PC"
                                     categoryName="PC"
                                     availableProducts={availableComponentProducts}
+                                    onSelectComponentProduct={(slotKey, prod) => handleComponentSelectedInSpecs(slotKey, prod, true)}
                                 />
                             </div>
                         )}
@@ -1953,6 +2058,7 @@ export default function PCConfigList() {
                                     productType="PC"
                                     categoryName="PC"
                                     readOnly={true}
+                                    availableProducts={availableComponentProducts}
                                 />
                             </div>
                         )}

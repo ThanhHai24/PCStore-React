@@ -3,6 +3,9 @@ export interface SpecItem {
   name: string; // e.g. "CPU Intel Core i5-12400F"
   warranty?: string; // e.g. "36 Tháng"
   productId?: string; // e.g. "12" or "cpu-12400f"
+  productCode?: string;
+  productPrice?: number;
+  productImage?: string;
   highlightSummary?: string;
 }
 

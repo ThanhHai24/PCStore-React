@@ -153,9 +153,28 @@ export default function WarehouseInventoryList() {
     const [stockFilter, setStockFilter] = useState<string>('ALL');
     const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
     const [brandFilter, setBrandFilter] = useState<string>('ALL');
+    const [productTypeFilter, setProductTypeFilter] = useState<string>('ALL');
     const [businessStatusFilter, setBusinessStatusFilter] = useState<string>('ALL');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(10);
+
+    // Synchronize filters with URL search params (if navigated from dashboard or external links)
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const qSearch = params.get('q') || params.get('search');
+        const qStock = params.get('stock') || params.get('stockStatus');
+        const qCat = params.get('category') || params.get('categoryId');
+        const qBrand = params.get('brand') || params.get('brandId');
+        const qType = params.get('type') || params.get('productType');
+        const qStatus = params.get('status') || params.get('businessStatus');
+
+        if (qSearch) setSearchQuery(qSearch);
+        if (qStock) setStockFilter(qStock);
+        if (qCat) setCategoryFilter(qCat);
+        if (qBrand) setBrandFilter(qBrand);
+        if (qType) setProductTypeFilter(qType);
+        if (qStatus) setBusinessStatusFilter(qStatus);
+    }, [location.search]);
 
     // Detail Modal State
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -329,6 +348,8 @@ export default function WarehouseInventoryList() {
                 !q ||
                 item.productName.toLowerCase().includes(q) ||
                 item.productCode.toLowerCase().includes(q) ||
+                String(item.productId).includes(q) ||
+                item.slug.toLowerCase().includes(q) ||
                 item.brandName.toLowerCase().includes(q) ||
                 item.categoryName.toLowerCase().includes(q);
 
@@ -345,13 +366,25 @@ export default function WarehouseInventoryList() {
             const matchBrand =
                 brandFilter === 'ALL' || String(item.brandId) === String(brandFilter);
 
+            // Product type filter
+            const matchType =
+                productTypeFilter === 'ALL' || item.productType === productTypeFilter;
+
             // Business status filter
             const matchBiz =
                 businessStatusFilter === 'ALL' || item.status === businessStatusFilter;
 
-            return matchSearch && matchStock && matchCat && matchBrand && matchBiz;
+            return matchSearch && matchStock && matchCat && matchBrand && matchType && matchBiz;
         });
-    }, [inventoryItems, searchQuery, stockFilter, categoryFilter, brandFilter, businessStatusFilter]);
+    }, [
+        inventoryItems,
+        searchQuery,
+        stockFilter,
+        categoryFilter,
+        brandFilter,
+        productTypeFilter,
+        businessStatusFilter,
+    ]);
 
     // Paginated items
     const paginatedItems = useMemo(() => {
@@ -488,69 +521,142 @@ export default function WarehouseInventoryList() {
         toast.success(`Đã xuất báo cáo ${inventoryItems.length} sản phẩm kho ra file CSV.`);
     };
 
+    // Quick Status Tabs configuration
+    const stockTabs = useMemo(
+        () => [
+            { key: 'ALL', label: 'Tất cả kho', icon: Boxes, count: inventoryItems.length },
+            {
+                key: 'IN_STOCK',
+                label: 'Còn hàng dồi dào (> 5)',
+                icon: CheckCircle2,
+                count: inventoryItems.filter((i) => i.stockStatus === 'IN_STOCK').length,
+            },
+            {
+                key: 'LOW_STOCK',
+                label: 'Sắp hết hàng (1 - 5)',
+                icon: AlertTriangle,
+                count: inventoryItems.filter((i) => i.stockStatus === 'LOW_STOCK').length,
+            },
+            {
+                key: 'OUT_OF_STOCK',
+                label: 'Hết hàng trong kho (0)',
+                icon: XCircle,
+                count: inventoryItems.filter((i) => i.stockStatus === 'OUT_OF_STOCK').length,
+            },
+            {
+                key: 'DEFECTIVE',
+                label: 'Hàng lỗi kho',
+                icon: ShieldAlert,
+                count: inventoryItems.filter((i) => i.defectiveStock > 0).length,
+            },
+        ],
+        [inventoryItems]
+    );
+
     // Filter fields configuration for AdminFilter
-    const filterFields: FilterField[] = [
-        {
-            name: 'stockStatus',
-            label: 'Tình trạng tồn kho',
-            type: 'select',
-            options: [
-                { label: 'Tất cả tình trạng kho', value: 'ALL' },
-                { label: 'Còn hàng dồi dào (> 5)', value: 'IN_STOCK' },
-                { label: 'Sắp hết hàng (1 - 5)', value: 'LOW_STOCK' },
-                { label: 'Hết hàng trong kho (0)', value: 'OUT_OF_STOCK' },
-                { label: 'Có hàng lỗi chờ trả NCC', value: 'DEFECTIVE' },
-            ],
-        },
-        {
-            name: 'category',
-            label: 'Danh mục sản phẩm',
-            type: 'select',
-            options: [
-                { label: 'Tất cả danh mục', value: 'ALL' },
-                ...categories.map((c) => ({
+    const filterFields: FilterField[] = useMemo(
+        () => [
+            {
+                id: 'stockStatus',
+                name: 'stockStatus',
+                label: 'Tình trạng tồn kho',
+                type: 'select',
+                placeholder: 'Tất cả tình trạng kho',
+                icon: Boxes,
+                options: [
+                    { label: 'Còn hàng dồi dào (> 5)', value: 'IN_STOCK' },
+                    { label: 'Sắp hết hàng (1 - 5)', value: 'LOW_STOCK' },
+                    { label: 'Hết hàng trong kho (0)', value: 'OUT_OF_STOCK' },
+                    { label: 'Có hàng lỗi chờ trả NCC', value: 'DEFECTIVE' },
+                ],
+            },
+            {
+                id: 'category',
+                name: 'category',
+                label: 'Danh mục sản phẩm',
+                type: 'select',
+                placeholder: 'Tất cả danh mục',
+                icon: Layers,
+                options: categories.map((c) => ({
                     label: c.name,
                     value: String(c.id),
                 })),
-            ],
-        },
-        {
-            name: 'brand',
-            label: 'Thương hiệu',
-            type: 'select',
-            options: [
-                { label: 'Tất cả thương hiệu', value: 'ALL' },
-                ...brands.map((b) => ({
+            },
+            {
+                id: 'brand',
+                name: 'brand',
+                label: 'Thương hiệu',
+                type: 'select',
+                placeholder: 'Tất cả thương hiệu',
+                icon: Award,
+                options: brands.map((b) => ({
                     label: b.name,
                     value: String(b.id),
                 })),
-            ],
-        },
-        {
-            name: 'businessStatus',
-            label: 'Trạng thái kinh doanh',
-            type: 'select',
-            options: [
-                { label: 'Tất cả trạng thái', value: 'ALL' },
-                { label: 'Đang bán (ACTIVE)', value: 'ACTIVE' },
-                { label: 'Hết hàng (OUT_OF_STOCK)', value: 'OUT_OF_STOCK' },
-                { label: 'Ngừng kinh doanh (INACTIVE)', value: 'INACTIVE' },
-            ],
-        },
-    ];
+            },
+            {
+                id: 'productType',
+                name: 'productType',
+                label: 'Loại sản phẩm',
+                type: 'select',
+                placeholder: 'Tất cả loại sản phẩm',
+                icon: Package,
+                options: [
+                    { label: '🧩 Linh kiện (COMPONENT)', value: 'COMPONENT' },
+                    { label: '💻 Laptop xách tay (LAPTOP)', value: 'LAPTOP' },
+                    { label: '🖥️ Máy bộ / Desktop (PC)', value: 'PC' },
+                    { label: '📦 Khác (OTHER)', value: 'OTHER' },
+                ],
+            },
+            {
+                id: 'businessStatus',
+                name: 'businessStatus',
+                label: 'Trạng thái kinh doanh',
+                type: 'select',
+                placeholder: 'Tất cả trạng thái',
+                icon: Tag,
+                options: [
+                    { label: '✅ Đang bán (ACTIVE)', value: 'ACTIVE' },
+                    { label: '❌ Hết hàng (OUT_OF_STOCK)', value: 'OUT_OF_STOCK' },
+                    { label: '👁️ Ngừng kinh doanh (INACTIVE)', value: 'INACTIVE' },
+                ],
+            },
+        ],
+        [categories, brands]
+    );
 
-    const filterValues = {
-        stockStatus: stockFilter,
-        category: categoryFilter,
-        brand: brandFilter,
-        businessStatus: businessStatusFilter,
+    // Filter values passed to AdminFilter (only active filters with values)
+    const filterValues = useMemo(() => {
+        const vals: Record<string, any> = {};
+        if (stockFilter && stockFilter !== 'ALL') {
+            vals.stockStatus = stockFilter;
+        }
+        if (categoryFilter && categoryFilter !== 'ALL') {
+            vals.category = categoryFilter;
+        }
+        if (brandFilter && brandFilter !== 'ALL') {
+            vals.brand = brandFilter;
+        }
+        if (productTypeFilter && productTypeFilter !== 'ALL') {
+            vals.productType = productTypeFilter;
+        }
+        if (businessStatusFilter && businessStatusFilter !== 'ALL') {
+            vals.businessStatus = businessStatusFilter;
+        }
+        return vals;
+    }, [stockFilter, categoryFilter, brandFilter, productTypeFilter, businessStatusFilter]);
+
+    const handleSearchChange = (q: string) => {
+        setSearchQuery(q);
+        setCurrentPage(1);
     };
 
     const handleFilterChange = (newValues: Record<string, any>) => {
-        if (newValues.stockStatus !== undefined) setStockFilter(newValues.stockStatus);
-        if (newValues.category !== undefined) setCategoryFilter(newValues.category);
-        if (newValues.brand !== undefined) setBrandFilter(newValues.brand);
-        if (newValues.businessStatus !== undefined) setBusinessStatusFilter(newValues.businessStatus);
+        setStockFilter(newValues.stockStatus || 'ALL');
+        setCategoryFilter(newValues.category || 'ALL');
+        setBrandFilter(newValues.brand || 'ALL');
+        setProductTypeFilter(newValues.productType || 'ALL');
+        setBusinessStatusFilter(newValues.businessStatus || 'ALL');
         setCurrentPage(1);
     };
 
@@ -559,6 +665,7 @@ export default function WarehouseInventoryList() {
         setStockFilter('ALL');
         setCategoryFilter('ALL');
         setBrandFilter('ALL');
+        setProductTypeFilter('ALL');
         setBusinessStatusFilter('ALL');
         setCurrentPage(1);
     };
@@ -776,48 +883,92 @@ export default function WarehouseInventoryList() {
 
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setStockFilter('ALL');
+                        setCurrentPage(1);
+                    }}
+                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                        stockFilter === 'ALL'
+                            ? 'border-blue-400 ring-2 ring-blue-500/15 bg-blue-50/20'
+                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
+                    }`}
+                >
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg shrink-0">
                         <Boxes className="w-5 h-5" />
                     </div>
                     <div>
                         <div className="text-xs text-gray-500 font-medium">Mặt hàng lưu kho</div>
                         <div className="text-xl font-bold text-gray-900">{kpiStats.totalProducts}</div>
                     </div>
-                </div>
+                </button>
 
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setStockFilter('IN_STOCK');
+                        setCurrentPage(1);
+                    }}
+                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                        stockFilter === 'IN_STOCK'
+                            ? 'border-emerald-400 ring-2 ring-emerald-500/15 bg-emerald-50/20'
+                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
+                    }`}
+                >
+                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
                         <CheckCircle2 className="w-5 h-5" />
                     </div>
                     <div>
                         <div className="text-xs text-gray-500 font-medium">Tồn kho khả dụng</div>
                         <div className="text-xl font-bold text-emerald-700">{kpiStats.totalAvailableStock} cái</div>
                     </div>
-                </div>
+                </button>
 
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setStockFilter('LOW_STOCK');
+                        setCurrentPage(1);
+                    }}
+                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                        stockFilter === 'LOW_STOCK'
+                            ? 'border-amber-400 ring-2 ring-amber-500/15 bg-amber-50/20'
+                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
+                    }`}
+                >
+                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg shrink-0">
                         <AlertTriangle className="w-5 h-5" />
                     </div>
                     <div>
                         <div className="text-xs text-gray-500 font-medium">Cần bổ sung hàng</div>
                         <div className="text-xl font-bold text-amber-700">{kpiStats.lowOrOutCount} mã</div>
                     </div>
-                </div>
+                </button>
 
-                <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setStockFilter('DEFECTIVE');
+                        setCurrentPage(1);
+                    }}
+                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
+                        stockFilter === 'DEFECTIVE'
+                            ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20'
+                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
+                    }`}
+                >
+                    <div className="p-3 bg-rose-50 text-rose-600 rounded-lg shrink-0">
                         <ShieldAlert className="w-5 h-5" />
                     </div>
                     <div>
                         <div className="text-xs text-gray-500 font-medium">Hàng lỗi kho</div>
                         <div className="text-xl font-bold text-rose-700">{kpiStats.totalDefective} cái</div>
                     </div>
-                </div>
+                </button>
 
                 <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
                         <DollarSign className="w-5 h-5" />
                     </div>
                     <div>
@@ -827,18 +978,51 @@ export default function WarehouseInventoryList() {
                 </div>
             </div>
 
-            {/* Filters Section */}
-            <div className="bg-white p-5 rounded-2xl shadow-xs border border-gray-100 space-y-4">
-                <AdminFilter
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    searchPlaceholder="Tìm kiếm theo tên sản phẩm, mã SKU, thương hiệu, danh mục..."
-                    fields={filterFields}
-                    values={filterValues}
-                    onFilterChange={handleFilterChange}
-                    onReset={handleResetFilters}
-                />
+            {/* Quick Status Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                {stockTabs.map((tab) => {
+                    const isActive = stockFilter === tab.key;
+                    const IconComponent = tab.icon;
+                    return (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => {
+                                setStockFilter(tab.key);
+                                setCurrentPage(1);
+                            }}
+                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
+                                isActive
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-500/20'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900 shadow-2xs'
+                            }`}
+                        >
+                            <IconComponent className="w-3.5 h-3.5" />
+                            <span>{tab.label}</span>
+                            <span
+                                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                    isActive
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-gray-100 text-gray-600'
+                                }`}
+                            >
+                                {tab.count}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
+
+            {/* Filter Toolbar */}
+            <AdminFilter
+                searchQuery={searchQuery}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder="Tìm kiếm theo tên linh kiện, mã SKU, mã SP, thương hiệu, danh mục..."
+                fields={filterFields}
+                values={filterValues}
+                onFilterChange={handleFilterChange}
+                onReset={handleResetFilters}
+            />
 
             {/* Main Table */}
             <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">

@@ -7,6 +7,7 @@ export interface SpecItemData {
   productId?: string;
   productCode?: string;
   productPrice?: number;
+  productImage?: string;
 }
 
 export interface SpecTemplateField {
@@ -73,18 +74,184 @@ export const COMPONENT_SPEC_TEMPLATES: ComponentTemplate[] = [
   {
     id: 'vga',
     name: 'VGA / Card màn hình',
-    categoryKeywords: ['vga', 'card màn hình', 'card đồ họa', 'gpu', 'đồ họa'],
+    categoryKeywords: ['vga', 'card màn hình', 'card đồ họa', 'graphics card', 'gpu'],
     fields: [
-      { key: 'Chipset đồ họa', label: 'Chipset đồ họa (GPU)', placeholder: 'VD: GeForce RTX 4070 SUPER' },
-      { key: 'Dung lượng bộ nhớ', label: 'Dung lượng VRAM', placeholder: 'VD: 12GB GDDR6X' },
-      { key: 'Giao diện bộ nhớ', label: 'Memory Bus', placeholder: 'VD: 192-bit' },
-      { key: 'Xung nhịp Boost', label: 'Xung nhịp Boost Clock', placeholder: 'VD: 2505 MHz' },
-      { key: 'Cổng kết nối', label: 'Cổng xuất hình', placeholder: 'VD: 3x DisplayPort 1.4a, 1x HDMI 2.1a' },
-      { key: 'Chuẩn giao tiếp', label: 'Giao diện PCIe', placeholder: 'VD: PCI Express 4.0 x16' },
-      { key: 'Nguồn khuyến nghị', label: 'Nguồn khuyến nghị (PSU)', placeholder: 'VD: Tối thiểu 650W, đầu cấp nguồn 1x 16-pin' },
-      { key: 'Kích thước card', label: 'Kích thước', placeholder: 'VD: 261 x 126 x 50 mm (2.5 slot)' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 36 Tháng' },
-    ],
+      {
+        key: 'Nhà sản xuất chip (GPU Vendor)',
+        label: 'Nhà sản xuất chip (GPU Vendor)',
+        type: 'select',
+        options: [
+          'NVIDIA',
+          'AMD',
+          'Intel'
+        ],
+      },
+      {
+        key: 'Dòng GPU (GPU Series)',
+        label: 'Dòng GPU (GPU Series)',
+        type: 'select',
+        options: [
+          'GeForce RTX 50 Series',
+          'GeForce RTX 40 Series',
+          'GeForce RTX 30 Series',
+          'GeForce GTX 16 Series',
+          'Radeon RX 8000 Series',
+          'Radeon RX 7000 Series',
+          'Radeon RX 6000 Series',
+          'Intel Arc A-Series'
+        ],
+      },
+      {
+        key: 'Mã GPU (GPU Model)',
+        label: 'Mã GPU (GPU Model)',
+        type: 'text',
+        placeholder: 'Ví dụ: RTX 5070, RTX 4060, RX 7900 XTX...',
+      },
+      {
+        key: 'Dung lượng VRAM',
+        label: 'Dung lượng VRAM',
+        type: 'select',
+        options: [
+          '4GB',
+          '6GB',
+          '8GB',
+          '10GB',
+          '12GB',
+          '16GB',
+          '20GB',
+          '24GB'
+        ],
+      },
+      {
+        key: 'Loại bộ nhớ (Memory Type)',
+        label: 'Loại bộ nhớ (Memory Type)',
+        type: 'select',
+        options: [
+          'GDDR7',
+          'GDDR6X',
+          'GDDR6',
+          'GDDR5'
+        ],
+      },
+      {
+        key: 'Bus bộ nhớ (Memory Interface)',
+        label: 'Bus bộ nhớ (Memory Interface)',
+        type: 'select',
+        options: [
+          '64-bit',
+          '96-bit',
+          '128-bit',
+          '192-bit',
+          '256-bit',
+          '320-bit',
+          '384-bit'
+        ],
+      },
+      {
+        key: 'Số nhân đồ họa (CUDA / Stream Processors)',
+        label: 'Số nhân đồ họa (CUDA / Stream Processors)',
+        type: 'text',
+        placeholder: 'Ví dụ: 6144 CUDA Cores (RTX 5070), 3072 CUDA Cores...',
+      },
+      {
+        key: 'Xung nhịp cơ bản (Base Clock)',
+        label: 'Xung nhịp cơ bản (Base Clock)',
+        type: 'text',
+        placeholder: 'Ví dụ: 2325 MHz',
+      },
+      {
+        key: 'Xung nhịp tối đa (Boost Clock)',
+        label: 'Xung nhịp tối đa (Boost Clock)',
+        type: 'text',
+        placeholder: 'Ví dụ: 2512 MHz (có thể OC lên 2557 MHz)',
+      },
+      {
+        key: 'Chuẩn giao tiếp (Interface)',
+        label: 'Chuẩn giao tiếp (Interface)',
+        type: 'select',
+        options: [
+          'PCIe 5.0 x16',
+          'PCIe 4.0 x16',
+          'PCIe 4.0 x8',
+          'PCIe 3.0 x16'
+        ],
+      },
+      {
+        key: 'Cổng xuất hình (Video Outputs)',
+        label: 'Cổng xuất hình (Video Outputs)',
+        type: 'text',
+        placeholder: 'Ví dụ: 3x DisplayPort 2.1, 1x HDMI 2.1a',
+      },
+      {
+        key: 'Cổng nguồn phụ (Power Connectors)',
+        label: 'Cổng nguồn phụ (Power Connectors)',
+        type: 'select',
+        options: [
+          'Không cần nguồn phụ',
+          '1x 8-pin',
+          '2x 8-pin',
+          '3x 8-pin',
+          '1x 12VHPWR (16-pin)',
+          '1x 12V-2x6',
+          '1x 6-pin'
+        ],
+      },
+      {
+        key: 'Công suất tiêu thụ (TGP/TBP)',
+        label: 'Công suất tiêu thụ (TGP/TBP)',
+        type: 'text',
+        placeholder: 'Ví dụ: 250W, 115W...',
+      },
+      {
+        key: 'Nguồn đề xuất (Recommended PSU)',
+        label: 'Nguồn đề xuất (Recommended PSU)',
+        type: 'select',
+        options: [
+          '400W',
+          '450W',
+          '500W',
+          '550W',
+          '600W',
+          '650W',
+          '750W',
+          '850W',
+          '1000W',
+          '1200W',
+          '1600W'
+        ],
+      },
+      {
+        key: 'Số quạt tản nhiệt (Cooling Design)',
+        label: 'Số quạt tản nhiệt (Cooling Design)',
+        type: 'select',
+        options: [
+          '1 Quạt (ITX)',
+          '2 Quạt',
+          '3 Quạt',
+          'Tản nhiệt nước (AIO)',
+          'Tản nhiệt thụ động (Fanless)'
+        ],
+      },
+      {
+        key: 'Kích thước (Dimensions - L x W x H)',
+        label: 'Kích thước (Dimensions - L x W x H)',
+        type: 'text',
+        placeholder: 'Ví dụ: 325 x 140 x 60 mm',
+      },
+      {
+        key: 'Số khe cắm chiếm dụng (Slot Width)',
+        label: 'Số khe cắm chiếm dụng (Slot Width)',
+        type: 'select',
+        options: [
+          '1 Slot',
+          '2 Slot',
+          '2.5 Slot',
+          '3 Slot',
+          '3.5 Slot',
+          '4 Slot'
+        ],
+      }
+    ]
   },
   {
     id: 'cpu',
@@ -359,47 +526,399 @@ export const COMPONENT_SPEC_TEMPLATES: ComponentTemplate[] = [
   {
     id: 'mainboard',
     name: 'Mainboard / Bo mạch chủ',
-    categoryKeywords: ['mainboard', 'bo mạch', 'motherboard', 'bo mạch chủ', 'main'],
+    categoryKeywords: ['mainboard', 'bo mạch chủ', 'motherboard', 'main'],
     fields: [
-      { key: 'Chipset', label: 'Chipset bo mạch', placeholder: 'VD: Intel B760 / AMD B650' },
-      { key: 'Socket', label: 'Socket vi xử lý', placeholder: 'VD: LGA 1700 / AM5' },
-      { key: 'Chuẩn kích thước', label: 'Form Factor', placeholder: 'VD: Micro-ATX (24.4 x 24.4 cm)' },
-      { key: 'Khe cắm RAM', label: 'Số khe & Chuẩn RAM', placeholder: 'VD: 4x DDR5, Tối đa 192GB, Bus 7200+(OC) MHz' },
-      { key: 'Khe mở rộng', label: 'Khe cắm PCIe', placeholder: 'VD: 1x PCIe 5.0 x16, 2x PCIe 4.0 x16 (hỗ trợ x1)' },
-      { key: 'Lưu trữ hỗ trợ', label: 'Cổng lưu trữ', placeholder: 'VD: 2x M.2 PCIe 4.0 x4, 4x SATA 6Gb/s' },
-      { key: 'Kết nối mạng', label: 'LAN / Wi-Fi', placeholder: 'VD: 2.5Gb Ethernet, Wi-Fi 6E + Bluetooth 5.3' },
-      { key: 'Cổng kết nối sau', label: 'Cổng I/O phía sau', placeholder: 'VD: 1x USB-C 3.2 Gen2, 4x USB 3.2, 2x USB 2.0, HDMI, DP' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 36 Tháng' },
-    ],
+      {
+        key: 'Kích thước (Form Factor)',
+        label: 'Kích thước (Form Factor)',
+        type: 'select',
+        options: [
+          'E-ATX (Mở rộng)',
+          'ATX (Tiêu chuẩn)',
+          'Micro-ATX (mATX)',
+          'Mini-ITX (ITX)'
+        ],
+      },
+      {
+        key: 'Socket hỗ trợ',
+        label: 'Socket hỗ trợ',
+        type: 'select',
+        options: [
+          'LGA 1700 (Intel Gen 12/13/14)',
+          'LGA 1851 (Intel Core Ultra Series 2)',
+          'LGA 1200 (Intel Gen 10/11)',
+          'AM5 (AMD Ryzen 7000/8000/9000)',
+          'AM4 (AMD Ryzen 1000 - 5000)'
+        ],
+      },
+      {
+        key: 'Chipset',
+        label: 'Chipset',
+        type: 'select',
+        options: [
+          'Intel Z890',
+          'Intel B860',
+          'Intel Z790',
+          'Intel B760',
+          'Intel H610',
+          'Intel Z690',
+          'AMD X870E / X870',
+          'AMD B850',
+          'AMD X670E / X670',
+          'AMD B650E / B650',
+          'AMD A620'
+        ],
+      },
+      {
+        key: 'Chuẩn RAM hỗ trợ',
+        label: 'Chuẩn RAM hỗ trợ',
+        type: 'select',
+        options: [
+          'DDR5',
+          'DDR4'
+        ],
+      },
+      {
+        key: 'Số khe cắm RAM',
+        label: 'Số khe cắm RAM',
+        type: 'select',
+        options: [
+          '2 Khe',
+          '4 Khe',
+          '8 Khe (Workstation)'
+        ],
+      },
+      {
+        key: 'Dung lượng RAM tối đa',
+        label: 'Dung lượng RAM tối đa',
+        type: 'select',
+        options: [
+          '64GB',
+          '96GB',
+          '128GB',
+          '192GB',
+          '256GB'
+        ],
+      },
+      {
+        key: 'Tốc độ RAM hỗ trợ tối đa',
+        label: 'Tốc độ RAM hỗ trợ tối đa',
+        type: 'text',
+        placeholder: 'Ví dụ: DDR5 7200+ MT/s (OC), DDR4 3200 MT/s',
+      },
+      {
+        key: 'Khe cắm PCIe x16 (Dành cho VGA)',
+        label: 'Khe cắm PCIe x16 (Dành cho VGA)',
+        type: 'select',
+        options: [
+          '1x PCIe 5.0 x16',
+          '1x PCIe 4.0 x16',
+          '2x PCIe 5.0 x16',
+          '2x PCIe 4.0 x16',
+          '1x PCIe 3.0 x16'
+        ],
+      },
+      {
+        key: 'Số cổng lưu trữ M.2 NVMe',
+        label: 'Số cổng lưu trữ M.2 NVMe',
+        type: 'select',
+        options: [
+          '1 Cổng',
+          '2 Cổng',
+          '3 Cổng',
+          '4 Cổng',
+          '5 Cổng'
+        ],
+      },
+      {
+        key: 'Chuẩn M.2 tốc độ cao nhất hỗ trợ',
+        label: 'Chuẩn M.2 tốc độ cao nhất hỗ trợ',
+        type: 'select',
+        options: [
+          'PCIe 5.0 x4',
+          'PCIe 4.0 x4',
+          'PCIe 3.0 x4'
+        ],
+      },
+      {
+        key: 'Số cổng SATA 3 (Lưu trữ 2.5"/3.5")',
+        label: 'Số cổng SATA 3 (Lưu trữ 2.5"/3.5")',
+        type: 'select',
+        options: [
+          '2 Cổng',
+          '4 Cổng',
+          '6 Cổng',
+          '8 Cổng'
+        ],
+      },
+      {
+        key: 'Kết nối mạng LAN (Ethernet)',
+        label: 'Kết nối mạng LAN (Ethernet)',
+        type: 'select',
+        options: [
+          '1 Gbps (10/100/1000 Mbps)',
+          '2.5 Gbps',
+          '5 Gbps',
+          '10 Gbps'
+        ],
+      },
+      {
+        key: 'Kết nối không dây (Wi-Fi / Bluetooth)',
+        label: 'Kết nối không dây (Wi-Fi / Bluetooth)',
+        type: 'select',
+        options: [
+          'Không có',
+          'Wi-Fi 5 + Bluetooth',
+          'Wi-Fi 6 + Bluetooth 5.2',
+          'Wi-Fi 6E + Bluetooth 5.3',
+          'Wi-Fi 7 + Bluetooth 5.4'
+        ],
+      },
+      {
+        key: 'Cổng xuất hình onboard (Cần CPU có iGPU)',
+        label: 'Cổng xuất hình onboard (Cần CPU có iGPU)',
+        type: 'text',
+        placeholder: 'Ví dụ: 1x HDMI 2.1, 1x DisplayPort 1.4',
+      },
+      {
+        key: 'Chân cắm cấp nguồn CPU',
+        label: 'Chân cắm cấp nguồn CPU',
+        type: 'select',
+        options: [
+          '1x 8-pin',
+          '8-pin + 4-pin',
+          '2x 8-pin'
+        ],
+      },
+      {
+        key: 'Chân cắm ARGB/RGB (Header)',
+        label: 'Chân cắm ARGB/RGB (Header)',
+        type: 'text',
+        placeholder: 'Ví dụ: 3x Addressable Gen 2 (5V), 1x Aura RGB (12V)',
+      }
+    ]
   },
   {
     id: 'ram',
     name: 'RAM / Bộ nhớ trong',
-    categoryKeywords: ['ram', 'bộ nhớ ram', 'bộ nhớ trong', 'dram'],
+    categoryKeywords: ['ram', 'bộ nhớ trong', 'memory', 'ddr4', 'ddr5'],
     fields: [
-      { key: 'Dung lượng', label: 'Dung lượng RAM', placeholder: 'VD: 32GB (2x16GB)' },
-      { key: 'Chuẩn RAM', label: 'Thế hệ RAM', placeholder: 'VD: DDR5 / DDR4' },
-      { key: 'Tốc độ Bus', label: 'Tốc độ Bus (MHz)', placeholder: 'VD: 6000MHz' },
-      { key: 'Độ trễ (CAS Latency)', label: 'Độ trễ CL', placeholder: 'VD: CL30 (30-36-36-76)' },
-      { key: 'Điện áp hoạt động', label: 'Điện áp', placeholder: 'VD: 1.35V' },
-      { key: 'Hỗ trợ Profile', label: 'XMP / EXPO', placeholder: 'VD: Intel XMP 3.0 & AMD EXPO' },
-      { key: 'Tản nhiệt & LED', label: 'Tản nhiệt / LED', placeholder: 'VD: Tản nhôm cao cấp, LED RGB đồng bộ' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 36 Tháng' },
-    ],
+      {
+        key: 'Loại RAM (Form Factor)',
+        label: 'Loại RAM (Form Factor)',
+        type: 'select',
+        options: [
+          'U-DIMM (Desktop PC)',
+          'SO-DIMM (Laptop / Mini PC)',
+          'R-DIMM (Server / Workstation)'
+        ],
+      },
+      {
+        key: 'Chuẩn RAM (Memory Type)',
+        label: 'Chuẩn RAM (Memory Type)',
+        type: 'select',
+        options: [
+          'DDR5',
+          'DDR4',
+          'DDR3'
+        ],
+      },
+      {
+        key: 'Tổng dung lượng (Total Capacity)',
+        label: 'Tổng dung lượng (Total Capacity)',
+        type: 'select',
+        options: [
+          '8GB',
+          '16GB',
+          '24GB',
+          '32GB',
+          '48GB',
+          '64GB',
+          '96GB',
+          '128GB'
+        ],
+      },
+      {
+        key: 'Quy cách đóng gói (Kit / Single)',
+        label: 'Quy cách đóng gói (Kit / Single)',
+        type: 'select',
+        options: [
+          '1 x 8GB (Single)',
+          '2 x 8GB (Kit 16GB)',
+          '1 x 16GB (Single)',
+          '2 x 16GB (Kit 32GB)',
+          '2 x 24GB (Kit 48GB)',
+          '1 x 32GB (Single)',
+          '2 x 32GB (Kit 64GB)',
+          '4 x 16GB (Kit 64GB)',
+          '2 x 48GB (Kit 96GB)',
+          '4 x 32GB (Kit 128GB)'
+        ],
+      },
+      {
+        key: 'Tốc độ Bus (Memory Speed)',
+        label: 'Tốc độ Bus (Memory Speed)',
+        type: 'select',
+        options: [
+          '3200 MT/s',
+          '3600 MT/s',
+          '4800 MT/s',
+          '5200 MT/s',
+          '5600 MT/s',
+          '6000 MT/s',
+          '6400 MT/s',
+          '7200 MT/s',
+          '8000 MT/s'
+        ],
+        placeholder: 'Ví dụ: 6000 MT/s (hoặc MHz)',
+      },
+      {
+        key: 'Độ trễ (CAS Latency)',
+        label: 'Độ trễ (CAS Latency)',
+        type: 'text',
+        placeholder: 'Ví dụ: CL30, CL32, CL36, CL16 (Điền cụ thể như CL30-38-38-96)',
+      },
+      {
+        key: 'Điện áp (Voltage)',
+        label: 'Điện áp (Voltage)',
+        type: 'select',
+        options: [
+          '1.1V (Mặc định JEDEC DDR5)',
+          '1.2V (Mặc định JEDEC DDR4 / DDR5)',
+          '1.35V',
+          '1.4V',
+          '1.45V'
+        ],
+      },
+      {
+        key: 'Hỗ trợ ép xung (Overclocking Profile)',
+        label: 'Hỗ trợ ép xung (Overclocking Profile)',
+        type: 'select',
+        options: [
+          'Intel XMP 3.0',
+          'AMD EXPO',
+          'Cả XMP 3.0 và EXPO',
+          'Intel XMP 2.0 (DDR4)',
+          'Không hỗ trợ (Plug and Play JEDEC)'
+        ],
+      },
+      {
+        key: 'Tản nhiệt (Heatsink)',
+        label: 'Tản nhiệt (Heatsink)',
+        type: 'select',
+        options: [
+          'Có tản nhiệt (Nhôm)',
+          'Không có tản nhiệt (RAM bo lùn/trần)'
+        ],
+      },
+      {
+        key: 'Hỗ trợ LED',
+        label: 'Hỗ trợ LED',
+        type: 'select',
+        options: [
+          'Không có LED',
+          'LED RGB',
+          'LED ARGB (Đồng bộ Mainboard)'
+        ],
+      },
+      {
+        key: 'Chiều cao thanh RAM (Height Clearance)',
+        label: 'Chiều cao thanh RAM (Height Clearance)',
+        type: 'text',
+        placeholder: 'Ví dụ: 44mm (Quan trọng khi dùng tản nhiệt khí Tháp đôi)',
+      }
+    ]
   },
   {
     id: 'ssd',
     name: 'Ổ cứng SSD',
-    categoryKeywords: ['ssd', 'nvme', 'ổ cứng ssd', 'ổ ssd', 'thể rắn'],
+    categoryKeywords: ['ssd', 'ổ cứng', 'ổ cứng ssd', 'nvme', 'lưu trữ', 'storage'],
     fields: [
-      { key: 'Dung lượng', label: 'Dung lượng lưu trữ', placeholder: 'VD: 1TB / 2TB' },
-      { key: 'Chuẩn giao tiếp', label: 'Form Factor & Giao thức', placeholder: 'VD: M.2 2280 NVMe PCIe 4.0 x4' },
-      { key: 'Tốc độ đọc tuần tự', label: 'Tốc độ đọc (Max)', placeholder: 'VD: Lên tới 7450 MB/s' },
-      { key: 'Tốc độ ghi tuần tự', label: 'Tốc độ ghi (Max)', placeholder: 'VD: Lên tới 6900 MB/s' },
-      { key: 'Độ bền (TBW)', label: 'Chỉ số TBW', placeholder: 'VD: 600 TBW' },
-      { key: 'Bộ nhớ đệm DRAM', label: 'DRAM Cache', placeholder: 'VD: 1GB LPDDR4 / HMB (DRAM-less)' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 60 Tháng (hoặc theo TBW)' },
-    ],
+      {
+        key: 'Dung lượng (Capacity)',
+        label: 'Dung lượng (Capacity)',
+        type: 'select',
+        options: [
+          '250GB - 256GB',
+          '500GB - 512GB',
+          '1TB',
+          '2TB',
+          '4TB',
+          '8TB'
+        ],
+      },
+      {
+        key: 'Kích thước / Chuẩn cắm (Form Factor)',
+        label: 'Kích thước / Chuẩn cắm (Form Factor)',
+        type: 'select',
+        options: [
+          'M.2 2280 (Phổ biến nhất)',
+          'M.2 2230 (Cho Handheld/Mini PC)',
+          'M.2 2242',
+          '2.5 inch (SATA)',
+          'PCIe Add-in Card'
+        ],
+      },
+      {
+        key: 'Chuẩn giao tiếp (Interface)',
+        label: 'Chuẩn giao tiếp (Interface)',
+        type: 'select',
+        options: [
+          'NVMe PCIe Gen 5.0 x4',
+          'NVMe PCIe Gen 4.0 x4',
+          'NVMe PCIe Gen 3.0 x4',
+          'SATA III (6Gb/s)'
+        ],
+      },
+      {
+        key: 'Tốc độ đọc tuần tự (Sequential Read)',
+        label: 'Tốc độ đọc tuần tự (Sequential Read)',
+        type: 'text',
+        placeholder: 'Ví dụ: 7450 MB/s, 3500 MB/s, 560 MB/s...',
+      },
+      {
+        key: 'Tốc độ ghi tuần tự (Sequential Write)',
+        label: 'Tốc độ ghi tuần tự (Sequential Write)',
+        type: 'text',
+        placeholder: 'Ví dụ: 6900 MB/s, 3000 MB/s, 530 MB/s...',
+      },
+      {
+        key: 'Loại chip nhớ (NAND Flash Type)',
+        label: 'Loại chip nhớ (NAND Flash Type)',
+        type: 'select',
+        options: [
+          '3D TLC (Hiệu năng/Độ bền tốt - Phổ biến)',
+          '3D QLC (Dung lượng cao/Giá rẻ)',
+          '3D MLC (Độ bền cực cao/Cao cấp)'
+        ],
+      },
+      {
+        key: 'Bộ nhớ đệm (Cache)',
+        label: 'Bộ nhớ đệm (Cache)',
+        type: 'select',
+        options: [
+          'Có DRAM Cache (Độc lập)',
+          'HMB (Không DRAM - Dùng RAM hệ thống)',
+          'Không có'
+        ],
+      },
+      {
+        key: 'Tản nhiệt đi kèm (Heatsink)',
+        label: 'Tản nhiệt đi kèm (Heatsink)',
+        type: 'select',
+        options: [
+          'Không có tản nhiệt (Bo mạch trần)',
+          'Có tản nhiệt nhôm (Dày)',
+          'Có tản nhiệt nhôm (Mỏng / Graphene)'
+        ],
+      },
+      {
+        key: 'Độ bền (TBW - Terabytes Written)',
+        label: 'Độ bền (TBW - Terabytes Written)',
+        type: 'text',
+        placeholder: 'Ví dụ: 600 TBW, 1200 TBW (Tuổi thọ ghi dữ liệu)',
+      }
+    ]
   },
   {
     id: 'hdd',
@@ -416,47 +935,397 @@ export const COMPONENT_SPEC_TEMPLATES: ComponentTemplate[] = [
   },
   {
     id: 'psu',
-    name: 'Nguồn máy tính (PSU)',
-    categoryKeywords: ['psu', 'nguồn', 'power supply', 'nguồn máy tính'],
+    name: 'Nguồn máy tính / PSU',
+    categoryKeywords: ['psu', 'nguồn', 'nguồn máy tính', 'power supply', 'nguồn pc'],
     fields: [
-      { key: 'Công suất thực', label: 'Công suất tối đa', placeholder: 'VD: 750W / 850W' },
-      { key: 'Chứng nhận hiệu suất', label: 'Chuẩn 80 Plus', placeholder: 'VD: 80 Plus Gold (Hiệu suất > 90%)' },
-      { key: 'Kiểu cáp nguồn', label: 'Modular', placeholder: 'VD: Full Modular (Dây rời toàn bộ)' },
-      { key: 'Chuẩn nguồn', label: 'Tiêu chuẩn', placeholder: 'VD: ATX 3.0, PCIe 5.0 (Cáp 12VHPWR 16-pin)' },
-      { key: 'Kích thước quạt làm mát', label: 'Quạt tản nhiệt', placeholder: 'VD: 120mm FDB Fan, chế độ Zero RPM' },
-      { key: 'Bảo vệ nguồn', label: 'Chế độ bảo vệ', placeholder: 'VD: OVP, UVP, OCP, OTP, SCP, OPP' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 60 Tháng' },
-    ],
+      {
+        key: 'Công suất tối đa (Wattage)',
+        label: 'Công suất tối đa (Wattage)',
+        type: 'select',
+        options: [
+          '400W',
+          '450W',
+          '500W',
+          '550W',
+          '600W',
+          '650W',
+          '750W',
+          '850W',
+          '1000W',
+          '1200W',
+          '1300W',
+          '1600W'
+        ],
+      },
+      {
+        key: 'Kích thước / Chuẩn nguồn (Form Factor)',
+        label: 'Kích thước / Chuẩn nguồn (Form Factor)',
+        type: 'select',
+        options: [
+          'ATX (Phổ biến nhất cho case Mid/Full Tower)',
+          'SFX (Dành cho case Mini-ITX)',
+          'SFX-L (Mini-ITX nhưng dài hơn)',
+          'TFX (Dành cho case Slim/SFF)'
+        ],
+      },
+      {
+        key: 'Chứng nhận hiệu suất (80 PLUS)',
+        label: 'Chứng nhận hiệu suất (80 PLUS)',
+        type: 'select',
+        options: [
+          '80 PLUS Titanium (Cao cấp nhất)',
+          '80 PLUS Platinum',
+          '80 PLUS Gold',
+          '80 PLUS Silver',
+          '80 PLUS Bronze',
+          '80 PLUS White / Standard',
+          'Không có chứng nhận'
+        ],
+      },
+      {
+        key: 'Thiết kế cáp (Modularity)',
+        label: 'Thiết kế cáp (Modularity)',
+        type: 'select',
+        options: [
+          'Full-Modular (Tháo rời 100% cáp - Dễ đi dây)',
+          'Semi-Modular (Tháo rời cáp phụ, cáp main liền)',
+          'Non-Modular (Cáp liền toàn bộ)'
+        ],
+      },
+      {
+        key: 'Chuẩn nguồn ATX',
+        label: 'Chuẩn nguồn ATX',
+        type: 'select',
+        options: [
+          'ATX 3.1 (Mới nhất - Đầu cắm 12V-2x6)',
+          'ATX 3.0 (Đầu cắm 12VHPWR cho PCIe 5.0)',
+          'ATX 2.52 / ATX 2.4 (Chuẩn cũ)',
+          'ATX 2.31'
+        ],
+      },
+      {
+        key: 'Đầu cấp nguồn PCIe 5.0 (16-pin GPU)',
+        label: 'Đầu cấp nguồn PCIe 5.0 (16-pin GPU)',
+        type: 'select',
+        options: [
+          'Có (1x 600W 12V-2x6 / 12VHPWR)',
+          'Có (1x 450W 12V-2x6 / 12VHPWR)',
+          'Có (2x 600W 12V-2x6 / 12VHPWR)',
+          'Không có'
+        ],
+      },
+      {
+        key: 'Đầu cấp nguồn CPU (EPS/ATX12V 8-pin)',
+        label: 'Đầu cấp nguồn CPU (EPS/ATX12V 8-pin)',
+        type: 'select',
+        options: [
+          '1x 8-pin (4+4)',
+          '2x 8-pin (4+4)'
+        ],
+      },
+      {
+        key: 'Đầu cấp nguồn VGA (PCIe 8-pin / 6+2-pin)',
+        label: 'Đầu cấp nguồn VGA (PCIe 8-pin / 6+2-pin)',
+        type: 'select',
+        options: [
+          '1 Cổng (6+2-pin)',
+          '2 Cổng (6+2-pin)',
+          '3 Cổng (6+2-pin)',
+          '4 Cổng (6+2-pin)',
+          '6 Cổng (6+2-pin)'
+        ],
+      },
+      {
+        key: 'Đầu cấp nguồn SATA (Cho SSD/HDD 2.5/3.5)',
+        label: 'Đầu cấp nguồn SATA (Cho SSD/HDD 2.5/3.5)',
+        type: 'text',
+        placeholder: 'Ví dụ: 4 cổng, 6 cổng, 8 cổng...',
+      },
+      {
+        key: 'Đầu cấp nguồn Molex (4-pin cho quạt cũ/phụ kiện)',
+        label: 'Đầu cấp nguồn Molex (4-pin cho quạt cũ/phụ kiện)',
+        type: 'text',
+        placeholder: 'Ví dụ: 2 cổng, 4 cổng...',
+      },
+      {
+        key: 'Điện áp đầu vào (Input Voltage)',
+        label: 'Điện áp đầu vào (Input Voltage)',
+        type: 'select',
+        options: [
+          '100 - 240V (Auto Volt - Dải rộng)',
+          '200 - 240V (Dải hẹp)'
+        ],
+      },
+      {
+        key: 'Quạt làm mát',
+        label: 'Quạt làm mát',
+        type: 'select',
+        options: [
+          '120mm',
+          '135mm',
+          '140mm',
+          'Zero RPM Mode (Quạt dừng khi tải nhẹ)'
+        ],
+      },
+      {
+        key: 'Kích thước nguồn (L x W x H)',
+        label: 'Kích thước nguồn (L x W x H)',
+        type: 'text',
+        placeholder: 'Ví dụ: 150 x 140 x 86 mm (Dài 140mm)',
+      }
+    ]
   },
   {
     id: 'case',
-    name: 'Vỏ máy tính (Case)',
-    categoryKeywords: ['case', 'vỏ máy', 'thùng máy', 'vỏ case'],
+    name: 'Vỏ máy tính / Case',
+    categoryKeywords: ['case', 'vỏ máy tính', 'vỏ case', 'chassis', 'thùng máy'],
     fields: [
-      { key: 'Loại case', label: 'Kiểu thùng máy', placeholder: 'VD: Mid Tower / Mini Tower' },
-      { key: 'Chất liệu', label: 'Chất liệu vỏ', placeholder: 'VD: Thép SPCC 0.7mm, Kính cường lực 4mm' },
-      { key: 'Hỗ trợ Mainboard', label: 'Mainboard hỗ trợ', placeholder: 'VD: E-ATX, ATX, Micro-ATX, Mini-ITX' },
-      { key: 'Hỗ trợ VGA tối đa', label: 'Chiều dài VGA tối đa', placeholder: 'VD: Tối đa 380mm' },
-      { key: 'Hỗ trợ tản CPU', label: 'Chiều cao tản CPU tối đa', placeholder: 'VD: Tối đa 165mm' },
-      { key: 'Hỗ trợ Radiator tản nước', label: 'Radiator tản nhiệt', placeholder: 'VD: Mặt trên 240/280/360mm, Mặt trước 360mm' },
-      { key: 'Số quạt đi kèm', label: 'Quạt tản nhiệt lắp sẵn', placeholder: 'VD: 3x Fan ARGB 120mm mặt trước, 1x Fan 120mm phía sau' },
-      { key: 'Cổng kết nối mặt trước', label: 'Cổng I/O mặt trước', placeholder: 'VD: 1x USB-C, 2x USB 3.0, Audio HD' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 12 Tháng' },
-    ],
+      {
+        key: 'Loại Case (Form Factor)',
+        label: 'Loại Case (Form Factor)',
+        type: 'select',
+        options: [
+          'Full Tower (Cỡ lớn)',
+          'Mid Tower (Tiêu chuẩn - Phổ biến nhất)',
+          'Mini Tower (Cỡ nhỏ)',
+          'SFF / Mini-ITX (Siêu nhỏ)',
+          'Dual Chamber (Bể cá / Hai buồng)'
+        ],
+      },
+      {
+        key: 'Mainboard hỗ trợ',
+        label: 'Mainboard hỗ trợ',
+        type: 'select',
+        options: [
+          'E-ATX, ATX, Micro-ATX, Mini-ITX',
+          'ATX, Micro-ATX, Mini-ITX',
+          'Micro-ATX, Mini-ITX',
+          'Chỉ Mini-ITX',
+          'Hỗ trợ Mainboard giấu dây (Back-connect)'
+        ],
+      },
+      {
+        key: 'Màu sắc (Color)',
+        label: 'Màu sắc (Color)',
+        type: 'select',
+        options: [
+          'Đen (Black)',
+          'Trắng (White)',
+          'Hồng (Pink)',
+          'Bạc / Xám (Silver/Grey)'
+        ],
+      },
+      {
+        key: 'Chất liệu mặt hông / Mặt trước',
+        label: 'Chất liệu mặt hông / Mặt trước',
+        type: 'select',
+        options: [
+          'Mặt trước Lưới (Mesh) / Hông Kính cường lực',
+          'Mặt trước Kính / Hông Kính cường lực (Bể cá)',
+          'Thép nguyên khối / Nhôm',
+          'Kính cường lực toàn cảnh (Curved Glass)'
+        ],
+      },
+      {
+        key: 'Chiều dài VGA tối đa (Max GPU Clearance)',
+        label: 'Chiều dài VGA tối đa (Max GPU Clearance)',
+        type: 'text',
+        placeholder: 'Ví dụ: 400mm, 340mm (Cực kỳ quan trọng để bắt lỗi VGA)',
+      },
+      {
+        key: 'Chiều cao tản nhiệt CPU tối đa (Max CPU Cooler Clearance)',
+        label: 'Chiều cao tản nhiệt CPU tối đa (Max CPU Cooler Clearance)',
+        type: 'text',
+        placeholder: 'Ví dụ: 165mm, 170mm (Quan trọng khi dùng Tản khí)',
+      },
+      {
+        key: 'Chiều dài Nguồn tối đa (Max PSU Clearance)',
+        label: 'Chiều dài Nguồn tối đa (Max PSU Clearance)',
+        type: 'text',
+        placeholder: 'Ví dụ: 180mm, 200mm, 220mm (Quan trọng khi chọn PSU lớn)',
+      },
+      {
+        key: 'Hỗ trợ Tản nhiệt nước (Radiator Support) - Nóc (Top)',
+        label: 'Hỗ trợ Tản nhiệt nước (Radiator Support) - Nóc (Top)',
+        type: 'select',
+        options: [
+          'Hỗ trợ Rad 360mm / 280mm',
+          'Hỗ trợ Rad 240mm / 280mm',
+          'Hỗ trợ Rad 420mm',
+          'Không hỗ trợ'
+        ],
+      },
+      {
+        key: 'Hỗ trợ Tản nhiệt nước (Radiator Support) - Mặt trước (Front)',
+        label: 'Hỗ trợ Tản nhiệt nước (Radiator Support) - Mặt trước (Front)',
+        type: 'select',
+        options: [
+          'Hỗ trợ Rad 360mm / 280mm',
+          'Hỗ trợ Rad 420mm',
+          'Hỗ trợ Rad 240mm',
+          'Không hỗ trợ (Ví dụ: Các dòng case bể cá)'
+        ],
+      },
+      {
+        key: 'Số lượng quạt gắn sẵn (Pre-installed Fans)',
+        label: 'Số lượng quạt gắn sẵn (Pre-installed Fans)',
+        type: 'select',
+        options: [
+          'Không có quạt',
+          '1 Quạt (Không LED)',
+          '3 Quạt (ARGB)',
+          '4 Quạt (ARGB - 3 Trước, 1 Sau)',
+          '4 Quạt (ARGB - 3 Đáy/Hông, 1 Sau - Bể cá)',
+          '6 Quạt (ARGB)'
+        ],
+      },
+      {
+        key: 'Hỗ trợ khay ổ cứng (Drive Bays)',
+        label: 'Hỗ trợ khay ổ cứng (Drive Bays)',
+        type: 'text',
+        placeholder: 'Ví dụ: 2x 3.5" HDD, 2x 2.5" SSD',
+      },
+      {
+        key: 'Cổng kết nối mặt trước (Front I/O)',
+        label: 'Cổng kết nối mặt trước (Front I/O)',
+        type: 'text',
+        placeholder: 'Ví dụ: 1x Type-C, 2x USB 3.0, 1x Audio Jack',
+      },
+      {
+        key: 'Hỗ trợ dựng dọc VGA (Vertical GPU Mount)',
+        label: 'Hỗ trợ dựng dọc VGA (Vertical GPU Mount)',
+        type: 'select',
+        options: [
+          'Có (Cần mua thêm Riser Cable)',
+          'Có (Kèm sẵn Riser Cable)',
+          'Không hỗ trợ'
+        ],
+      },
+      {
+        key: 'Kích thước Case (L x W x H)',
+        label: 'Kích thước Case (L x W x H)',
+        type: 'text',
+        placeholder: 'Ví dụ: 460 x 210 x 485 mm',
+      }
+    ]
   },
   {
     id: 'cooler',
-    name: 'Tản nhiệt (Cooler / Fan)',
-    categoryKeywords: ['tản nhiệt', 'cooler', 'quạt tản', 'cooling', 'aio', 'quạt làm mát', 'case fan', 'fan'],
+    name: 'Tản nhiệt CPU',
+    categoryKeywords: ['tản nhiệt', 'tản nhiệt cpu', 'cooler', 'tản nhiệt nước', 'aio', 'tản nhiệt khí'],
     fields: [
-      { key: 'Loại tản nhiệt', label: 'Kiểu tản nhiệt', placeholder: 'VD: Tản nhiệt nước AIO 360mm / Tản khí tháp đôi' },
-      { key: 'Socket CPU hỗ trợ', label: 'Socket hỗ trợ', placeholder: 'VD: Intel LGA1700/1200/115x, AMD AM5/AM4' },
-      { key: 'Kích thước Radiator/Tản', label: 'Kích thước', placeholder: 'VD: 397 x 120 x 27 mm (Radiator nhôm)' },
-      { key: 'Thông số quạt', label: 'Quạt tản nhiệt', placeholder: 'VD: 3x 120mm PWM (800 - 2000 RPM, 72 CFM)' },
-      { key: 'Độ ồn quạt', label: 'Độ ồn tối đa', placeholder: 'VD: < 28.5 dBA' },
-      { key: 'Đèn LED hiển thị', label: 'LED & Màn hình', placeholder: 'VD: Màn hình LCD 2.4 inch hiển thị thông số, LED ARGB' },
-      { key: 'Bảo hành', label: 'Bảo hành', placeholder: 'VD: 36 Tháng (Đổi mới nếu rò nước)' },
-    ],
+      {
+        key: 'Loại tản nhiệt (Cooler Type)',
+        label: 'Loại tản nhiệt (Cooler Type)',
+        type: 'select',
+        options: [
+          'Tản nhiệt khí - Tháp đơn (Single Tower)',
+          'Tản nhiệt khí - Tháp đôi (Dual Tower)',
+          'Tản nhiệt khí - Top-down (Khí thổi xuống)',
+          'Tản nhiệt nước AIO 120mm',
+          'Tản nhiệt nước AIO 240mm',
+          'Tản nhiệt nước AIO 280mm',
+          'Tản nhiệt nước AIO 360mm',
+          'Tản nhiệt nước AIO 420mm'
+        ],
+      },
+      {
+        key: 'Socket hỗ trợ (Socket Compatibility)',
+        label: 'Socket hỗ trợ (Socket Compatibility)',
+        type: 'select',
+        options: [
+          'Intel 1700/1851/1200/115x & AMD AM4/AM5',
+          'Chỉ Intel (1700/1851/1200/115x)',
+          'Chỉ AMD (AM4/AM5)',
+          'Intel 1700 & AMD AM5 (Chỉ hỗ trợ socket mới)',
+          'Hỗ trợ thêm TR4/sTR5 (Cho chip HEDT/Threadripper)'
+        ],
+      },
+      {
+        key: 'Màu sắc (Color)',
+        label: 'Màu sắc (Color)',
+        type: 'select',
+        options: [
+          'Đen (Black)',
+          'Trắng (White)',
+          'Bạc (Silver)'
+        ],
+      },
+      {
+        key: 'Chiều cao tản nhiệt (Dành cho Tản khí)',
+        label: 'Chiều cao tản nhiệt (Dành cho Tản khí)',
+        type: 'text',
+        placeholder: 'Ví dụ: 154mm, 165mm (Cực kỳ quan trọng để check cấn Case)',
+      },
+      {
+        key: 'Kích thước Radiator (Dành cho Tản AIO)',
+        label: 'Kích thước Radiator (L x W x H)',
+        type: 'text',
+        placeholder: 'Ví dụ: 397 x 120 x 27 mm (Bề dày 27mm là chuẩn phổ thông)',
+      },
+      {
+        key: 'Thiết kế Block/Pump (Dành cho Tản AIO)',
+        label: 'Thiết kế Block/Pump',
+        type: 'text',
+        placeholder: 'Ví dụ: Pump hình tròn (như Jonsbo TH-360), Vuông, Vô cực...',
+      },
+      {
+        key: 'Kích thước quạt (Fan Size)',
+        label: 'Kích thước quạt (Fan Size)',
+        type: 'select',
+        options: [
+          '120mm (120 x 120 x 25mm)',
+          '140mm (140 x 140 x 25mm)',
+          '92mm / 100mm (Cho tản mini)'
+        ],
+      },
+      {
+        key: 'Số lượng quạt đi kèm',
+        label: 'Số lượng quạt đi kèm',
+        type: 'select',
+        options: [
+          '1 Quạt',
+          '2 Quạt',
+          '3 Quạt'
+        ],
+      },
+      {
+        key: 'Tốc độ quạt (Fan Speed)',
+        label: 'Tốc độ quạt (Fan Speed)',
+        type: 'text',
+        placeholder: 'Ví dụ: 500 - 2200 RPM',
+      },
+      {
+        key: 'Lưu lượng gió tối đa (Airflow)',
+        label: 'Lưu lượng gió tối đa (Airflow)',
+        type: 'text',
+        placeholder: 'Ví dụ: 85.85 CFM',
+      },
+      {
+        key: 'Led / Hiển thị (Lighting & Display)',
+        label: 'Led / Hiển thị (Lighting & Display)',
+        type: 'select',
+        options: [
+          'Không LED',
+          'LED RGB (Auto)',
+          'LED ARGB (Đồng bộ Mainboard 5V 3-pin)',
+          'Có màn hình LCD hiển thị nhiệt độ',
+          'Gương vô cực (Infinity Mirror)'
+        ],
+      },
+      {
+        key: 'Khoảng không RAM (RAM Clearance - Cho Tản Khí)',
+        label: 'Khoảng không RAM (RAM Clearance)',
+        type: 'text',
+        placeholder: 'Ví dụ: Hỗ trợ RAM cao tối đa 42mm (tránh cấn RAM)',
+      },
+      {
+        key: 'TDP Hỗ trợ tối đa (Cooling Power)',
+        label: 'TDP Hỗ trợ tối đa (Cooling Power)',
+        type: 'text',
+        placeholder: 'Ví dụ: 250W, 300W (Nên >= TDP Turbo của CPU)',
+      }
+    ]
   },
   {
     id: 'monitor',

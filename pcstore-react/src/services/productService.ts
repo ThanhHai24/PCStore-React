@@ -222,11 +222,18 @@ export function parseSpecsTable(specStr?: string | null, productName: string = '
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed)) {
-        return parsed.map((item: any) => ({
-          key: String(item.key || item.name || 'Thông số'),
-          name: String(item.value || item.name || item.val || ''),
-          warranty: item.warranty || '36TH',
-        }));
+        return parsed.map((item: any) => {
+          const rawId = item.productId ?? item.product_id ?? item.id;
+          return {
+            key: String(item.key || item.name || 'Thông số'),
+            name: String(item.value || item.name || item.val || ''),
+            warranty: item.warranty || '36TH',
+            productId: rawId != null && String(rawId).trim() !== '' ? String(rawId).trim() : undefined,
+            productCode: item.productCode || item.sku || undefined,
+            productPrice: item.productPrice || item.price ? Number(item.productPrice || item.price) : undefined,
+            productImage: item.productImage || item.image || item.imageUrl || undefined,
+          };
+        });
       }
       if (typeof parsed === 'object') {
         return Object.entries(parsed).map(([key, val]) => ({

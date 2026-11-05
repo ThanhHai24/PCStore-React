@@ -660,6 +660,11 @@ export default function GoodsReceiptList() {
      * Add single scanned serial
      */
     const handleAddSerial = () => {
+        if (scanningReceipt?.status !== 'DRAFT') {
+            toast.warning('Phiếu không ở trạng thái Lưu nháp (DRAFT), không thể thêm Serial.');
+            return;
+        }
+
         const clean = barcodeInput.trim();
         if (!clean) {
             toast.warning('Vui lòng nhập hoặc quét mã Serial.');
@@ -695,6 +700,11 @@ export default function GoodsReceiptList() {
      * Add bulk serials from text
      */
     const handleAddBulkSerials = () => {
+        if (scanningReceipt?.status !== 'DRAFT') {
+            toast.warning('Phiếu không ở trạng thái Lưu nháp (DRAFT), không thể dán thêm Serial.');
+            return;
+        }
+
         if (!bulkSerialsInput.trim() || !formItems[activeItemIndex]) {
             setIsBulkModalOpen(false);
             return;
@@ -740,6 +750,11 @@ export default function GoodsReceiptList() {
      * Toggle individual serial status (GOOD_CONDITION <-> DEFECTIVE)
      */
     const handleToggleSerialStatus = (itemIndex: number, serialIndex: number) => {
+        if (scanningReceipt?.status !== 'DRAFT') {
+            toast.warning('Phiếu không ở trạng thái Lưu nháp (DRAFT), không thể thay đổi trạng thái Serial.');
+            return;
+        }
+
         const updated = [...formItems];
         const cur = updated[itemIndex].serials[serialIndex].status;
         updated[itemIndex].serials[serialIndex].status =
@@ -751,6 +766,11 @@ export default function GoodsReceiptList() {
      * Remove individual serial
      */
     const handleRemoveSerial = (itemIndex: number, serialIndex: number) => {
+        if (scanningReceipt?.status !== 'DRAFT') {
+            toast.warning('Phiếu không ở trạng thái Lưu nháp (DRAFT), không thể xóa Serial.');
+            return;
+        }
+
         const updated = [...formItems];
         updated[itemIndex].serials.splice(serialIndex, 1);
         setFormItems(updated);
@@ -760,6 +780,11 @@ export default function GoodsReceiptList() {
      * Clear all serials of an item
      */
     const handleClearAllSerials = (itemIndex: number) => {
+        if (scanningReceipt?.status !== 'DRAFT') {
+            toast.warning('Phiếu không ở trạng thái Lưu nháp (DRAFT), không thể xóa Serial.');
+            return;
+        }
+
         const updated = [...formItems];
         updated[itemIndex].serials = [];
         setFormItems(updated);
@@ -836,10 +861,15 @@ export default function GoodsReceiptList() {
     };
 
     /**
-     * Save all serials and their status
+     * Save all serials and their status (Only for DRAFT)
      */
     const handleSaveAllSerials = async () => {
         if (!scanningReceipt) return;
+
+        if (scanningReceipt.status !== 'DRAFT') {
+            toast.warning('Chỉ có thể chỉnh sửa và lưu danh sách Serial khi phiếu ở trạng thái Lưu nháp (DRAFT).');
+            return;
+        }
 
         setIsSavingSerials(true);
         try {
@@ -888,37 +918,39 @@ export default function GoodsReceiptList() {
 
         setIsCompletingReceipt(true);
         try {
-            // Save all serials and status first
-            const selectedItems: ReceiptItemRequest[] = formItems
-                .filter((it) => it.serials.length > 0)
-                .map((it) => ({
-                    purchaseOrderItemId: it.purchaseOrderItemId,
-                    actualUnitCost: Number(it.actualUnitCost) || 0,
-                    productSerials: it.serials.map((s) => ({
-                        serialNumber: s.serialNumber.trim(),
-                        status: s.status,
-                    })),
-                }));
-
-            await adminGoodsReceiptService.updateReceipt(scanningReceipt.numericId, {
-                code: scanningReceipt.code,
-                name: scanningReceipt.name,
-                receivedAt: scanningReceipt.rawReceivedAt ? `${scanningReceipt.rawReceivedAt.slice(0, 19)}Z` : undefined,
-                items: selectedItems,
-            });
-
-            // Transition status
             let currentStatus = scanningReceipt.status;
+
+            // 1. Chỉ gọi updateReceipt lưu serials nếu phiếu đang ở trạng thái DRAFT
             if (currentStatus === 'DRAFT') {
+                const selectedItems: ReceiptItemRequest[] = formItems
+                    .filter((it) => it.serials.length > 0)
+                    .map((it) => ({
+                        purchaseOrderItemId: it.purchaseOrderItemId,
+                        actualUnitCost: Number(it.actualUnitCost) || 0,
+                        productSerials: it.serials.map((s) => ({
+                            serialNumber: s.serialNumber.trim(),
+                            status: s.status,
+                        })),
+                    }));
+
+                await adminGoodsReceiptService.updateReceipt(scanningReceipt.numericId, {
+                    code: scanningReceipt.code,
+                    name: scanningReceipt.name,
+                    receivedAt: scanningReceipt.rawReceivedAt ? `${scanningReceipt.rawReceivedAt.slice(0, 19)}Z` : undefined,
+                    items: selectedItems,
+                });
+
+                // Chuyển DRAFT -> PENDING
                 await adminGoodsReceiptService.updateReceiptStatus(scanningReceipt.numericId, 'PENDING');
                 currentStatus = 'PENDING';
             }
 
+            // 2. Chuyển PENDING -> CONFIRMED (Hoàn tất nhập kho)
             if (currentStatus === 'PENDING') {
                 await adminGoodsReceiptService.updateReceiptStatus(scanningReceipt.numericId, 'CONFIRMED');
             }
 
-            // Đổi trạng thái của đơn nhập tương ứng sang ĐÃ NHẬN (RECEIVED)
+            // 3. Đổi trạng thái của đơn nhập tương ứng sang ĐÃ NHẬN (RECEIVED)
             try {
                 await adminPurchaseOrderService.updateOrderStatus(scanningReceipt.purchaseOrderId, 'RECEIVED');
             } catch (poErr: any) {
@@ -1858,17 +1890,19 @@ export default function GoodsReceiptList() {
                                 >
                                     Đóng
                                 </AdminButton>
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={handleSaveAllSerials}
-                                    disabled={isSavingSerials || isCompletingReceipt}
-                                    isLoading={isSavingSerials}
-                                    icon={Save}
-                                    title="Lưu lại toàn bộ Serial đã quét và trạng thái"
-                                >
-                                    Lưu tất cả Serial & Trạng thái
-                                </AdminButton>
+                                {scanningReceipt.status === 'DRAFT' && (
+                                    <AdminButton
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={handleSaveAllSerials}
+                                        disabled={isSavingSerials || isCompletingReceipt}
+                                        isLoading={isSavingSerials}
+                                        icon={Save}
+                                        title="Lưu lại toàn bộ Serial đã quét và trạng thái"
+                                    >
+                                        Lưu tất cả Serial & Trạng thái
+                                    </AdminButton>
+                                )}
                                 <AdminButton
                                     type="button"
                                     variant="primary"
@@ -1886,6 +1920,15 @@ export default function GoodsReceiptList() {
                     }
                 >
                     <div className="space-y-4 p-2">
+                        {scanningReceipt.status !== 'DRAFT' && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                                <span>
+                                    Phiếu nhập đang ở trạng thái <b>{RECEIPT_STATUS_CONFIG[scanningReceipt.status]?.label || scanningReceipt.status}</b>.
+                                    Danh sách Serial đã được khóa từ bước kiểm đếm. Bấm <b>"Hoàn thành phiếu nhập (Nhập kho)"</b> để duyệt xác nhận hoàn tất.
+                                </span>
+                            </div>
+                        )}
                         {isLoadingPoItems ? (
                             <div className="p-12 text-center text-gray-500">
                                 <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
@@ -1981,85 +2024,91 @@ export default function GoodsReceiptList() {
                                                 </div>
                                             </div>
 
-                                            {/* Barcode input row */}
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1">
-                                                        <AdminInput
-                                                            type="text"
-                                                            value={barcodeInput}
-                                                            onChange={(e) => setBarcodeInput(e.target.value)}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    e.preventDefault();
-                                                                    handleAddSerial();
-                                                                }
-                                                            }}
-                                                            placeholder="Quét Barcode hoặc nhập Serial rồi nhấn Enter..."
-                                                            prefixIcon={Barcode}
-                                                            className="font-mono"
-                                                            autoFocus
-                                                        />
-                                                    </div>
+                                            {/* Barcode input row (Chỉ hiển thị khi ở trạng thái DRAFT) */}
+                                            {scanningReceipt.status === 'DRAFT' && (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1">
+                                                            <AdminInput
+                                                                type="text"
+                                                                value={barcodeInput}
+                                                                onChange={(e) => setBarcodeInput(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault();
+                                                                        handleAddSerial();
+                                                                    }
+                                                                }}
+                                                                placeholder="Quét Barcode hoặc nhập Serial rồi nhấn Enter..."
+                                                                prefixIcon={Barcode}
+                                                                className="font-mono"
+                                                                autoFocus
+                                                            />
+                                                        </div>
 
-                                                    <AdminSelect
-                                                        value={barcodeStatus}
-                                                        onChange={(e) => setBarcodeStatus(e.target.value as any)}
-                                                        className={`!w-auto font-semibold ${barcodeStatus === 'GOOD_CONDITION'
-                                                            ? 'text-emerald-700 border-emerald-300'
-                                                            : 'text-rose-700 border-rose-300'
-                                                            }`}
-                                                    >
-                                                        <option value="GOOD_CONDITION">Đạt chuẩn (Tốt)</option>
-                                                        <option value="DEFECTIVE">Hàng lỗi / Hư hỏng</option>
-                                                    </AdminSelect>
+                                                        <AdminSelect
+                                                            value={barcodeStatus}
+                                                            onChange={(e) => setBarcodeStatus(e.target.value as any)}
+                                                            className={`!w-auto font-semibold ${barcodeStatus === 'GOOD_CONDITION'
+                                                                ? 'text-emerald-700 border-emerald-300'
+                                                                : 'text-rose-700 border-rose-300'
+                                                                }`}
+                                                        >
+                                                            <option value="GOOD_CONDITION">Đạt chuẩn (Tốt)</option>
+                                                            <option value="DEFECTIVE">Hàng lỗi / Hư hỏng</option>
+                                                        </AdminSelect>
 
-                                                    <AdminButton
-                                                        type="button"
-                                                        onClick={handleAddSerial}
-                                                        variant="primary"
-                                                    >
-                                                        Thêm
-                                                    </AdminButton>
-                                                </div>
-
-                                                {/* Tool buttons: Bulk paste, Clear */}
-                                                <div className="flex items-center justify-between gap-2 pt-1">
-                                                    <div className="flex items-center gap-2 text-xs">
                                                         <AdminButton
                                                             type="button"
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            onClick={() => setIsBulkModalOpen(true)}
-                                                            icon={FileText}
+                                                            onClick={handleAddSerial}
+                                                            variant="primary"
                                                         >
-                                                            Dán nhiều serial (Paste)
+                                                            Thêm
                                                         </AdminButton>
                                                     </div>
 
-                                                    {formItems[activeItemIndex].serials.length > 0 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleClearAllSerials(activeItemIndex)}
-                                                            className="text-xs text-rose-600 hover:underline cursor-pointer"
-                                                        >
-                                                            Xóa hết serial
-                                                        </button>
-                                                    )}
+                                                    {/* Tool buttons: Bulk paste, Clear */}
+                                                    <div className="flex items-center justify-between gap-2 pt-1">
+                                                        <div className="flex items-center gap-2 text-xs">
+                                                            <AdminButton
+                                                                type="button"
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                onClick={() => setIsBulkModalOpen(true)}
+                                                                icon={FileText}
+                                                            >
+                                                                Dán nhiều serial (Paste)
+                                                            </AdminButton>
+                                                        </div>
+
+                                                        {formItems[activeItemIndex].serials.length > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleClearAllSerials(activeItemIndex)}
+                                                                className="text-xs text-rose-600 hover:underline cursor-pointer"
+                                                            >
+                                                                Xóa hết serial
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* Serials table in form */}
                                             <div className="space-y-1.5">
                                                 <div className="text-xs font-semibold text-gray-700 flex justify-between">
-                                                    <span>Danh sách Serial đã nhập ({formItems[activeItemIndex].serials.length}):</span>
-                                                    <span className="text-gray-500 font-normal">Click vào nhãn để đổi trạng thái Tốt ⮂ Lỗi</span>
+                                                    <span>Danh sách Serial ({formItems[activeItemIndex].serials.length}):</span>
+                                                    <span className="text-gray-500 font-normal">
+                                                        {scanningReceipt.status === 'DRAFT'
+                                                            ? 'Click vào nhãn để đổi trạng thái Tốt ⮂ Lỗi'
+                                                            : 'Danh sách serial đã cố định'}
+                                                    </span>
                                                 </div>
 
                                                 <div className="max-h-[260px] overflow-y-auto border border-gray-200 rounded-xl bg-white divide-y divide-gray-100">
                                                     {formItems[activeItemIndex].serials.length === 0 ? (
                                                         <div className="p-6 text-center text-xs text-gray-400">
-                                                            Chưa có serial nào được quét. Sử dụng máy quét hoặc ô nhập phía trên.
+                                                            Chưa có serial nào được quét.
                                                         </div>
                                                     ) : (
                                                         formItems[activeItemIndex].serials.map((ser, sIdx) => (
@@ -2073,26 +2122,39 @@ export default function GoodsReceiptList() {
                                                                 </div>
 
                                                                 <div className="flex items-center gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleToggleSerialStatus(activeItemIndex, sIdx)}
-                                                                        className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${ser.status === 'GOOD_CONDITION'
-                                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                                                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                                                                            }`}
-                                                                        title="Bấm để đổi trạng thái giữa Đạt chuẩn và Lỗi hỏng"
-                                                                    >
-                                                                        {ser.status === 'GOOD_CONDITION' ? '✓ Đạt chuẩn' : '⚠ Hàng lỗi'}
-                                                                    </button>
+                                                                    {scanningReceipt.status === 'DRAFT' ? (
+                                                                        <>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleToggleSerialStatus(activeItemIndex, sIdx)}
+                                                                                className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${ser.status === 'GOOD_CONDITION'
+                                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                                                                    : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                                                                    }`}
+                                                                                title="Bấm để đổi trạng thái giữa Đạt chuẩn và Lỗi hỏng"
+                                                                            >
+                                                                                {ser.status === 'GOOD_CONDITION' ? '✓ Đạt chuẩn' : '⚠ Hàng lỗi'}
+                                                                            </button>
 
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleRemoveSerial(activeItemIndex, sIdx)}
-                                                                        className="p-1 text-gray-400 hover:text-rose-600 rounded transition-colors"
-                                                                        title="Xóa serial"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleRemoveSerial(activeItemIndex, sIdx)}
+                                                                                className="p-1 text-gray-400 hover:text-rose-600 rounded transition-colors"
+                                                                                title="Xóa serial"
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span
+                                                                            className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${ser.status === 'GOOD_CONDITION'
+                                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                                                }`}
+                                                                        >
+                                                                            {ser.status === 'GOOD_CONDITION' ? '✓ Đạt chuẩn' : '⚠ Hàng lỗi'}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         ))

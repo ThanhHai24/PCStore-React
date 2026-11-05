@@ -1065,7 +1065,7 @@ export default function HandoverList() {
                                     <p className="font-bold text-gray-900">{printRecord.carrierInfo?.handoverStaffName}</p>
                                 </div>
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Đại diện bên nhận (Tài xế ĐVVC ngoài)</p>
+                                    <p className="font-semibold text-gray-700">Đại diện bên nhận</p>
                                     <p className="font-bold text-purple-700">{printRecord.carrierInfo?.driverName}</p>
                                 </div>
                             </div>

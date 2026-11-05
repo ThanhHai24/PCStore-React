@@ -71,18 +71,16 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
                                         {specsTable.map((item, index) => (
                                             <tr key={index} className="hover:bg-gray-50/80 transition-colors">
                                                 <td className="border border-gray-300 px-3 py-3 font-bold text-gray-800 text-center uppercase">
-                                                    {item.key}
+                                                    <div>{item.key}</div>
+
                                                 </td>
                                                 <td className="border border-gray-300 px-4 py-3 text-red-600 font-semibold text-center leading-relaxed">
                                                     {item.productId ? (
                                                         <Link
                                                             to={`/product/${item.productId}`}
-                                                            className="text-red-600 hover:text-blue-600 hover:underline transition-colors font-semibold flex items-center justify-center gap-1"
+                                                            className="text-red-600 hover:text-blue-600 hover:underline transition-colors font-semibold inline-flex items-center justify-center gap-1.5 flex-wrap"
                                                         >
                                                             <span>{item.name}</span>
-                                                            <span className="text-[10px] text-blue-500 font-normal bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 whitespace-nowrap">
-                                                                Xem chi tiết ↗
-                                                            </span>
                                                         </Link>
                                                     ) : (
                                                         item.name

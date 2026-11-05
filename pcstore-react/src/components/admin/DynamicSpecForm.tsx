@@ -33,6 +33,11 @@ import {
   type ComponentTemplate
 } from '../../config/specTemplates';
 import { adminProductService } from '../../services/adminProductService';
+import {
+  AdminModalHeader,
+  AdminInput,
+  AdminButton,
+} from './common/modal';
 
 export interface DynamicSpecFormProps {
   value: string;
@@ -1003,43 +1008,29 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
       {/* ========================================================================= */}
       {pickerSlotKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+          <div className="bg-white rounded-2xl shadow-xl w-[80vw] h-[80vh] flex flex-col overflow-hidden border border-gray-200">
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-sky-50/70">
-              <div className="flex items-center gap-2">
-                <Cpu className="w-5 h-5 text-sky-600" />
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900">
-                    Chọn linh kiện cho: <span className="text-sky-600 uppercase">{pickerSlotLabel}</span>
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Tìm kiếm và chọn từ danh mục sản phẩm của hệ thống</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPickerSlotKey(null)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <AdminModalHeader
+              title={
+                <span>
+                  Chọn linh kiện cho: <span className="text-blue-600 uppercase">{pickerSlotLabel}</span>
+                </span>
+              }
+              subtitle="Tìm kiếm và chọn từ danh mục sản phẩm của hệ thống"
+              icon={Cpu}
+              onClose={() => setPickerSlotKey(null)}
+            />
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50 space-y-2">
-              <div className="relative">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchKeyword}
-                  onChange={(e) => handleSearchRemoteProducts(e.target.value)}
-                  placeholder={`Tìm kiếm tên hoặc mã SKU linh kiện (${pickerSlotKey})...`}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 shadow-2xs"
-                  autoFocus
-                />
-                {isSearchingRemote && (
-                  <RefreshCw className="w-4 h-4 text-blue-500 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2" />
-                )}
-              </div>
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <AdminInput
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => handleSearchRemoteProducts(e.target.value)}
+                placeholder={`Tìm kiếm tên hoặc mã SKU linh kiện (${pickerSlotKey})...`}
+                prefixIcon={Search}
+                autoFocus
+              />
             </div>
 
             {/* Product List */}
@@ -1080,14 +1071,16 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                       </div>
                     </div>
 
-                    <button
+                    <AdminButton
                       type="button"
+                      size="sm"
+                      variant="primary"
                       onClick={() => handleSelectProductForSlot(pickerSlotKey, prod)}
-                      className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-2xs shrink-0 flex items-center gap-1"
+                      icon={Check}
+                      className="shrink-0"
                     >
-                      <Check className="w-3.5 h-3.5" />
                       Chọn
-                    </button>
+                    </AdminButton>
                   </div>
                 ))
               ) : (
@@ -1107,28 +1100,29 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                 Hoặc tự nhập tên linh kiện (nếu chưa có trong hệ thống):
               </span>
               <div className="flex flex-col sm:flex-row items-center gap-2">
-                <input
+                <AdminInput
                   type="text"
                   value={manualInputName}
                   onChange={(e) => setManualInputName(e.target.value)}
                   placeholder={`Tên linh kiện (${pickerSlotKey})...`}
-                  className="flex-1 w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  className="flex-1 w-full"
                 />
-                <input
+                <AdminInput
                   type="text"
                   value={manualInputWarranty}
                   onChange={(e) => setManualInputWarranty(e.target.value)}
                   placeholder="36 Tháng"
-                  className="w-full sm:w-28 px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                  className="w-full sm:w-28"
                 />
-                <button
+                <AdminButton
                   type="button"
                   onClick={() => handleSaveManualSlot(pickerSlotKey)}
                   disabled={!manualInputName.trim()}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-900 disabled:opacity-40 text-white text-xs font-bold transition-all shrink-0"
+                  variant="secondary"
+                  className="w-full sm:w-auto shrink-0 !bg-gray-800 hover:!bg-gray-900 !text-white !border-transparent"
                 >
                   Lưu nhập tay
-                </button>
+                </AdminButton>
               </div>
             </div>
           </div>

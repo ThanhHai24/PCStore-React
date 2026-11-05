@@ -34,7 +34,16 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminUserService } from '../../../services/adminUserService';
@@ -944,110 +953,65 @@ export const UserList: React.FC = () => {
                         {/* Tab 1: Thông tin cơ bản */}
                         {activeTab === 'basic' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Tên đăng nhập (Username) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.username}
-                                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                        placeholder="vd: nguyenvana (4 đến 50 ký tự)"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Họ và tên <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.fullName}
-                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                        placeholder="vd: Nguyễn Văn A"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Mật khẩu khởi tạo <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        placeholder="Tối thiểu 8 ký tự (để trống sẽ dùng mặc định: Password123!)"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                    <p className="text-[11px] text-gray-400 mt-1">
-                                        Mật khẩu được mã hóa an toàn trên hệ thống máy chủ trước khi lưu.
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Số Căn cước công dân (CCCD / CMND)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.citizenIdentificationCard}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, citizenIdentificationCard: e.target.value })
-                                        }
-                                        placeholder="vd: 001099012345"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Tên đăng nhập (Username)"
+                                    required
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    placeholder="vd: nguyenvana (4 đến 50 ký tự)"
+                                />
+                                <AdminInput
+                                    label="Họ và tên"
+                                    required
+                                    value={formData.fullName}
+                                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                    placeholder="vd: Nguyễn Văn A"
+                                />
+                                <AdminInput
+                                    label="Mật khẩu khởi tạo"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="Tối thiểu 8 ký tự (để trống sẽ dùng mặc định: Password123!)"
+                                    helperText="Mật khẩu được mã hóa an toàn trên hệ thống máy chủ trước khi lưu."
+                                />
+                                <AdminInput
+                                    label="Số Căn cước công dân (CCCD / CMND)"
+                                    value={formData.citizenIdentificationCard}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, citizenIdentificationCard: e.target.value })
+                                    }
+                                    placeholder="vd: 001099012345"
+                                />
                             </div>
                         )}
 
                         {/* Tab 2: Thông tin liên hệ */}
                         {activeTab === 'contact' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Địa chỉ Email <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        <input
-                                            type="email"
-                                            required
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            placeholder="vd: user@example.com"
-                                            className="w-full text-xs pl-10 pr-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Số điện thoại
-                                    </label>
-                                    <div className="relative">
-                                        <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        <input
-                                            type="tel"
-                                            value={formData.phone}
-                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder="vd: 0912345678"
-                                            className="w-full text-xs pl-10 pr-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Địa chỉ liên hệ
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formData.address}
-                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        placeholder="vd: 123 Nguyễn Trãi, Hà Nội"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Địa chỉ Email"
+                                    required
+                                    type="email"
+                                    prefixIcon={Mail}
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    placeholder="vd: user@example.com"
+                                />
+                                <AdminInput
+                                    label="Số điện thoại"
+                                    type="tel"
+                                    prefixIcon={Phone}
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    placeholder="vd: 0912345678"
+                                />
+                                <AdminInput
+                                    label="Địa chỉ liên hệ"
+                                    value={formData.address}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    placeholder="vd: 123 Nguyễn Trãi, Hà Nội"
+                                />
                             </div>
                         )}
 
@@ -1149,35 +1113,35 @@ export const UserList: React.FC = () => {
                                 Ngày tham gia: <span className="font-semibold text-gray-700">{detailUser.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-2 ml-auto">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                                 >
                                     Đóng
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
-                                    onClick={() => {
-                                        handleOpenDeleteModal(detailUser);
-                                    }}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 text-rose-600 hover:bg-rose-50 border border-rose-200 font-semibold text-xs rounded-xl transition-all"
-                                    title="Xóa tài khoản này"
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleOpenDeleteModal(detailUser)}
+                                    icon={Trash2}
                                 >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    <span>Xóa tài khoản</span>
-                                </button>
-                                <button
+                                    Xóa tài khoản
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         handleOpenEditModal(detailUser);
                                     }}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                                    icon={Edit}
                                 >
-                                    <Edit className="w-3.5 h-3.5" />
-                                    <span>Chỉnh sửa tài khoản</span>
-                                </button>
+                                    Chỉnh sửa tài khoản
+                                </AdminButton>
                             </div>
                         </div>
                     )
@@ -1435,115 +1399,71 @@ export const UserList: React.FC = () => {
                         {/* Tab 1: Thông tin cơ bản */}
                         {activeTab === 'basic' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Tên đăng nhập (Username) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editFormData.username}
-                                        onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Họ và tên <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editFormData.fullName}
-                                        onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Mật khẩu mới
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={editFormData.password}
-                                        onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
-                                        placeholder="Để trống nếu không muốn đổi mật khẩu"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                    <p className="text-[11px] text-gray-400 mt-1">
-                                        Chỉ điền vào ô này nếu cần đặt lại mật khẩu mới (tối thiểu 8 ký tự).
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Số Căn cước công dân (CCCD / CMND)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.citizenIdentificationCard}
-                                        onChange={(e) =>
-                                            setEditFormData({
-                                                ...editFormData,
-                                                citizenIdentificationCard: e.target.value,
-                                            })
-                                        }
-                                        placeholder="vd: 001099012345"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Tên đăng nhập (Username)"
+                                    required
+                                    value={editFormData.username}
+                                    onChange={(e) => setEditFormData({ ...editFormData, username: e.target.value })}
+                                />
+                                <AdminInput
+                                    label="Họ và tên"
+                                    required
+                                    value={editFormData.fullName}
+                                    onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                                />
+                                <AdminInput
+                                    label="Mật khẩu mới"
+                                    type="password"
+                                    value={editFormData.password}
+                                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                                    placeholder="Để trống nếu không muốn đổi mật khẩu"
+                                    helperText="Chỉ điền vào ô này nếu cần đặt lại mật khẩu mới (tối thiểu 8 ký tự)."
+                                />
+                                <AdminInput
+                                    label="Số Căn cước công dân (CCCD / CMND)"
+                                    value={editFormData.citizenIdentificationCard}
+                                    onChange={(e) =>
+                                        setEditFormData({
+                                            ...editFormData,
+                                            citizenIdentificationCard: e.target.value,
+                                        })
+                                    }
+                                    placeholder="vd: 001099012345"
+                                />
                             </div>
                         )}
 
                         {/* Tab 2: Thông tin liên hệ */}
                         {activeTab === 'contact' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Địa chỉ Email <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        <input
-                                            type="email"
-                                            required
-                                            value={editFormData.email}
-                                            onChange={(e) =>
-                                                setEditFormData({ ...editFormData, email: e.target.value })
-                                            }
-                                            className="w-full text-xs pl-10 pr-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Số điện thoại
-                                    </label>
-                                    <div className="relative">
-                                        <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                        <input
-                                            type="tel"
-                                            value={editFormData.phone}
-                                            onChange={(e) =>
-                                                setEditFormData({ ...editFormData, phone: e.target.value })
-                                            }
-                                            placeholder="vd: 0912345678"
-                                            className="w-full text-xs pl-10 pr-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Địa chỉ liên hệ
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editFormData.address}
-                                        onChange={(e) =>
-                                            setEditFormData({ ...editFormData, address: e.target.value })
-                                        }
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Địa chỉ Email"
+                                    required
+                                    type="email"
+                                    prefixIcon={Mail}
+                                    value={editFormData.email}
+                                    onChange={(e) =>
+                                        setEditFormData({ ...editFormData, email: e.target.value })
+                                    }
+                                />
+                                <AdminInput
+                                    label="Số điện thoại"
+                                    type="tel"
+                                    prefixIcon={Phone}
+                                    value={editFormData.phone}
+                                    onChange={(e) =>
+                                        setEditFormData({ ...editFormData, phone: e.target.value })
+                                    }
+                                    placeholder="vd: 0912345678"
+                                />
+                                <AdminInput
+                                    label="Địa chỉ liên hệ"
+                                    value={editFormData.address}
+                                    onChange={(e) =>
+                                        setEditFormData({ ...editFormData, address: e.target.value })
+                                    }
+                                    placeholder="vd: 123 Nguyễn Trãi, Hà Nội"
+                                />
                             </div>
                         )}
 
@@ -1635,82 +1555,74 @@ export const UserList: React.FC = () => {
 
             {/* MODAL 4: PHÂN QUYỀN HẠN NHANH */}
             {isRoleModalOpen && selectedUser && (
-                <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
-                        <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                <Key className="w-5 h-5 text-purple-600" /> Thiết Lập Phân Quyền
-                            </h2>
-                            <button
+                <AdminModal
+                    isOpen={isRoleModalOpen}
+                    onClose={() => !isSubmitting && setIsRoleModalOpen(false)}
+                    title="Thiết Lập Phân Quyền"
+                    icon={Key}
+                    size="sm"
+                    footer={
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsRoleModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600"
+                                disabled={isSubmitting}
                             >
-                                <X className="w-5 h-5" />
-                            </button>
+                                Hủy bỏ
+                            </AdminButton>
+                            <AdminButton
+                                type="button"
+                                variant="primary"
+                                onClick={handleSaveRole}
+                                disabled={isSubmitting}
+                                isLoading={isSubmitting}
+                                loadingText="Đang lưu..."
+                                icon={Save}
+                            >
+                                Lưu Phân Quyền
+                            </AdminButton>
+                        </div>
+                    }
+                >
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 p-3 bg-purple-50/60 border border-purple-100 rounded-xl">
+                            <img
+                                src={selectedUser.avatar}
+                                alt={selectedUser.fullName}
+                                className="w-10 h-10 rounded-full object-cover border border-purple-200"
+                            />
+                            <div>
+                                <h3 className="font-bold text-xs text-gray-900">{selectedUser.fullName}</h3>
+                                <p className="text-[11px] text-gray-500">{selectedUser.email}</p>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleSaveRole} className="space-y-4">
-                            <div className="flex items-center gap-3 p-3 bg-purple-50/60 border border-purple-100 rounded-xl">
-                                <img
-                                    src={selectedUser.avatar}
-                                    alt={selectedUser.fullName}
-                                    className="w-10 h-10 rounded-full object-cover border border-purple-200"
-                                />
-                                <div>
-                                    <h3 className="font-bold text-xs text-gray-900">{selectedUser.fullName}</h3>
-                                    <p className="text-[11px] text-gray-500">{selectedUser.email}</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-gray-800">Chọn vai trò mới:</label>
-                                {ROLE_OPTIONS.map((r) => (
-                                    <button
-                                        key={r.role}
-                                        type="button"
-                                        onClick={() => setRoleFormRole(r.role)}
-                                        className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${roleFormRole === r.role
+                        <div className="space-y-2">
+                            <AdminLabel>Chọn vai trò mới:</AdminLabel>
+                            {ROLE_OPTIONS.map((r) => (
+                                <button
+                                    key={r.role}
+                                    type="button"
+                                    onClick={() => setRoleFormRole(r.role)}
+                                    className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                                        roleFormRole === r.role
                                             ? 'border-purple-500 bg-purple-50 text-purple-900 font-bold'
                                             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <r.icon className="w-4 h-4 text-purple-600" />
-                                            <span className="text-xs">{r.title}</span>
-                                        </div>
-                                        {roleFormRole === r.role && (
-                                            <Check className="w-4 h-4 text-purple-600" />
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsRoleModalOpen(false)}
-                                    disabled={isSubmitting}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl"
+                                    }`}
                                 >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-4 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow flex items-center gap-1.5 disabled:opacity-60"
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Save className="w-4 h-4" />
+                                    <div className="flex items-center gap-2">
+                                        <r.icon className="w-4 h-4 text-purple-600" />
+                                        <span className="text-xs">{r.title}</span>
+                                    </div>
+                                    {roleFormRole === r.role && (
+                                        <Check className="w-4 h-4 text-purple-600" />
                                     )}
-                                    <span>{isSubmitting ? 'Đang lưu...' : 'Lưu Phân Quyền'}</span>
                                 </button>
-                            </div>
-                        </form>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                </AdminModal>
             )}
 
             {/* MODAL 5: POPUP XÁC NHẬN XÓA TÀI KHOẢN (Thay thế alert/window.confirm) */}

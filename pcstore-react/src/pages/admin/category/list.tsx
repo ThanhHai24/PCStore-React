@@ -22,7 +22,15 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminCategoryService } from '../../../services/adminCategoryService';
@@ -1012,86 +1020,65 @@ export const CategoryList: React.FC = () => {
                         {/* Tab 1: Thông tin cơ bản */}
                         {activeTab === 'basic' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Tên danh mục sản phẩm <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setFormData({
-                                                ...formData,
-                                                name: val,
-                                                slug: generateSlug(val),
-                                                metaTitle: `${val} Chính Hãng - Giá Rẻ | PCStore`,
-                                            });
-                                        }}
-                                        placeholder="vd: PC Gaming Khủng"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Tên danh mục sản phẩm"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFormData({
+                                            ...formData,
+                                            name: val,
+                                            slug: generateSlug(val),
+                                            metaTitle: `${val} Chính Hãng - Giá Rẻ | PCStore`,
+                                        });
+                                    }}
+                                    placeholder="vd: PC Gaming Khủng"
+                                />
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Đường dẫn tĩnh (Slug) <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                required
-                                                value={formData.slug}
-                                                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                                placeholder="vd: pc-gaming-khung"
-                                                className="w-full text-xs px-3.5 py-2.5 font-mono bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                            />
-                                            <button
+                                    <AdminInput
+                                        label="Đường dẫn tĩnh (Slug)"
+                                        required
+                                        value={formData.slug}
+                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                                        placeholder="vd: pc-gaming-khung"
+                                        action={
+                                            <AdminButton
                                                 type="button"
+                                                variant="ghost"
                                                 onClick={() => setFormData({ ...formData, slug: generateSlug(formData.name) })}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1"
-                                                title="Tạo lại từ tên danh mục"
+                                                icon={RefreshCw}
                                             >
-                                                <RefreshCw className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                        <p className="text-[11px] text-gray-400 mt-1">Đường dẫn thân thiện hiển thị trên thanh địa chỉ URL</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Nhóm danh mục cha
-                                        </label>
-                                        <select
-                                            value={formData.parentId || ''}
-                                            onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
-                                            className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        >
-                                            <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
-                                            {allParentOptions.map((rc) => (
-                                                <option key={rc.id} value={rc.id}>
-                                                    📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="text-[11px] text-gray-400 mt-1">Chọn danh mục cha để tạo cấu trúc phân cấp đa tầng</p>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Mô tả chi tiết danh mục
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        placeholder="Mô tả công năng, đối tượng người dùng hoặc đặc tính nổi bật của nhóm sản phẩm..."
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
+                                                Tạo lại slug
+                                            </AdminButton>
+                                        }
+                                        helperText="Đường dẫn thân thiện hiển thị trên thanh địa chỉ URL"
+                                        className="font-mono"
                                     />
+
+                                    <AdminSelect
+                                        label="Nhóm danh mục cha"
+                                        value={formData.parentId || ''}
+                                        onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
+                                        helperText="Chọn danh mục cha để tạo cấu trúc phân cấp đa tầng"
+                                    >
+                                        <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
+                                        {allParentOptions.map((rc) => (
+                                            <option key={rc.id} value={rc.id}>
+                                                📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
+                                            </option>
+                                        ))}
+                                    </AdminSelect>
                                 </div>
+
+                                <AdminTextarea
+                                    label="Mô tả chi tiết danh mục"
+                                    rows={3}
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Mô tả công năng, đối tượng người dùng hoặc đặc tính nổi bật của nhóm sản phẩm..."
+                                />
                             </div>
                         )}
                         {/* Tab 2: Hiển thị & Trạng thái */}
@@ -1203,24 +1190,26 @@ export const CategoryList: React.FC = () => {
                                 Khởi tạo ngày: <span className="font-semibold text-gray-700">{detailCategory.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-2 ml-auto">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                                 >
                                     Đóng
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         handleOpenEditModal(detailCategory);
                                     }}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                                    icon={Edit}
                                 >
-                                    <Edit className="w-3.5 h-3.5" />
-                                    <span>Chỉnh sửa danh mục</span>
-                                </button>
+                                    Chỉnh sửa danh mục
+                                </AdminButton>
                             </div>
                         </div>
                     )
@@ -1496,78 +1485,57 @@ export const CategoryList: React.FC = () => {
                         {/* Tab 1: Thông tin cơ bản */}
                         {activeTab === 'basic' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Tên danh mục sản phẩm <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editFormData.name}
-                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                                        placeholder="vd: PC Gaming Khủng"
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Tên danh mục sản phẩm"
+                                    required
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    placeholder="vd: PC Gaming Khủng"
+                                />
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Đường dẫn tĩnh (Slug) <span className="text-red-500">*</span>
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                required
-                                                value={editFormData.slug}
-                                                onChange={(e) => setEditFormData({ ...editFormData, slug: e.target.value })}
-                                                placeholder="vd: pc-gaming-khung"
-                                                className="w-full text-xs px-3.5 py-2.5 font-mono bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                            />
-                                            <button
+                                    <AdminInput
+                                        label="Đường dẫn tĩnh (Slug)"
+                                        required
+                                        value={editFormData.slug}
+                                        onChange={(e) => setEditFormData({ ...editFormData, slug: e.target.value })}
+                                        placeholder="vd: pc-gaming-khung"
+                                        action={
+                                            <AdminButton
                                                 type="button"
+                                                variant="ghost"
                                                 onClick={() => setEditFormData({ ...editFormData, slug: generateSlug(editFormData.name) })}
-                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors p-1"
-                                                title="Tạo lại từ tên danh mục"
+                                                icon={RefreshCw}
                                             >
-                                                <RefreshCw className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                            Nhóm danh mục cha
-                                        </label>
-                                        <select
-                                            value={editFormData.parentId || ''}
-                                            onChange={(e) => setEditFormData({ ...editFormData, parentId: e.target.value || null })}
-                                            className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
-                                        >
-                                            <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
-                                            {allParentOptions
-                                                .filter((rc) => rc.id !== editingCategory?.id)
-                                                .map((rc) => (
-                                                    <option key={rc.id} value={rc.id}>
-                                                        📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                        Mô tả chi tiết danh mục
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={editFormData.description}
-                                        onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                                        placeholder="Mô tả công năng hoặc đặc tính nổi bật của danh mục..."
-                                        className="w-full text-xs px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition-all"
+                                                Tạo lại từ tên danh mục
+                                            </AdminButton>
+                                        }
+                                        className="font-mono"
                                     />
+
+                                    <AdminSelect
+                                        label="Nhóm danh mục cha"
+                                        value={editFormData.parentId || ''}
+                                        onChange={(e) => setEditFormData({ ...editFormData, parentId: e.target.value || null })}
+                                    >
+                                        <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
+                                        {allParentOptions
+                                            .filter((rc) => rc.id !== editingCategory?.id)
+                                            .map((rc) => (
+                                                <option key={rc.id} value={rc.id}>
+                                                    📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
+                                                </option>
+                                            ))}
+                                    </AdminSelect>
                                 </div>
+
+                                <AdminTextarea
+                                    label="Mô tả chi tiết danh mục"
+                                    rows={3}
+                                    value={editFormData.description}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    placeholder="Mô tả công năng hoặc đặc tính nổi bật của danh mục..."
+                                />
                             </div>
                         )}
                         {/* Tab 3: Hiển thị & Trạng thái */}

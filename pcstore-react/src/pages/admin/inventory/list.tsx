@@ -31,7 +31,13 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminButton,
+    AdminLabel,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminProductService } from '../../../services/adminProductService';
@@ -906,17 +912,18 @@ export default function WarehouseInventoryList() {
                                     >
                                         {STOCK_LEVEL_CONFIG[selectedItem.stockStatus].label}
                                     </span>
-                                    <button
+                                    <AdminButton
                                         type="button"
+                                        size="sm"
+                                        variant="primary"
                                         onClick={() => {
                                             setIsDetailModalOpen(false);
                                             navigate('/admin/import');
                                         }}
-                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1 cursor-pointer"
+                                        icon={Plus}
                                     >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        <span>Lập đơn nhập bổ sung</span>
-                                    </button>
+                                        Lập đơn nhập bổ sung
+                                    </AdminButton>
                                 </div>
                             </div>
 
@@ -990,28 +997,29 @@ export default function WarehouseInventoryList() {
                     {activeDetailTab === 'serials' && (
                         <div className="space-y-4 p-2">
                             <div className="flex flex-col sm:flex-row justify-between gap-3">
-                                <div className="relative flex-1">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input
+                                <div className="flex-1">
+                                    <AdminInput
                                         type="text"
                                         value={serialSearchFilter}
                                         onChange={(e) => setSerialSearchFilter(e.target.value)}
                                         placeholder="Tra cứu số Serial của sản phẩm này..."
-                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-mono"
+                                        prefixIcon={Search}
+                                        className="font-mono"
                                     />
                                 </div>
 
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         navigate(`/admin/warehouse/serials?productId=${selectedItem.productId}`);
                                     }}
-                                    className="px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+                                    icon={Barcode}
                                 >
-                                    <Barcode className="w-4 h-4" />
-                                    <span>Mở trang Quản lý Serial đầy đủ</span>
-                                </button>
+                                    Mở trang Quản lý Serial đầy đủ
+                                </AdminButton>
                             </div>
 
                             {/* Table of Serials */}

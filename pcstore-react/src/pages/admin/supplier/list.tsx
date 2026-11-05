@@ -22,7 +22,15 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminSupplierService } from '../../../services/adminSupplierService';
@@ -956,42 +964,45 @@ export default function SupplierList() {
                     <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-2">
                             {activeAddTab === 'contact' && (
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => setActiveAddTab('basic')}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                                 >
                                     Quay lại
-                                </button>
+                                </AdminButton>
                             )}
                             {activeAddTab === 'basic' && (
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
+                                    size="sm"
                                     onClick={() => setActiveAddTab('contact')}
-                                    className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800"
                                 >
                                     Tiếp theo: Đại diện & Địa chỉ
-                                </button>
+                                </AdminButton>
                             )}
                         </div>
-                        <div className="flex items-center gap-2.5">
-                            <button
+                        <div className="flex items-center gap-3">
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsAddModalOpen(false)}
                                 disabled={isSubmitting}
-                                className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                             >
                                 Hủy bỏ
-                            </button>
-                            <button
+                            </AdminButton>
+                            <AdminButton
                                 type="button"
+                                variant="primary"
                                 onClick={handleSaveAdd}
                                 disabled={isSubmitting}
-                                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 active:scale-[0.98] shadow-md shadow-blue-500/20 flex items-center gap-1.5 disabled:opacity-50"
+                                isLoading={isSubmitting}
+                                loadingText="Đang lưu..."
                             >
-                                {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                <span>Lưu nhà cung cấp</span>
-                            </button>
+                                Lưu nhà cung cấp
+                            </AdminButton>
                         </div>
                     </div>
                 }
@@ -999,127 +1010,89 @@ export default function SupplierList() {
                 {activeAddTab === 'basic' && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Tên nhà cung cấp <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: Công ty TNHH Asus Việt Nam..."
-                                    value={addForm.name}
-                                    onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-                                    className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Mã nhà cung cấp <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: NCC_ASUS, NCC_FPT..."
-                                    value={addForm.code}
-                                    onChange={(e) =>
-                                        setAddForm({ ...addForm, code: e.target.value.toUpperCase() })
-                                    }
-                                    className="w-full text-xs font-mono font-bold uppercase px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                />
-                            </div>
+                            <AdminInput
+                                label="Tên nhà cung cấp"
+                                required
+                                placeholder="Ví dụ: Công ty TNHH Asus Việt Nam..."
+                                value={addForm.name}
+                                onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                            />
+                            <AdminInput
+                                label="Mã nhà cung cấp"
+                                required
+                                placeholder="Ví dụ: NCC_ASUS, NCC_FPT..."
+                                value={addForm.code}
+                                onChange={(e) =>
+                                    setAddForm({ ...addForm, code: e.target.value.toUpperCase() })
+                                }
+                                className="font-mono uppercase font-bold"
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Email chính thức <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="email"
-                                    placeholder="contact@nhacungcap.vn"
-                                    value={addForm.email}
-                                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                                    className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Mã số thuế doanh nghiệp (MST)
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: 0312345678"
-                                    value={addForm.taxCode}
-                                    onChange={(e) => setAddForm({ ...addForm, taxCode: e.target.value })}
-                                    className="w-full text-xs font-mono font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                                />
-                            </div>
+                            <AdminInput
+                                label="Email chính thức"
+                                required
+                                type="email"
+                                placeholder="contact@nhacungcap.vn"
+                                value={addForm.email}
+                                onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                            />
+                            <AdminInput
+                                label="Mã số thuế doanh nghiệp (MST)"
+                                placeholder="Ví dụ: 0312345678"
+                                value={addForm.taxCode}
+                                onChange={(e) => setAddForm({ ...addForm, taxCode: e.target.value })}
+                                className="font-mono"
+                            />
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">
-                                Trạng thái hoạt động
-                            </label>
-                            <select
-                                value={addForm.status}
-                                onChange={(e) =>
-                                    setAddForm({
-                                        ...addForm,
-                                        status: e.target.value as BackendSupplierStatus,
-                                    })
-                                }
-                                className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
-                            >
-                                <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
-                                <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
-                            </select>
-                        </div>
+                        <AdminSelect
+                            label="Trạng thái hoạt động"
+                            value={addForm.status}
+                            onChange={(e) =>
+                                setAddForm({
+                                    ...addForm,
+                                    status: e.target.value as BackendSupplierStatus,
+                                })
+                            }
+                        >
+                            <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
+                            <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
+                        </AdminSelect>
                     </div>
                 )}
 
                 {activeAddTab === 'contact' && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Họ và tên người đại diện liên hệ
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="Ví dụ: Nguyễn Văn A"
-                                    value={addForm.contactPerson}
-                                    onChange={(e) =>
-                                        setAddForm({ ...addForm, contactPerson: e.target.value })
-                                    }
-                                    className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Số điện thoại liên hệ
-                                </label>
-                                <input
-                                    type="tel"
-                                    placeholder="Ví dụ: 0901234567 hoặc +84901234567"
-                                    value={addForm.phoneNumber}
-                                    onChange={(e) =>
-                                        setAddForm({ ...addForm, phoneNumber: e.target.value })
-                                    }
-                                    className="w-full text-xs font-mono font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">
-                                Địa chỉ trụ sở / Kho xuất hàng
-                            </label>
-                            <textarea
-                                rows={3}
-                                placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
-                                value={addForm.address}
-                                onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
-                                className="w-full text-xs p-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
+                            <AdminInput
+                                label="Họ và tên người đại diện liên hệ"
+                                placeholder="Ví dụ: Nguyễn Văn A"
+                                value={addForm.contactPerson}
+                                onChange={(e) =>
+                                    setAddForm({ ...addForm, contactPerson: e.target.value })
+                                }
+                            />
+                            <AdminInput
+                                label="Số điện thoại liên hệ"
+                                type="tel"
+                                placeholder="Ví dụ: 0901234567 hoặc +84901234567"
+                                value={addForm.phoneNumber}
+                                onChange={(e) =>
+                                    setAddForm({ ...addForm, phoneNumber: e.target.value })
+                                }
+                                className="font-mono"
                             />
                         </div>
+
+                        <AdminTextarea
+                            label="Địa chỉ trụ sở / Kho xuất hàng"
+                            rows={3}
+                            placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                            value={addForm.address}
+                            onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
+                        />
                     </div>
                 )}
             </AdminModal>
@@ -1138,153 +1111,116 @@ export default function SupplierList() {
                     activeTab={activeEditTab}
                     onTabChange={setActiveEditTab}
                     footer={
-                        <div className="flex items-center justify-between w-full">
-                            <button
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsEditModalOpen(false)}
                                 disabled={isSubmitting}
-                                className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                             >
                                 Hủy bỏ
-                            </button>
-                            <button
+                            </AdminButton>
+                            <AdminButton
                                 type="button"
+                                variant="primary"
                                 onClick={handleSaveEdit}
                                 disabled={isSubmitting}
-                                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 active:scale-[0.98] shadow-md shadow-blue-500/20 flex items-center gap-1.5 disabled:opacity-50"
+                                isLoading={isSubmitting}
+                                loadingText="Đang lưu..."
                             >
-                                {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                <span>Lưu thay đổi</span>
-                            </button>
+                                Lưu thay đổi
+                            </AdminButton>
                         </div>
                     }
                 >
                     {activeEditTab === 'basic' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Tên nhà cung cấp <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.name}
-                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                        className="w-full text-xs font-bold px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Mã nhà cung cấp <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.code}
-                                        onChange={(e) =>
-                                            setEditForm({
-                                                ...editForm,
-                                                code: e.target.value.toUpperCase(),
-                                            })
-                                        }
-                                        className="w-full text-xs font-mono font-bold uppercase px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Email chính thức <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={editForm.email}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, email: e.target.value })
-                                        }
-                                        className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Mã số thuế doanh nghiệp (MST)
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.taxCode}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, taxCode: e.target.value })
-                                        }
-                                        className="w-full text-xs font-mono font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-blue-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Trạng thái hoạt động
-                                </label>
-                                <select
-                                    value={editForm.status}
+                                <AdminInput
+                                    label="Tên nhà cung cấp"
+                                    required
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                />
+                                <AdminInput
+                                    label="Mã nhà cung cấp"
+                                    required
+                                    value={editForm.code}
                                     onChange={(e) =>
                                         setEditForm({
                                             ...editForm,
-                                            status: e.target.value as BackendSupplierStatus,
+                                            code: e.target.value.toUpperCase(),
                                         })
                                     }
-                                    className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
-                                >
-                                    <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
-                                    <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
-                                </select>
+                                    className="font-mono uppercase font-bold"
+                                />
                             </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <AdminInput
+                                    label="Email chính thức"
+                                    required
+                                    type="email"
+                                    value={editForm.email}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, email: e.target.value })
+                                    }
+                                />
+                                <AdminInput
+                                    label="Mã số thuế doanh nghiệp (MST)"
+                                    value={editForm.taxCode}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, taxCode: e.target.value })
+                                    }
+                                    className="font-mono"
+                                />
+                            </div>
+
+                            <AdminSelect
+                                label="Trạng thái hoạt động"
+                                value={editForm.status}
+                                onChange={(e) =>
+                                    setEditForm({
+                                        ...editForm,
+                                        status: e.target.value as BackendSupplierStatus,
+                                    })
+                                }
+                            >
+                                <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
+                                <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
+                            </AdminSelect>
                         </div>
                     )}
 
                     {activeEditTab === 'contact' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Họ và tên người đại diện
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.contactPerson}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, contactPerson: e.target.value })
-                                        }
-                                        className="w-full text-xs font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 mb-1">
-                                        Số điện thoại liên hệ
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        value={editForm.phoneNumber}
-                                        onChange={(e) =>
-                                            setEditForm({ ...editForm, phoneNumber: e.target.value })
-                                        }
-                                        className="w-full text-xs font-mono font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">
-                                    Địa chỉ trụ sở / Kho xuất
-                                </label>
-                                <textarea
-                                    rows={3}
-                                    value={editForm.address}
+                                <AdminInput
+                                    label="Họ và tên người đại diện"
+                                    value={editForm.contactPerson}
                                     onChange={(e) =>
-                                        setEditForm({ ...editForm, address: e.target.value })
+                                        setEditForm({ ...editForm, contactPerson: e.target.value })
                                     }
-                                    className="w-full text-xs p-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-blue-500"
+                                />
+                                <AdminInput
+                                    label="Số điện thoại liên hệ"
+                                    type="tel"
+                                    value={editForm.phoneNumber}
+                                    onChange={(e) =>
+                                        setEditForm({ ...editForm, phoneNumber: e.target.value })
+                                    }
+                                    className="font-mono"
                                 />
                             </div>
+
+                            <AdminTextarea
+                                label="Địa chỉ trụ sở / Kho xuất"
+                                rows={3}
+                                value={editForm.address}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, address: e.target.value })
+                                }
+                            />
                         </div>
                     )}
                 </AdminModal>
@@ -1318,24 +1254,26 @@ export default function SupplierList() {
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         handleOpenEdit(selectedSupplier);
                                     }}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+                                    icon={Edit}
                                 >
-                                    <Edit className="w-3.5 h-3.5" />
                                     Chỉnh sửa hồ sơ
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-5 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800"
                                 >
                                     Đóng
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
                     }

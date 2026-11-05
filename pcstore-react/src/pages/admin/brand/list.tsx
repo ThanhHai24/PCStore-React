@@ -24,7 +24,16 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminBrandService } from '../../../services/adminBrandService';
@@ -878,100 +887,60 @@ export default function BrandList() {
                 description="Tạo mới hãng sản xuất vào hệ thống cơ sở dữ liệu"
                 size="lg"
                 footer={
-                    <div className="flex items-center justify-end gap-3 w-full">
-                        <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={() => setIsAddModalOpen(false)}
-                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                            Hủy bỏ
-                        </button>
-                        <button
-                            type="button"
-                            disabled={isSubmitting}
-                            onClick={handleAddSubmit}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Đang tạo...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="w-4 h-4" />
-                                    Tạo thương hiệu
-                                </>
-                            )}
-                        </button>
-                    </div>
+                    <AdminModalFooter
+                        onCancel={() => setIsAddModalOpen(false)}
+                        onSubmit={handleAddSubmit}
+                        isSubmitting={isSubmitting}
+                        submittingText="Đang tạo..."
+                        submitText="Tạo thương hiệu"
+                        submitIcon={Plus}
+                    />
                 }
             >
                 <form onSubmit={handleAddSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            Tên thương hiệu <span className="text-rose-500">*</span>
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            placeholder="Ví dụ: ASUS, Gigabyte, Intel, MSI..."
-                            value={addForm.name}
-                            onChange={(e) => {
-                                const newName = e.target.value;
-                                setAddForm((prev) => ({
-                                    ...prev,
-                                    name: newName,
-                                    slug: generateSlug(newName),
-                                }));
-                            }}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                        />
-                    </div>
+                    <AdminInput
+                        label="Tên thương hiệu"
+                        required
+                        placeholder="Ví dụ: ASUS, Gigabyte, Intel, MSI..."
+                        value={addForm.name}
+                        onChange={(e) => {
+                            const newName = e.target.value;
+                            setAddForm((prev) => ({
+                                ...prev,
+                                name: newName,
+                                slug: generateSlug(newName),
+                            }));
+                        }}
+                    />
 
                     {/* Slug URL */}
-                    <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                            <label className="block text-sm font-medium text-gray-700">
-                                Đường dẫn tĩnh (Slug URL)
-                            </label>
-                            <button
+                    <AdminInput
+                        label="Đường dẫn tĩnh (Slug URL)"
+                        action={
+                            <AdminButton
                                 type="button"
+                                variant="ghost"
                                 onClick={() => setAddForm((prev) => ({ ...prev, slug: generateSlug(prev.name) }))}
-                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+                                icon={RefreshCw}
                             >
-                                <RefreshCw className="w-3 h-3" />
                                 Tạo lại slug
-                            </button>
-                        </div>
-                        <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-600">
-                            <span className="inline-flex items-center px-3.5 bg-gray-50 text-gray-500 text-xs font-mono border-r border-gray-200">
-                                /thuong-hieu/
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="asus"
-                                value={addForm.slug}
-                                onChange={(e) => setAddForm({ ...addForm, slug: e.target.value })}
-                                className="w-full px-3.5 py-2.5 text-sm font-mono text-gray-800 focus:outline-none"
-                            />
-                        </div>
-                    </div>
+                            </AdminButton>
+                        }
+                        prefixText="/thuong-hieu/"
+                        placeholder="asus"
+                        value={addForm.slug}
+                        onChange={(e) => setAddForm({ ...addForm, slug: e.target.value })}
+                        className="font-mono"
+                    />
 
                     {/* Description */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                            Mô tả thương hiệu
-                        </label>
-                        <textarea
-                            rows={3}
-                            placeholder="Mô tả thông tin hãng sản xuất, lịch sử phát triển..."
-                            value={addForm.description}
-                            onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
-                        />
-                    </div>
+                    <AdminTextarea
+                        label="Mô tả thương hiệu"
+                        rows={3}
+                        placeholder="Mô tả thông tin hãng sản xuất, lịch sử phát triển..."
+                        value={addForm.description}
+                        onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
+                    />
 
                     {/* Status checkbox */}
                     <div className="pt-2">
@@ -1006,90 +975,50 @@ export default function BrandList() {
                     description="Cập nhật thông tin thương hiệu trong cơ sở dữ liệu"
                     size="lg"
                     footer={
-                        <div className="flex items-center justify-end gap-3 w-full">
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={() => setIsEditModalOpen(false)}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isSubmitting}
-                                onClick={handleSaveEdit}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Đang lưu...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="w-4 h-4" />
-                                        Lưu thay đổi
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                        <AdminModalFooter
+                            onCancel={() => setIsEditModalOpen(false)}
+                            onSubmit={handleSaveEdit}
+                            isSubmitting={isSubmitting}
+                            submittingText="Đang lưu..."
+                            submitText="Lưu thay đổi"
+                            submitIcon={Check}
+                        />
                     }
                 >
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                Tên thương hiệu <span className="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={editForm.name}
-                                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                            />
-                        </div>
+                        <AdminInput
+                            label="Tên thương hiệu"
+                            required
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        />
 
                         {/* Slug */}
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-sm font-medium text-gray-700">
-                                    Đường dẫn tĩnh (Slug URL)
-                                </label>
-                                <button
+                        <AdminInput
+                            label="Đường dẫn tĩnh (Slug URL)"
+                            action={
+                                <AdminButton
                                     type="button"
+                                    variant="ghost"
                                     onClick={() => setEditForm((prev) => (prev ? { ...prev, slug: generateSlug(prev.name) } : null))}
-                                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+                                    icon={RefreshCw}
                                 >
-                                    <RefreshCw className="w-3 h-3" />
                                     Tạo lại từ tên
-                                </button>
-                            </div>
-                            <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-600">
-                                <span className="inline-flex items-center px-3.5 bg-gray-50 text-gray-500 text-xs font-mono border-r border-gray-200">
-                                    /thuong-hieu/
-                                </span>
-                                <input
-                                    type="text"
-                                    value={editForm.slug}
-                                    onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
-                                    className="w-full px-3.5 py-2.5 text-sm font-mono text-gray-800 focus:outline-none"
-                                />
-                            </div>
-                        </div>
+                                </AdminButton>
+                            }
+                            prefixText="/thuong-hieu/"
+                            value={editForm.slug}
+                            onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                            className="font-mono"
+                        />
 
                         {/* Description */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                Mô tả thương hiệu
-                            </label>
-                            <textarea
-                                rows={3}
-                                value={editForm.description}
-                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all resize-none"
-                            />
-                        </div>
+                        <AdminTextarea
+                            label="Mô tả thương hiệu"
+                            rows={3}
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        />
 
                         {/* Status Checkbox */}
                         <div className="pt-2">
@@ -1134,24 +1063,26 @@ export default function BrandList() {
                                 <span>Thêm vào hệ thống: {selectedBrand.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         handleOpenEdit(selectedBrand);
                                     }}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold hover:bg-amber-100 transition-colors"
+                                    icon={Edit}
                                 >
-                                    <Edit className="w-3.5 h-3.5" />
                                     Chỉnh sửa
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-5 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                                 >
                                     Đóng
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
                     }

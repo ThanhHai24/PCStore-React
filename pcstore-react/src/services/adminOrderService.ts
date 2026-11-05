@@ -156,6 +156,49 @@ export const adminOrderService = {
   },
 
   /**
+   * Giai đoạn 3: Gán mã serial sản phẩm vào đơn hàng (chuyển trạng thái serial sang PACKING)
+   */
+  async assignSerials(id: number | string, itemSerials: Record<string | number, string[]>): Promise<OrderResponse> {
+    const response = await fetchWithAuth(`${API_ENDPOINTS.ADMIN.ORDERS}/${id}/assign-serials`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ itemSerials }),
+    });
+
+    return handleResponse<OrderResponse>(response);
+  },
+
+  /**
+   * Giai đoạn 3 Bước 5: Bàn giao đơn hàng cho ĐVVC ngoài (chuyển trạng thái serial sang DELIVERING)
+   */
+  async handoverToCarrier(id: number | string): Promise<OrderResponse> {
+    const response = await fetchWithAuth(`${API_ENDPOINTS.ADMIN.ORDERS}/${id}/handover`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return handleResponse<OrderResponse>(response);
+  },
+
+  /**
+   * Giai đoạn 4: Hoàn thành đơn hàng (chuyển trạng thái đơn sang COMPLETED & toàn bộ serial sang SOLD)
+   */
+  async completeOrder(id: number | string): Promise<OrderResponse> {
+    const response = await fetchWithAuth(`${API_ENDPOINTS.ADMIN.ORDERS}/${id}/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return handleResponse<OrderResponse>(response);
+  },
+
+  /**
    * Xóa đơn hàng (soft delete)
    */
   async deleteOrder(id: number | string): Promise<void> {

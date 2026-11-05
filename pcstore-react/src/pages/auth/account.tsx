@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { uploadImage, validateImageFile } from '../../services/imgbbService';
 import { orderService } from '../../services/orderService';
+import { orderFulfillmentService } from '../../services/orderFulfillmentService';
 import type { OrderResponse, OrderStatus } from '../../types/order';
 
 export const Account: React.FC = () => {
@@ -649,6 +650,39 @@ export const Account: React.FC = () => {
                                                     >
                                                         Xem chi tiết
                                                     </button>
+
+                                                    {ord.status === 'PROCESSING' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                if (
+                                                                    window.confirm(
+                                                                        `Bạn xác nhận đã nhận được kiện hàng cho đơn ${ord.code} và ngoại quan nguyên vẹn?`
+                                                                    )
+                                                                ) {
+                                                                    await orderFulfillmentService.confirmCustomerDelivery(
+                                                                        ord.id,
+                                                                        {
+                                                                            customerName: ord.recipientName,
+                                                                            inspectionPassed: true,
+                                                                            customerNotes:
+                                                                                'Khách hàng tự xác nhận nhận hàng thành công qua tài khoản cá nhân.',
+                                                                        }
+                                                                    );
+                                                                    setOrderActionMsg({
+                                                                        type: 'success',
+                                                                        text: `Đã xác nhận nhận hàng thành công cho đơn ${ord.code}. Cảm ơn bạn đã mua sắm tại PCStore!`,
+                                                                    });
+                                                                    fetchCustomerOrders();
+                                                                }
+                                                            }}
+                                                            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1"
+                                                            title="Xác nhận bạn đã nhận được hàng và kiện hàng nguyên vẹn"
+                                                        >
+                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                            <span>Đã nhận được hàng</span>
+                                                        </button>
+                                                    )}
 
                                                     {ord.status === 'PENDING' && (
                                                         <button

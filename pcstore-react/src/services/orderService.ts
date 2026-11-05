@@ -150,5 +150,19 @@ export const orderService = {
 
     return handleResponse<OrderResponse>(response);
   },
+
+  /**
+   * Giai đoạn 4: Khách hàng xác nhận nhận hàng thành công (chuyển trạng thái COMPLETED & serial thành SOLD)
+   */
+  async confirmDelivery(id: number | string): Promise<OrderResponse> {
+    const response = await fetchWithAuth(`${API_ENDPOINTS.ADMIN.ORDERS}/${id}/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return handleResponse<OrderResponse>(response);
+  },
 };
 

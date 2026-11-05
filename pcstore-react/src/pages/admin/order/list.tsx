@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     ShoppingCart,
     Plus,
@@ -30,15 +31,32 @@ import {
     Check,
     CreditCard,
     ArrowRight,
+    Sparkles,
+    ShieldCheck,
+    Truck,
+    Box,
+    Barcode,
+    AlertTriangle,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
+import { useAuth } from '../../../context/AuthContext';
 import { adminOrderService } from '../../../services/adminOrderService';
 import { adminUserService } from '../../../services/adminUserService';
 import { adminProductService } from '../../../services/adminProductService';
+import { orderFulfillmentService } from '../../../services/orderFulfillmentService';
 import type {
     OrderResponse,
     OrderItemResponse,
@@ -212,6 +230,7 @@ export const ORDER_TYPE_CONFIG: Record<
 
 export default function OrderList() {
     const { toast } = useToast();
+    const { user } = useAuth();
 
     // Data State
     const [orders, setOrders] = useState<OrderUI[]>([]);
@@ -285,6 +304,104 @@ export default function OrderList() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState<OrderUI | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const navigate = useNavigate();
+
+    // Sơ đồ luồng nghiệp vụ 4 giai đoạn bán hàng
+    const [showSalesWorkflowGuide, setShowSalesWorkflowGuide] = useState(true);
+
+    // Modal Thẩm định tồn kho khả dụng (Giai đoạn 2 - Nhân viên bán hàng)
+    const [isAppraisalModalOpen, setIsAppraisalModalOpen] = useState(false);
+    const [appraisalOrder, setAppraisalOrder] = useState<OrderUI | null>(null);
+    const [appraisalResult, setAppraisalResult] = useState<{
+        isAvailable: boolean;
+        itemsCheck: {
+            productId: number;
+            productName: string;
+            productCode: string;
+            requestedQty: number;
+            inStockQty: number;
+            isSufficient: boolean;
+        }[];
+    } | null>(null);
+    const [isCheckingStock, setIsCheckingStock] = useState(false);
+    const [appraisalStaff, setAppraisalStaff] = useState<string>(
+        user?.fullName || user?.username || 'Nhân viên bán hàng'
+    );
+
+    useEffect(() => {
+        if (user?.fullName || user?.username) {
+            setAppraisalStaff(user.fullName || user.username);
+        }
+    }, [user]);
+
+    const [appraisalNotes, setAppraisalNotes] = useState('Đã kiểm tra tồn kho khả dụng, đáp ứng đủ số lượng đơn hàng.');
+    const [cancellationReason, setCancellationReason] = useState('Kho không đủ số lượng tồn kho khả dụng. Khách hàng đã được thông báo và đồng ý hủy đơn.');
+    const [isSubmittingAppraisal, setIsSubmittingAppraisal] = useState(false);
+
+    // Mở modal thẩm định tồn kho khả dụng (GĐ 2)
+    const handleOpenAppraisalModal = async (order: OrderUI) => {
+        setAppraisalOrder(order);
+        if (user?.fullName || user?.username) {
+            setAppraisalStaff(user.fullName || user.username);
+        }
+        setIsCheckingStock(true);
+        setIsAppraisalModalOpen(true);
+        try {
+            const rawOrder = order.rawResponse;
+            const res = await orderFulfillmentService.checkStockAvailability(rawOrder);
+            setAppraisalResult(res);
+            if (res.isAvailable) {
+                setAppraisalNotes('Tồn kho sẵn sàng, chuyển yêu cầu đóng gói linh kiện cho bộ phận kho.');
+            } else {
+                setCancellationReason('Tồn kho thực tế không đủ đáp ứng số lượng đặt mua. Đã liên hệ khách hàng thông báo và thỏa thuận hủy đơn.');
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsCheckingStock(false);
+        }
+    };
+
+    // Xác nhận còn hàng & chuyển sang kho đóng gói
+    const handleConfirmAndSendToWarehouse = async () => {
+        if (!appraisalOrder) return;
+        setIsSubmittingAppraisal(true);
+        try {
+            await orderFulfillmentService.approveOrderToPackaging(appraisalOrder.numericId, {
+                staffName: appraisalStaff,
+                notes: appraisalNotes,
+                stockCheckResult: appraisalResult,
+            });
+            toast.success(`Đã xác nhận đơn ${appraisalOrder.code} và gửi yêu cầu đóng gói xuống bộ phận kho!`);
+            setIsAppraisalModalOpen(false);
+            fetchOrders();
+        } catch (e: any) {
+            toast.error(e.message || 'Lỗi khi xác nhận đơn');
+        } finally {
+            setIsSubmittingAppraisal(false);
+        }
+    };
+
+    // Hủy đơn do hết hàng (Khách hàng đồng ý)
+    const handleCancelOrderOutOfStock = async () => {
+        if (!appraisalOrder) return;
+        setIsSubmittingAppraisal(true);
+        try {
+            await orderFulfillmentService.cancelOrderOutOfStock(appraisalOrder.numericId, {
+                staffName: appraisalStaff,
+                cancellationReason,
+                customerAgreed: true,
+            });
+            toast.warning(`Đã hủy đơn ${appraisalOrder.code} do hết hàng tồn kho khả dụng (Khách hàng đã đồng ý).`);
+            setIsAppraisalModalOpen(false);
+            fetchOrders();
+        } catch (e: any) {
+            toast.error(e.message || 'Lỗi khi hủy đơn');
+        } finally {
+            setIsSubmittingAppraisal(false);
+        }
+    };
 
     // Load available products for picker
     const fetchProductsForPicker = useCallback(async () => {
@@ -383,6 +500,9 @@ export default function OrderList() {
                 });
 
                 const mapped = (res.content || []).map(mapToUI);
+                (res.content || []).forEach((ord) => {
+                    orderFulfillmentService.ensureFulfillmentRecord(ord);
+                });
                 setOrders(mapped);
                 setTotalElements(res.totalElements || 0);
                 setTotalPages(res.totalPages || 1);
@@ -603,6 +723,7 @@ export default function OrderList() {
             };
 
             const created = await adminOrderService.createOrder(payload);
+            orderFulfillmentService.ensureFulfillmentRecord(created);
             toast.success(`Tạo đơn hàng ${created.code} thành công!`, 'Thành công');
             setIsCreateModalOpen(false);
             fetchOrders();
@@ -628,6 +749,7 @@ export default function OrderList() {
         try {
             setIsUpdatingStatus(true);
             const updated = await adminOrderService.updateOrderStatus(orderToUpdateStatus.numericId, targetStatus);
+            orderFulfillmentService.ensureFulfillmentRecord(updated);
             toast.success(`Đã cập nhật trạng thái đơn ${updated.code} sang "${ORDER_STATUS_CONFIG[targetStatus]?.label}"`);
             setIsStatusModalOpen(false);
 
@@ -662,6 +784,7 @@ export default function OrderList() {
         try {
             setIsDeleting(true);
             await adminOrderService.deleteOrder(orderToDelete.numericId);
+            orderFulfillmentService.removeFulfillmentRecord(orderToDelete.numericId);
             toast.success(`Đã xóa đơn hàng "${orderToDelete.code}" thành công`);
             setIsDeleteModalOpen(false);
             if (selectedOrder?.numericId === orderToDelete.numericId) {
@@ -1213,6 +1336,42 @@ export default function OrderList() {
                             className="flex items-center justify-end gap-1"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            {order.status === 'PENDING' && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenAppraisalModal(order)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs transition-all cursor-pointer mr-1"
+                                    title="Thẩm định tồn kho khả dụng & Phân nhánh đơn"
+                                >
+                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                    <span>Xác nhận đơn</span>
+                                </button>
+                            )}
+
+                            {order.status === 'CONFIRMED' && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/warehouse/packaging')}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all cursor-pointer mr-1"
+                                    title="Quản lý đóng gói kho"
+                                >
+                                    <Box className="w-3.5 h-3.5" />
+                                    <span>Đóng gói</span>
+                                </button>
+                            )}
+
+                            {order.status === 'PROCESSING' && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/warehouse/handover')}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all cursor-pointer mr-1"
+                                    title="Bàn giao ĐVVC )"
+                                >
+                                    <Truck className="w-3.5 h-3.5" />
+                                    <span>Bàn giao ĐVVC</span>
+                                </button>
+                            )}
+
                             <button
                                 type="button"
                                 onClick={() => handleOpenDetail(order)}
@@ -1333,9 +1492,6 @@ export default function OrderList() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Quản lý đơn hàng</h1>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Quản lý đơn đặt hàng trực tuyến và bán tại quầy, theo dõi trạng thái giao dịch & in hóa đơn
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -1372,9 +1528,6 @@ export default function OrderList() {
                     </button>
                 </div>
             </div>
-
-            {/* Metrics Overview Cards */}
-
 
             {/* Quick Status Tabs & Filter Section */}
             <div className="space-y-3">
@@ -1458,31 +1611,31 @@ export default function OrderList() {
                     footer={
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={() => handlePrintOrder(selectedOrder)}
-                                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                    icon={<Printer className="w-4 h-4 text-indigo-600" />}
                                 >
-                                    <Printer className="w-4 h-4 text-indigo-600" />
-                                    <span>In hóa đơn</span>
-                                </button>
-                                <button
+                                    In hóa đơn
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={() => handlePromptStatusChange(selectedOrder)}
-                                    className="px-3 py-2 text-sm font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                    icon={<RefreshCw className="w-4 h-4" />}
                                 >
-                                    <RefreshCw className="w-4 h-4" />
-                                    <span>Đổi trạng thái</span>
-                                </button>
+                                    Đổi trạng thái
+                                </AdminButton>
                             </div>
 
-                            <button
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsDetailModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                             >
                                 Đóng
-                            </button>
+                            </AdminButton>
                         </div>
                     }
                 >
@@ -1698,45 +1851,37 @@ export default function OrderList() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <button
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsCreateModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
                             >
                                 Hủy bỏ
-                            </button>
+                            </AdminButton>
 
                             {activeCreateTab !== 'summary' ? (
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={() => {
                                         if (activeCreateTab === 'customer') setActiveCreateTab('items');
                                         else if (activeCreateTab === 'items') setActiveCreateTab('summary');
                                     }}
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                                    icon={<ArrowRight className="w-4 h-4" />}
                                 >
-                                    <span>Tiếp theo</span>
-                                    <ArrowRight className="w-4 h-4" />
-                                </button>
+                                    Tiếp theo
+                                </AdminButton>
                             ) : (
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={handleCreateOrderSubmit}
                                     disabled={isSubmitting || createForm.items.length === 0}
-                                    className="px-5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                    loading={isSubmitting}
+                                    icon={!isSubmitting ? <Check className="w-4 h-4" /> : undefined}
                                 >
-                                    {isSubmitting ? (
-                                        <>
-                                            <RefreshCw className="w-4 h-4 animate-spin" />
-                                            <span>Đang tạo đơn...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="w-4 h-4" />
-                                            <span>Xác nhận tạo đơn</span>
-                                        </>
-                                    )}
-                                </button>
+                                    Xác nhận tạo đơn
+                                </AdminButton>
                             )}
                         </div>
                     </div>
@@ -1747,9 +1892,9 @@ export default function OrderList() {
                     <div className="space-y-6">
                         {/* Order Type Selection */}
                         <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
-                            <label className="text-xs font-bold text-gray-800 uppercase tracking-wider block">
+                            <AdminLabel className="uppercase tracking-wider">
                                 Loại hình đơn hàng
-                            </label>
+                            </AdminLabel>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
@@ -1789,8 +1934,8 @@ export default function OrderList() {
 
                         {/* Customer Search & Select */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
-                                <span>Tài khoản khách hàng (Tùy chọn)</span>
+                            <div className="flex items-center justify-between">
+                                <AdminLabel>Tài khoản khách hàng (Tùy chọn)</AdminLabel>
                                 {selectedUserId && (
                                     <button
                                         type="button"
@@ -1800,18 +1945,15 @@ export default function OrderList() {
                                         Bỏ chọn tài khoản
                                     </button>
                                 )}
-                            </label>
-
-                            <div className="relative">
-                                <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Tìm tài khoản theo tên, email, sđt..."
-                                    value={userSearchTerm}
-                                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
                             </div>
+
+                            <AdminInput
+                                type="text"
+                                placeholder="Tìm tài khoản theo tên, email, sđt..."
+                                value={userSearchTerm}
+                                onChange={(e) => setUserSearchTerm(e.target.value)}
+                                icon={<Search className="w-4 h-4" />}
+                            />
 
                             {isLoadingUsers && (
                                 <div className="p-2 text-xs text-gray-500 flex items-center gap-2">
@@ -1863,54 +2005,42 @@ export default function OrderList() {
                         {/* Recipient Details */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-semibold text-gray-700 block mb-1">
-                                    Họ tên người nhận <span className="text-red-500">*</span>
-                                </label>
-                                <input
+                                <AdminLabel required>Họ tên người nhận</AdminLabel>
+                                <AdminInput
                                     type="text"
                                     placeholder="Nguyễn Văn A"
                                     value={createForm.recipientName}
                                     onChange={(e) => setCreateForm({ ...createForm, recipientName: e.target.value })}
-                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-gray-700 block mb-1">
-                                    Số điện thoại người nhận <span className="text-red-500">*</span>
-                                </label>
-                                <input
+                                <AdminLabel required>Số điện thoại người nhận</AdminLabel>
+                                <AdminInput
                                     type="text"
                                     placeholder="0987654321"
                                     value={createForm.recipientPhone}
                                     onChange={(e) => setCreateForm({ ...createForm, recipientPhone: e.target.value })}
-                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold text-gray-700 block mb-1">
-                                    Địa chỉ nhận hàng {createForm.type === 'ONLINE' && <span className="text-red-500">*</span>}
-                                </label>
-                                <input
+                                <AdminLabel required={createForm.type === 'ONLINE'}>Địa chỉ nhận hàng</AdminLabel>
+                                <AdminInput
                                     type="text"
                                     placeholder={createForm.type === 'IN_STORE' ? 'Nhận tại quầy PC Store' : 'Số 123 Đường Cầu Giấy, Hà Nội'}
                                     value={createForm.address}
                                     onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
 
                             <div className="md:col-span-2">
-                                <label className="text-xs font-semibold text-gray-700 block mb-1">
-                                    Ghi chú đơn hàng
-                                </label>
-                                <textarea
+                                <AdminLabel>Ghi chú đơn hàng</AdminLabel>
+                                <AdminTextarea
                                     rows={2}
                                     placeholder="Giao hàng buổi sáng, kiểm hàng trước khi thanh toán..."
                                     value={createForm.note}
                                     onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })}
-                                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                         </div>
@@ -1924,14 +2054,14 @@ export default function OrderList() {
                             <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 Danh sách mặt hàng ({createForm.items.length})
                             </span>
-                            <button
+                            <AdminButton
                                 type="button"
+                                variant="secondary"
                                 onClick={() => setIsProductPickerOpen(true)}
-                                className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                icon={<Plus className="w-3.5 h-3.5" />}
                             >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>Thêm linh kiện / sản phẩm</span>
-                            </button>
+                                Thêm linh kiện / sản phẩm
+                            </AdminButton>
                         </div>
 
                         {createForm.items.length === 0 ? (
@@ -1945,13 +2075,13 @@ export default function OrderList() {
                                         Vui lòng nhấn nút "Thêm linh kiện / sản phẩm" để chọn mặt hàng cho đơn này
                                     </p>
                                 </div>
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={() => setIsProductPickerOpen(true)}
-                                    className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
                                 >
                                     Chọn sản phẩm ngay
-                                </button>
+                                </AdminButton>
                             </div>
                         ) : (
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -2044,11 +2174,13 @@ export default function OrderList() {
                         {createForm.items.length > 0 && (
                             <div className="flex flex-col sm:flex-row items-end justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 gap-4">
                                 <div className="space-y-1 w-full sm:w-64">
-                                    <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                                        <Tag className="w-3.5 h-3.5 text-blue-600" />
-                                        <span>Giảm giá chung trên đơn (VND):</span>
-                                    </label>
-                                    <input
+                                    <AdminLabel>
+                                        <span className="flex items-center gap-1.5">
+                                            <Tag className="w-3.5 h-3.5 text-blue-600" />
+                                            <span>Giảm giá chung trên đơn (VND):</span>
+                                        </span>
+                                    </AdminLabel>
+                                    <AdminInput
                                         type="number"
                                         min={0}
                                         value={createForm.discountAmount}
@@ -2058,7 +2190,6 @@ export default function OrderList() {
                                                 discountAmount: Math.max(0, Number(e.target.value) || 0),
                                             })
                                         }
-                                        className="w-full px-3 py-1.5 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                                         placeholder="0"
                                     />
                                 </div>
@@ -2162,26 +2293,23 @@ export default function OrderList() {
                 subtitle="Tìm kiếm theo mã linh kiện, tên sản phẩm để thêm vào đơn"
                 size="lg"
                 footer={
-                    <button
+                    <AdminButton
                         type="button"
+                        variant="primary"
                         onClick={() => setIsProductPickerOpen(false)}
-                        className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"
                     >
                         Xong
-                    </button>
+                    </AdminButton>
                 }
             >
                 <div className="space-y-4">
-                    <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Nhập tên sản phẩm hoặc mã linh kiện (CPU, RAM, VGA...)"
-                            value={productSearchTerm}
-                            onChange={(e) => setProductSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                    <AdminInput
+                        type="text"
+                        placeholder="Nhập tên sản phẩm hoặc mã linh kiện (CPU, RAM, VGA...)"
+                        value={productSearchTerm}
+                        onChange={(e) => setProductSearchTerm(e.target.value)}
+                        icon={<Search className="w-4 h-4" />}
+                    />
 
                     <div className="max-h-[360px] overflow-y-auto border border-gray-200 rounded-xl divide-y divide-gray-100">
                         {isLoadingProducts ? (
@@ -2234,14 +2362,15 @@ export default function OrderList() {
                                             </div>
                                         </div>
 
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            variant="secondary"
                                             onClick={() => handleAddProductToForm(prod)}
-                                            className="px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                                            icon={<Plus className="w-3.5 h-3.5" />}
+                                            className="!py-1.5 !px-2.5 !text-xs shrink-0"
                                         >
-                                            <Plus className="w-3.5 h-3.5" />
-                                            <span>Thêm vào đơn</span>
-                                        </button>
+                                            Thêm vào đơn
+                                        </AdminButton>
                                     </div>
                                 ))
                         )}
@@ -2258,33 +2387,13 @@ export default function OrderList() {
                     subtitle={`Mã đơn: ${orderToUpdateStatus.code} • Khách hàng: ${orderToUpdateStatus.recipientName}`}
                     size="md"
                     footer={
-                        <div className="flex items-center justify-end gap-2 w-full">
-                            <button
-                                type="button"
-                                onClick={() => setIsStatusModalOpen(false)}
-                                className="px-4 py-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleConfirmStatusUpdate}
-                                disabled={isUpdatingStatus}
-                                className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                            >
-                                {isUpdatingStatus ? (
-                                    <>
-                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Đang cập nhật...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="w-3.5 h-3.5" />
-                                        <span>Lưu thay đổi</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                        <AdminModalFooter
+                            onCancel={() => setIsStatusModalOpen(false)}
+                            onSubmit={handleConfirmStatusUpdate}
+                            isSubmitting={isUpdatingStatus}
+                            cancelText="Hủy"
+                            submitText="Lưu thay đổi"
+                        />
                     }
                 >
                     <div className="space-y-4">
@@ -2369,6 +2478,215 @@ export default function OrderList() {
                         badge: ORDER_STATUS_CONFIG[orderToDelete.status]?.label,
                     }}
                 />
+            )}
+
+            {/* 5. GIAI ĐOẠN 2: MODAL THẨM ĐỊNH TỒN KHO KHẢ DỤNG & TIẾP NHẬN ĐƠN */}
+            {appraisalOrder && (
+                <AdminModal
+                    isOpen={isAppraisalModalOpen}
+                    onClose={() => setIsAppraisalModalOpen(false)}
+                    title={
+                        <div className="flex items-center gap-2">
+                            <span>Tiếp nhận đơn hàng: </span>
+                            <span className="font-mono text-blue-600 font-bold">{appraisalOrder.code}</span>
+                        </div>
+                    }
+                    subtitle={``}
+                    icon={ShoppingCart}
+                    size="xl"
+                    footer={
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                                <AdminButton
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setIsAppraisalModalOpen(false)}
+                                >
+                                    Đóng
+                                </AdminButton>
+
+                                {appraisalResult?.isAvailable ? (
+                                    <AdminButton
+                                        type="button"
+                                        variant="primary"
+                                        onClick={handleConfirmAndSendToWarehouse}
+                                        isLoading={isSubmittingAppraisal}
+                                        disabled={isSubmittingAppraisal}
+                                        icon={<CheckCircle2 className="w-4 h-4" />}
+                                        className="!bg-blue-600 hover:!bg-blue-700"
+                                    >
+                                        Xác nhận đơn & Chuyển kho đóng gói
+                                    </AdminButton>
+                                ) : (
+                                    <AdminButton
+                                        type="button"
+                                        variant="danger"
+                                        onClick={handleCancelOrderOutOfStock}
+                                        isLoading={isSubmittingAppraisal}
+                                        disabled={isSubmittingAppraisal}
+                                        icon={<Ban className="w-4 h-4" />}
+                                    >
+                                        Khách đồng ý hủy đơn & Hoàn tất
+                                    </AdminButton>
+                                )}
+                            </div>
+                        </div>
+                    }
+                >
+                    <div className="space-y-5 text-xs">
+                        {/* 1. THÔNG TIN GIAO NHẬN ĐƠN HÀNG */}
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div className="font-bold text-gray-900 text-sm flex items-center gap-1.5 mb-2.5">
+                                <span>Thông tin giao nhận đơn hàng</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700">
+                                <div>Khách hàng: <strong>{appraisalOrder.recipientName}</strong> ({appraisalOrder.recipientPhone})</div>
+                                <div>Hình thức mua: <strong className="text-blue-700">{ORDER_TYPE_CONFIG[appraisalOrder.type]?.label || appraisalOrder.type}</strong></div>
+                                <div className="sm:col-span-2">Địa chỉ giao: <strong>{appraisalOrder.address}</strong></div>
+                                {appraisalOrder.note && <div className="sm:col-span-2 italic text-gray-500">Ghi chú từ khách: "{appraisalOrder.note}"</div>}
+                            </div>
+                        </div>
+
+                        {/* 2. KIỂM TRA SỐ LƯỢNG TỒN KHO KHẢ DỤNG */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between border-b pb-2">
+                                <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                    <span>Tồn kho khả dụng</span>
+                                </h3>
+                                {isCheckingStock ? (
+                                    <span className="text-blue-600 flex items-center gap-1">
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Đang kiểm tra tồn kho...
+                                    </span>
+                                ) : (
+                                    <span className={`font-bold px-2.5 py-0.5 rounded-full border text-xs ${appraisalResult?.isAvailable
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                        : 'bg-rose-50 text-rose-700 border-rose-300'
+                                        }`}>
+                                        {appraisalResult?.isAvailable ? '✓ Đủ hàng trong kho' : '⚠ Không đủ hàng tồn kho'}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <table className="w-full text-xs">
+                                    <thead className="bg-gray-100 text-gray-700 font-semibold">
+                                        <tr>
+                                            <th className="p-2.5 text-left border-b">Tên sản phẩm</th>
+                                            <th className="p-2.5 text-left border-b">Mã SKU</th>
+                                            <th className="p-2.5 text-center border-b">Số lượng mua</th>
+                                            <th className="p-2.5 text-center border-b">Tồn kho khả dụng</th>
+                                            <th className="p-2.5 text-center border-b">Tình trạng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {appraisalResult?.itemsCheck ? (
+                                            appraisalResult.itemsCheck.map((it) => (
+                                                <tr key={it.productId} className="hover:bg-gray-50">
+                                                    <td className="p-2.5 font-medium text-gray-900">{it.productName}</td>
+                                                    <td className="p-2.5 font-mono text-gray-600">{it.productCode}</td>
+                                                    <td className="p-2.5 text-center font-bold text-gray-900">{it.requestedQty}</td>
+                                                    <td className="p-2.5 text-center font-bold text-indigo-700">{it.inStockQty}</td>
+                                                    <td className="p-2.5 text-center">
+                                                        {it.isSufficient ? (
+                                                            <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                                <Check className="w-3 h-3" /> Đủ hàng
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-rose-700 font-semibold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                                                <AlertTriangle className="w-3 h-3" /> Thiếu {it.requestedQty - it.inStockQty}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            (appraisalOrder.items || []).map((it) => (
+                                                <tr key={it.id}>
+                                                    <td className="p-2.5 font-medium">{it.productName}</td>
+                                                    <td className="p-2.5 font-mono">{it.productCode}</td>
+                                                    <td className="p-2.5 text-center font-bold">{it.quantity}</td>
+                                                    <td className="p-2.5 text-center text-gray-400">Đang kiểm tra...</td>
+                                                    <td className="p-2.5 text-center text-gray-400">---</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Banner thông báo tồn kho thực tế */}
+                            {!isCheckingStock && (
+                                appraisalResult?.isAvailable ? (
+                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex items-center gap-2 text-emerald-800">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        <span>Tất cả sản phẩm đều đủ số lượng tồn kho khả dụng để thực hiện đơn hàng.</span>
+                                    </div>
+                                ) : (
+                                    <div className="bg-rose-50 border border-rose-200 p-3 rounded-lg space-y-1 text-rose-800">
+                                        <div className="flex items-center gap-2 font-semibold">
+                                            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                                            <span>Một hoặc nhiều sản phẩm không đủ tồn kho khả dụng.</span>
+                                        </div>
+                                        <p className="text-[11px] text-rose-700">
+                                            Vui lòng liên hệ với khách hàng để thông báo hết hàng và thỏa thuận hủy đơn đặt hàng.
+                                        </p>
+                                    </div>
+                                )
+                            )}
+                        </div>
+
+                        {/* 3. TÁCH RIÊNG PHẦN GHI CHÚ */}
+                        <div className="pt-3 border-t border-gray-200 space-y-3">
+                            <div className="flex items-center gap-1.5 font-bold text-gray-900 text-sm">
+                                <FileText className="w-4 h-4 text-gray-600" />
+                                <span>Ghi chú xử lý</span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <AdminLabel>Nhân viên xử lý:</AdminLabel>
+                                    <AdminInput
+                                        type="text"
+                                        value={appraisalStaff}
+                                        disabled
+                                        readOnly
+                                        className="bg-gray-100 text-gray-800 cursor-not-allowed font-medium"
+                                    />
+                                </div>
+
+                                {appraisalResult?.isAvailable ? (
+                                    <div className="sm:col-span-2">
+                                        <AdminLabel>Ghi chú chuyển tiếp xuống kho đóng gói:</AdminLabel>
+                                        <AdminTextarea
+                                            rows={2}
+                                            value={appraisalNotes}
+                                            onChange={(e) => setAppraisalNotes(e.target.value)}
+                                            placeholder="Ghi chú về đóng gói, lưu ý giao hàng hoặc thứ tự chuẩn bị..."
+                                        />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="sm:col-span-2">
+                                            <AdminLabel required>Lý do hủy đơn & Nội dung thỏa thuận với khách hàng:</AdminLabel>
+                                            <AdminTextarea
+                                                rows={2}
+                                                value={cancellationReason}
+                                                onChange={(e) => setCancellationReason(e.target.value)}
+                                                placeholder="Ghi rõ lý do không thể đáp ứng đơn hàng và kết quả trao đổi với khách hàng..."
+                                            />
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <label className="flex items-center gap-2 text-rose-950 font-semibold cursor-pointer select-none">
+                                                <input type="checkbox" checked={true} readOnly className="rounded text-rose-600" />
+                                                <span>Đã liên hệ và nhận được xác nhận đồng ý hủy đơn từ khách hàng</span>
+                                            </label>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </AdminModal>
             )}
         </div>
     );

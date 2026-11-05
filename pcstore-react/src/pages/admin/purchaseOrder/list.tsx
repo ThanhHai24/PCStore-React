@@ -36,7 +36,16 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminPurchaseOrderService } from '../../../services/adminPurchaseOrderService';
@@ -1649,92 +1658,101 @@ export default function PurchaseOrderList() {
                     footer={
                         <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={() => handlePrintOrder(selectedOrder)}
-                                    className="px-3 py-2 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 flex items-center gap-1.5 cursor-pointer"
+                                    icon={Printer}
+                                    size="sm"
                                 >
-                                    <Printer className="w-3.5 h-3.5" />
                                     In đơn đặt hàng
-                                </button>
+                                </AdminButton>
                             </div>
                             <div className="flex items-center gap-2">
                                 {selectedOrder.status === 'DRAFT' && (
                                     <>
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            variant="danger"
+                                            size="sm"
                                             onClick={() => handleOpenDelete(selectedOrder)}
-                                            className="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold cursor-pointer"
                                         >
                                             Xóa đơn nháp
-                                        </button>
-                                        <button
+                                        </AdminButton>
+                                        <AdminButton
                                             type="button"
+                                            variant="secondary"
+                                            size="sm"
                                             onClick={() => {
                                                 setIsDetailModalOpen(false);
                                                 handleOpenEdit(selectedOrder);
                                             }}
-                                            className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                                            icon={Edit}
                                         >
-                                            <Edit className="w-3.5 h-3.5" />
                                             Chỉnh sửa đơn
-                                        </button>
-                                        <button
+                                        </AdminButton>
+                                        <AdminButton
                                             type="button"
+                                            variant="primary"
+                                            size="sm"
                                             onClick={() =>
                                                 handlePromptStatusChange(selectedOrder, 'PENDING')
                                             }
-                                            className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                            icon={Send}
                                         >
-                                            <Send className="w-3.5 h-3.5" />
                                             Gửi duyệt ngay
-                                        </button>
+                                        </AdminButton>
                                     </>
                                 )}
 
                                 {selectedOrder.status === 'PENDING' && (
                                     <>
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            variant="danger"
+                                            size="sm"
                                             onClick={() =>
                                                 handlePromptStatusChange(selectedOrder, 'CANCELLED')
                                             }
-                                            className="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold cursor-pointer"
                                         >
                                             Hủy đơn
-                                        </button>
-                                        <button
+                                        </AdminButton>
+                                        <AdminButton
                                             type="button"
+                                            variant="primary"
+                                            size="sm"
                                             onClick={() =>
                                                 handlePromptStatusChange(selectedOrder, 'APPROVED')
                                             }
-                                            className="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                            icon={Check}
+                                            className="!bg-emerald-600 hover:!bg-emerald-700"
                                         >
-                                            <Check className="w-3.5 h-3.5" />
                                             Phê duyệt đơn nhập
-                                        </button>
+                                        </AdminButton>
                                     </>
                                 )}
 
                                 {selectedOrder.status === 'APPROVED' && (
-                                    <button
+                                    <AdminButton
                                         type="button"
+                                        variant="danger"
+                                        size="sm"
                                         onClick={() =>
                                             handlePromptStatusChange(selectedOrder, 'CANCELLED')
                                         }
-                                        className="px-3.5 py-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold cursor-pointer"
                                     >
                                         Hủy đơn
-                                    </button>
+                                    </AdminButton>
                                 )}
 
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold cursor-pointer"
                                 >
                                     Đóng
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
                     }
@@ -1995,38 +2013,41 @@ export default function PurchaseOrderList() {
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={() => {
                                         setIsAddModalOpen(false);
                                         setIsEditModalOpen(false);
                                         setEditForm(null);
                                     }}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-semibold cursor-pointer"
                                 >
                                     Hủy bỏ
-                                </button>
+                                </AdminButton>
                                 {isAddModalOpen && (
-                                    <button
+                                    <AdminButton
                                         type="button"
+                                        variant="primary"
                                         onClick={() => handleSaveAdd(true)}
                                         disabled={isSubmitting}
-                                        className="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                                        isLoading={isSubmitting}
+                                        icon={Send}
+                                        className="!bg-emerald-600 hover:!bg-emerald-700"
                                     >
-                                        <Send className="w-3.5 h-3.5" />
                                         Tạo đơn nhập hàng
-                                    </button>
+                                    </AdminButton>
                                 )}
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={() =>
                                         isEditModalOpen ? handleSaveEdit() : handleSaveAdd(false)
                                     }
                                     disabled={isSubmitting}
-                                    className="px-5 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 text-xs font-semibold flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                                    isLoading={isSubmitting}
                                 >
                                     {isEditModalOpen ? 'Cập nhật đơn' : 'Lưu đơn nháp (DRAFT)'}
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
                     }
@@ -2034,14 +2055,10 @@ export default function PurchaseOrderList() {
                     {activeFormTab === 'general' ? (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-
                                 {/* Order Name */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                        Tên đơn nhập hàng
-                                    </label>
-                                    <input
+                                    <AdminLabel>Tên đơn nhập hàng</AdminLabel>
+                                    <AdminInput
                                         type="text"
                                         value={isEditModalOpen && editForm ? editForm.name : addForm.name}
                                         onChange={(e) => {
@@ -2053,17 +2070,14 @@ export default function PurchaseOrderList() {
                                             }
                                         }}
                                         placeholder="VD: Nhập linh kiện tháng 10 đợt 1"
-                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
 
                                 {/* Order Code */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                        Mã đơn nhập (PO Code) <span className="text-rose-500">*</span>
-                                    </label>
+                                    <AdminLabel required>Mã đơn nhập (PO Code)</AdminLabel>
                                     <div className="flex items-center gap-2">
-                                        <input
+                                        <AdminInput
                                             type="text"
                                             value={isEditModalOpen && editForm ? editForm.code : addForm.code}
                                             onChange={(e) => {
@@ -2075,10 +2089,13 @@ export default function PurchaseOrderList() {
                                                 }
                                             }}
                                             placeholder="PO-YYYYMMDD-XXX"
-                                            className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="font-mono font-bold"
+                                            required
                                         />
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            variant="secondary"
+                                            size="sm"
                                             onClick={() => {
                                                 const newCode = generateNewOrderCode();
                                                 if (isEditModalOpen && editForm) {
@@ -2087,20 +2104,18 @@ export default function PurchaseOrderList() {
                                                     setAddForm({ ...addForm, code: newCode });
                                                 }
                                             }}
-                                            className="px-3 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs hover:bg-gray-50 shrink-0 font-medium cursor-pointer"
+                                            className="shrink-0"
                                             title="Sinh mã tự động"
                                         >
                                             Sinh mã
-                                        </button>
+                                        </AdminButton>
                                     </div>
                                 </div>
 
                                 {/* Supplier Select */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                        Nhà cung cấp <span className="text-rose-500">*</span>
-                                    </label>
-                                    <select
+                                    <AdminLabel required>Nhà cung cấp</AdminLabel>
+                                    <AdminSelect
                                         value={
                                             isEditModalOpen && editForm
                                                 ? editForm.supplierId
@@ -2114,7 +2129,7 @@ export default function PurchaseOrderList() {
                                                 setAddForm({ ...addForm, supplierId: sid });
                                             }
                                         }}
-                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                        required
                                     >
                                         <option value={0}>-- Chọn nhà cung cấp --</option>
                                         {suppliers.map((s) => (
@@ -2122,15 +2137,13 @@ export default function PurchaseOrderList() {
                                                 {s.name} ({s.code})
                                             </option>
                                         ))}
-                                    </select>
+                                    </AdminSelect>
                                 </div>
 
                                 {/* Order Date */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                        Ngày đặt hàng
-                                    </label>
-                                    <input
+                                    <AdminLabel>Ngày đặt hàng</AdminLabel>
+                                    <AdminInput
                                         type="date"
                                         value={
                                             isEditModalOpen && editForm
@@ -2145,16 +2158,13 @@ export default function PurchaseOrderList() {
                                                 setAddForm({ ...addForm, orderDate: d });
                                             }
                                         }}
-                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
 
                                 {/* Expected Delivery Date */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                        Ngày dự kiến nhận hàng
-                                    </label>
-                                    <input
+                                    <AdminLabel>Ngày dự kiến nhận hàng</AdminLabel>
+                                    <AdminInput
                                         type="date"
                                         value={
                                             isEditModalOpen && editForm
@@ -2169,17 +2179,14 @@ export default function PurchaseOrderList() {
                                                 setAddForm({ ...addForm, expectedDate: d });
                                             }
                                         }}
-                                        className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
 
                             {/* Description */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                    Ghi chú hoặc Thỏa thuận với nhà cung cấp
-                                </label>
-                                <textarea
+                                <AdminLabel>Ghi chú hoặc Thỏa thuận với nhà cung cấp</AdminLabel>
+                                <AdminTextarea
                                     rows={3}
                                     value={
                                         isEditModalOpen && editForm
@@ -2195,7 +2202,6 @@ export default function PurchaseOrderList() {
                                         }
                                     }}
                                     placeholder="VD: Giao hàng vào giờ hành chính, kèm CO/CQ và hóa đơn VAT..."
-                                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                         </div>
@@ -2204,24 +2210,25 @@ export default function PurchaseOrderList() {
                             {/* Toolbar to add product */}
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                                    <AdminLabel className="uppercase tracking-wider">
                                         Mặt hàng linh kiện đặt mua
-                                    </h4>
+                                    </AdminLabel>
                                     <p className="text-[11px] text-gray-500">
                                         Chọn sản phẩm từ danh mục, điều chỉnh số lượng đặt và đơn giá nhập thỏa thuận
                                     </p>
                                 </div>
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => {
                                         setProductSearchTerm('');
                                         setIsProductPickerOpen(true);
                                     }}
-                                    className="px-3 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                                    icon={Plus}
                                 >
-                                    <Plus className="w-3.5 h-3.5" />
                                     Thêm sản phẩm vào đơn
-                                </button>
+                                </AdminButton>
                             </div>
 
                             {/* Items Table */}
@@ -2348,125 +2355,95 @@ export default function PurchaseOrderList() {
             {/* ========================================================================= */}
             {/* PRODUCT SELECTOR MODAL (Popup chọn sản phẩm) */}
             {/* ========================================================================= */}
-            {isProductPickerOpen && (
-                <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
-                        {/* Header */}
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-base font-bold text-gray-900">
-                                    Chọn sản phẩm từ danh mục
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    Tìm kiếm sản phẩm theo tên, mã SKU để thêm vào đơn đặt hàng
-                                </p>
+            <AdminModal
+                isOpen={isProductPickerOpen}
+                onClose={() => setIsProductPickerOpen(false)}
+                title="Chọn sản phẩm từ danh mục"
+                subtitle="Tìm kiếm sản phẩm theo tên, mã SKU để thêm vào đơn đặt hàng"
+                size="xl"
+                footer={
+                    <AdminButton
+                        type="button"
+                        variant="primary"
+                        onClick={() => setIsProductPickerOpen(false)}
+                    >
+                        Xong
+                    </AdminButton>
+                }
+            >
+                <div className="space-y-4">
+                    {/* Search Input */}
+                    <div>
+                        <AdminInput
+                            type="text"
+                            value={productSearchTerm}
+                            onChange={(e) => setProductSearchTerm(e.target.value)}
+                            placeholder="Tìm theo tên sản phẩm hoặc mã linh kiện..."
+                            prefixIcon={Search}
+                            autoFocus
+                        />
+                    </div>
+
+                    {/* List */}
+                    <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl p-2">
+                        {filteredPickerProducts.length === 0 ? (
+                            <div className="p-8 text-center text-xs text-gray-400">
+                                Không tìm thấy sản phẩm nào phù hợp.
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsProductPickerOpen(false)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
-                            >
-                                <XCircle className="w-5 h-5" />
-                            </button>
-                        </div>
+                        ) : (
+                            filteredPickerProducts.map((p) => {
+                                const currentItems =
+                                    isEditModalOpen && editForm ? editForm.items : addForm.items;
+                                const isAdded = currentItems.some((it) => it.productId === p.id);
 
-                        {/* Search Input */}
-                        <div className="p-4 border-b border-gray-100 bg-gray-50">
-                            <div className="relative">
-                                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                                <input
-                                    type="text"
-                                    value={productSearchTerm}
-                                    onChange={(e) => setProductSearchTerm(e.target.value)}
-                                    placeholder="Tìm theo tên sản phẩm hoặc mã linh kiện..."
-                                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 bg-white text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
-
-                        {/* List */}
-                        <div className="flex-1 overflow-y-auto p-4 divide-y divide-gray-100">
-                            {filteredPickerProducts.length === 0 ? (
-                                <div className="p-8 text-center text-xs text-gray-400">
-                                    Không tìm thấy sản phẩm nào phù hợp.
-                                </div>
-                            ) : (
-                                filteredPickerProducts.map((p) => {
-                                    const currentItems =
-                                        isEditModalOpen && editForm ? editForm.items : addForm.items;
-                                    const isAdded = currentItems.some((it) => it.productId === p.id);
-
-                                    return (
-                                        <div
-                                            key={p.id}
-                                            className="py-3 flex items-center justify-between gap-3 hover:bg-gray-50/80 px-2 rounded-lg transition-colors"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                {p.imageUrl ? (
-                                                    <img
-                                                        src={p.imageUrl}
-                                                        alt={p.name}
-                                                        className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0"
-                                                    />
-                                                ) : (
-                                                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
-                                                        <Package className="w-5 h-5" />
-                                                    </div>
-                                                )}
-                                                <div>
-                                                    <div className="text-xs font-semibold text-gray-900">
-                                                        {p.name}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-400 font-mono flex items-center gap-2">
-                                                        <span>Mã: {p.code}</span>
-                                                        {p.price && (
-                                                            <span>Giá bán: {formatVND(p.price)}</span>
-                                                        )}
-                                                    </div>
+                                return (
+                                    <div
+                                        key={p.id}
+                                        className="py-3 flex items-center justify-between gap-3 hover:bg-gray-50/80 px-2 rounded-lg transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            {p.imageUrl ? (
+                                                <img
+                                                    src={p.imageUrl}
+                                                    alt={p.name}
+                                                    className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                                                    <Package className="w-5 h-5" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-900">
+                                                    {p.name}
+                                                </div>
+                                                <div className="text-[11px] text-gray-400 font-mono flex items-center gap-2">
+                                                    <span>Mã: {p.code}</span>
+                                                    {p.price && (
+                                                        <span>Giá bán: {formatVND(p.price)}</span>
+                                                    )}
                                                 </div>
                                             </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAddProductToForm(p)}
-                                                disabled={isAdded}
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${isAdded
-                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xs'
-                                                    }`}
-                                            >
-                                                {isAdded ? (
-                                                    <>
-                                                        <Check className="w-3.5 h-3.5" />
-                                                        Đã thêm
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Plus className="w-3.5 h-3.5" />
-                                                        Chọn
-                                                    </>
-                                                )}
-                                            </button>
                                         </div>
-                                    );
-                                })
-                            )}
-                        </div>
 
-                        {/* Footer */}
-                        <div className="p-3 border-t border-gray-100 bg-gray-50 flex justify-end">
-                            <button
-                                type="button"
-                                onClick={() => setIsProductPickerOpen(false)}
-                                className="px-4 py-1.5 rounded-xl border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-100 cursor-pointer"
-                            >
-                                Đóng
-                            </button>
-                        </div>
+                                        <AdminButton
+                                            type="button"
+                                            size="sm"
+                                            variant={isAdded ? 'secondary' : 'primary'}
+                                            onClick={() => handleAddProductToForm(p)}
+                                            disabled={isAdded}
+                                            icon={isAdded ? Check : Plus}
+                                            className="shrink-0"
+                                        >
+                                            {isAdded ? 'Đã thêm' : 'Chọn'}
+                                        </AdminButton>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
-            )}
+            </AdminModal>
 
             {/* ========================================================================= */}
             {/* STATUS ACTION CONFIRMATION MODAL */}

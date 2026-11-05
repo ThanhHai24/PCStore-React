@@ -25,7 +25,16 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { useToast } from '../../../components/admin/common/toast';
 import { uploadImage, validateImageFile } from '../../../services/imgbbService';
 import { adminProductService } from '../../../services/adminProductService';
@@ -36,7 +45,6 @@ import type { BrandResponse } from '../../../types/adminBrand';
 import type { ProductResponse, BackendProductStatus, ProductType } from '../../../types/adminProduct';
 import { DynamicSpecForm } from '../../../components/admin/DynamicSpecForm';
 import {
-    detectProductTypeFromCategory,
     getSpecTemplateForCategory,
     mergeSpecsWithTemplate,
     cleanEmptySpecsForSaving,
@@ -417,7 +425,7 @@ export default function ProductList() {
         slug: '',
         brandId: '' as string | number,
         primaryCategoryId: '' as string | number,
-        productType: 'COMPONENT' as ProductType,
+        productType: 'OTHER' as ProductType,
         price: 1000000,
         status: 'ACTIVE' as BackendProductStatus,
         specification: '',
@@ -596,6 +604,7 @@ export default function ProductList() {
                 { label: '🧩 Linh kiện (COMPONENT)', value: 'COMPONENT' },
                 { label: '💻 Laptop xách tay (LAPTOP)', value: 'LAPTOP' },
                 { label: '🖥️ Máy bộ / Desktop (PC)', value: 'PC' },
+                { label: '📦 Khác (OTHER)', value: 'OTHER' },
             ],
         },
         {
@@ -993,7 +1002,7 @@ export default function ProductList() {
                 code: addForm.sku.trim().toUpperCase(),
                 slug: finalSlug,
                 price: Number(addForm.price) || 0,
-                productType: addForm.productType,
+                productType: 'OTHER',
                 status: addForm.status,
                 imageUrl: combinedImageUrl,
                 brandId: brandIdNum,
@@ -1009,7 +1018,6 @@ export default function ProductList() {
             // Reset Add Form & Gallery with default category specs template
             const resetCat = categories[0];
             const resetCatName = resetCat?.name || '';
-            const resetProductType = detectProductTypeFromCategory(resetCatName);
             const resetSpecs = getSpecTemplateForCategory(resetCatName).defaultSpecsJson;
 
             setAddForm({
@@ -1018,7 +1026,7 @@ export default function ProductList() {
                 slug: '',
                 brandId: brands[0]?.id || '',
                 primaryCategoryId: resetCat?.id || '',
-                productType: resetProductType,
+                productType: 'OTHER',
                 price: 1000000,
                 status: 'ACTIVE',
                 specification: resetSpecs,
@@ -1056,6 +1064,12 @@ export default function ProductList() {
                 return (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                         <Laptop className="w-3 h-3 text-purple-500" /> Laptop
+                    </span>
+                );
+            case 'OTHER':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <Package className="w-3 h-3 text-amber-500" /> Khác
                     </span>
                 );
             case 'COMPONENT':
@@ -1272,7 +1286,6 @@ export default function ProductList() {
                         onClick={() => {
                             const defaultCat = categories[0];
                             const defaultCatName = defaultCat?.name || '';
-                            const autoProductType = detectProductTypeFromCategory(defaultCatName);
                             const defaultSpecs = getSpecTemplateForCategory(defaultCatName).defaultSpecsJson;
 
                             setAddForm({
@@ -1281,7 +1294,7 @@ export default function ProductList() {
                                 slug: '',
                                 brandId: brands[0]?.id || '',
                                 primaryCategoryId: defaultCat?.id || '',
-                                productType: autoProductType,
+                                productType: 'OTHER',
                                 price: 1000000,
                                 status: 'ACTIVE',
                                 specification: defaultSpecs,
@@ -1406,184 +1419,109 @@ export default function ProductList() {
             <AdminModal
                 isOpen={isAddModalOpen}
                 onClose={() => !isSubmitting && setIsAddModalOpen(false)}
-                title="Thêm mới sản phẩm / linh kiện máy tính"
-                description="Nhập thông tin sản phẩm và lưu trực tiếp vào cơ sở dữ liệu qua API"
+                title="Thêm mới sản phẩm"
+                description=""
                 size="2xl"
                 tabs={addModalTabs}
                 activeTab={activeAddTab}
                 onTabChange={setActiveAddTab}
                 footer={
-                    <div className="flex items-center justify-end gap-3 w-full">
-                        <button
-                            type="button"
-                            disabled={isSubmitting || isUploadingProductImage}
-                            onClick={() => setIsAddModalOpen(false)}
-                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                        >
-                            Hủy bỏ
-                        </button>
-                        <button
-                            type="button"
-                            disabled={isSubmitting || isUploadingProductImage}
-                            onClick={handleAddSubmit}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
-                        >
-                            {isUploadingProductImage ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Đang tải ảnh lên ImgBB...
-                                </>
-                            ) : isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Đang lưu sản phẩm...
-                                </>
-                            ) : (
-                                <>
-                                    <Plus className="w-4 h-4" />
-                                    Tạo sản phẩm
-                                </>
-                            )}
-                        </button>
-                    </div>
+                    <AdminModalFooter
+                        onCancel={() => setIsAddModalOpen(false)}
+                        onSubmit={handleAddSubmit}
+                        isSubmitting={isSubmitting || isUploadingProductImage}
+                        submittingText={isUploadingProductImage ? "Đang tải ảnh lên ImgBB..." : "Đang lưu sản phẩm..."}
+                        submitText="Tạo sản phẩm"
+                        submitIcon={Plus}
+                    />
                 }
             >
                 <div className="space-y-6">
                     {/* TAB 1: THÔNG TIN CƠ BẢN */}
                     {activeAddTab === 'basic' && (
                         <div className="space-y-5">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Tên sản phẩm <span className="text-rose-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Tên sản phẩm"
-                                    value={addForm.name}
+                            <AdminInput
+                                label="Tên sản phẩm"
+                                required
+                                placeholder="Nhập tên sản phẩm..."
+                                value={addForm.name}
+                                onChange={(e) => {
+                                    const newName = e.target.value;
+                                    setAddForm((prev) => ({
+                                        ...prev,
+                                        name: newName,
+                                        slug: generateSlug(newName),
+                                    }));
+                                }}
+                            />
+
+                            {/* Slug */}
+                            <AdminInput
+                                label="Đường dẫn tĩnh"
+                                required
+                                action={
+                                    <AdminButton
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => setAddForm((prev) => ({ ...prev, slug: generateSlug(prev.name) }))}
+                                        icon={RefreshCw}
+                                    >
+                                        Tạo lại slug
+                                    </AdminButton>
+                                }
+                                prefixText="/product/"
+                                value={addForm.slug}
+                                onChange={(e) => setAddForm({ ...addForm, slug: e.target.value })}
+                                className="font-mono"
+                            />
+
+                            <AdminInput
+                                label="Mã SKU sản phẩm"
+                                required
+                                placeholder="Mã sản phẩm"
+                                value={addForm.sku}
+                                onChange={(e) => setAddForm({ ...addForm, sku: e.target.value.toUpperCase() })}
+                                className="font-mono uppercase"
+                            />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <AdminSelect
+                                    label="Danh mục sản phẩm"
+                                    value={addForm.primaryCategoryId}
                                     onChange={(e) => {
-                                        const newName = e.target.value;
+                                        const catId = e.target.value;
+                                        const selectedCat = categories.find((c) => String(c.id) === String(catId));
+                                        const catName = selectedCat?.name || '';
+                                        const templateInfo = getSpecTemplateForCategory(catName);
+                                        const mergedSpecs = mergeSpecsWithTemplate(addForm.specification, templateInfo.items);
+
                                         setAddForm((prev) => ({
                                             ...prev,
-                                            name: newName,
-                                            slug: generateSlug(newName),
+                                            primaryCategoryId: catId,
+                                            specification: mergedSpecs,
                                         }));
                                     }}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                />
-                            </div>
-                            {/* Slug */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Đường dẫn tĩnh <span className="text-rose-500">*</span>
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddForm((prev) => ({ ...prev, slug: generateSlug(prev.name) }))}
-                                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
-                                    >
-                                        <RefreshCw className="w-3 h-3" />
-                                        Tạo lại slug
-                                    </button>
-                                </div>
-                                <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-600">
-                                    <span className="inline-flex items-center px-3.5 bg-gray-50 text-gray-500 text-xs font-mono border-r border-gray-200">
-                                        /product/
-                                    </span>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={addForm.slug}
-                                        onChange={(e) => setAddForm({ ...addForm, slug: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 text-sm font-mono text-gray-800 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
+                                >
+                                    <option value="">-- Chọn danh mục --</option>
+                                    {categories.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </AdminSelect>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Mã SKU sản phẩm <span className="text-rose-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="Mã sản phẩm"
-                                        value={addForm.sku}
-                                        onChange={(e) => setAddForm({ ...addForm, sku: e.target.value.toUpperCase() })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono uppercase text-gray-800 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Loại sản phẩm <span className="text-rose-500">*</span>
-                                    </label>
-                                    <select
-                                        value={addForm.productType}
-                                        onChange={(e) => setAddForm({ ...addForm, productType: e.target.value as ProductType })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                    >
-                                        <option value="COMPONENT">Linh kiện máy tính</option>
-                                        <option value="LAPTOP">Máy tính xách tay</option>
-                                        <option value="PC">Máy tính để bàn / Desktop</option>
-                                    </select>
-                                </div>
-                            </div>
-
-
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Danh mục sản phẩm
-                                    </label>
-                                    <select
-                                        value={addForm.primaryCategoryId}
-                                        onChange={(e) => {
-                                            const catId = e.target.value;
-                                            const selectedCat = categories.find((c) => String(c.id) === String(catId));
-                                            const catName = selectedCat?.name || '';
-                                            const autoProductType = detectProductTypeFromCategory(catName);
-                                            const templateInfo = getSpecTemplateForCategory(catName);
-                                            const mergedSpecs = mergeSpecsWithTemplate(addForm.specification, templateInfo.items);
-
-                                            setAddForm((prev) => ({
-                                                ...prev,
-                                                primaryCategoryId: catId,
-                                                productType: autoProductType,
-                                                specification: mergedSpecs,
-                                            }));
-                                        }}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                    >
-                                        <option value="">-- Chọn danh mục --</option>
-                                        {categories.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Thương hiệu
-                                    </label>
-                                    <select
-                                        value={addForm.brandId}
-                                        onChange={(e) => setAddForm({ ...addForm, brandId: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                    >
-                                        <option value="">-- Chọn thương hiệu --</option>
-                                        {brands.map((b) => (
-                                            <option key={b.id} value={b.id}>
-                                                {b.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <AdminSelect
+                                    label="Thương hiệu"
+                                    value={addForm.brandId}
+                                    onChange={(e) => setAddForm({ ...addForm, brandId: e.target.value })}
+                                >
+                                    <option value="">-- Chọn thương hiệu --</option>
+                                    {brands.map((b) => (
+                                        <option key={b.id} value={b.id}>
+                                            {b.name}
+                                        </option>
+                                    ))}
+                                </AdminSelect>
                             </div>
                         </div>
                     )}
@@ -1592,53 +1530,38 @@ export default function ProductList() {
                     {activeAddTab === 'pricing' && (
                         <div className="space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Giá bán niêm yết (VNĐ) <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="10000"
-                                            required
-                                            value={addForm.price}
-                                            onChange={(e) => setAddForm({ ...addForm, price: Number(e.target.value) || 0 })}
-                                            className="w-full pl-4 pr-12 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-bold text-rose-600 transition-all"
-                                        />
-                                        <span className="absolute right-3.5 top-2.5 text-xs text-gray-400 font-medium">VNĐ</span>
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-1">Hiển thị: {formatVND(addForm.price)}</p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Trạng thái ban đầu <span className="text-rose-500">*</span>
-                                    </label>
-                                    <select
-                                        value={addForm.status}
-                                        onChange={(e) => setAddForm({ ...addForm, status: e.target.value as BackendProductStatus })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                    >
-                                        <option value="ACTIVE">✅ Đang bán (Active)</option>
-                                        <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
-                                        <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Mô tả chi tiết sản phẩm
-                                </label>
-                                <textarea
-                                    rows={4}
-                                    placeholder="Nhập thông tin giới thiệu, ưu điểm công nghệ, chế độ bảo hành..."
-                                    value={addForm.description}
-                                    onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
+                                <AdminInput
+                                    label="Giá bán niêm yết (VNĐ)"
+                                    required
+                                    type="number"
+                                    min="0"
+                                    step="10000"
+                                    suffixText="VNĐ"
+                                    value={addForm.price}
+                                    onChange={(e) => setAddForm({ ...addForm, price: Number(e.target.value) || 0 })}
+                                    helperText={`Hiển thị: ${formatVND(addForm.price)}`}
+                                    inputClassName="font-bold text-rose-600"
                                 />
+
+                                <AdminSelect
+                                    label="Trạng thái ban đầu"
+                                    required
+                                    value={addForm.status}
+                                    onChange={(e) => setAddForm({ ...addForm, status: e.target.value as BackendProductStatus })}
+                                >
+                                    <option value="ACTIVE">✅ Đang bán (Active)</option>
+                                    <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
+                                    <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
+                                </AdminSelect>
                             </div>
+
+                            <AdminTextarea
+                                label="Mô tả chi tiết sản phẩm"
+                                rows={4}
+                                placeholder="Nhập thông tin giới thiệu, ưu điểm công nghệ, chế độ bảo hành..."
+                                value={addForm.description}
+                                onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
+                            />
                         </div>
                     )}
 
@@ -1690,172 +1613,96 @@ export default function ProductList() {
                     activeTab={activeEditTab}
                     onTabChange={setActiveEditTab}
                     footer={
-                        <div className="flex items-center justify-end gap-3 w-full">
-                            <button
-                                type="button"
-                                disabled={isSubmitting || isUploadingProductImage}
-                                onClick={() => setIsEditModalOpen(false)}
-                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isSubmitting || isUploadingProductImage}
-                                onClick={handleSaveEdit}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20 disabled:opacity-50"
-                            >
-                                {isUploadingProductImage ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Đang tải ảnh lên ImgBB...
-                                    </>
-                                ) : isSubmitting ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        Đang lưu thay đổi...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="w-4 h-4" />
-                                        Lưu thay đổi
-                                    </>
-                                )}
-                            </button>
-                        </div>
+                        <AdminModalFooter
+                            onCancel={() => setIsEditModalOpen(false)}
+                            onSubmit={handleSaveEdit}
+                            isSubmitting={isSubmitting || isUploadingProductImage}
+                            submittingText={isUploadingProductImage ? "Đang tải ảnh lên ImgBB..." : "Đang lưu thay đổi..."}
+                            submitText="Lưu thay đổi"
+                            submitIcon={Check}
+                        />
                     }
                 >
                     <div className="space-y-6">
                         {/* TAB 1: THÔNG TIN CƠ BẢN */}
                         {activeEditTab === 'basic' && (
                             <div className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Tên sản phẩm <span className="text-rose-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={editForm.name}
-                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
-                                    />
-                                </div>
+                                <AdminInput
+                                    label="Tên sản phẩm"
+                                    required
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                />
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Mã SKU <span className="text-rose-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={editForm.sku}
-                                            onChange={(e) => setEditForm({ ...editForm, sku: e.target.value.toUpperCase() })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-mono uppercase text-gray-800 transition-all"
-                                        />
-                                    </div>
+                                <AdminInput
+                                    label="Mã SKU"
+                                    required
+                                    value={editForm.sku}
+                                    onChange={(e) => setEditForm({ ...editForm, sku: e.target.value.toUpperCase() })}
+                                    className="font-mono uppercase"
+                                />
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Loại sản phẩm
-                                        </label>
-                                        <select
-                                            value={editForm.productType}
-                                            onChange={(e) => setEditForm({ ...editForm, productType: e.target.value as ProductType })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                        >
-                                            <option value="COMPONENT">Linh kiện máy tính</option>
-                                            <option value="LAPTOP">Máy tính xách tay</option>
-                                            <option value="PC">Máy tính để bàn</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <label className="block text-sm font-medium text-gray-700">
-                                            Đường dẫn tĩnh (Slug URL)
-                                        </label>
-                                        <button
+                                <AdminInput
+                                    label="Đường dẫn tĩnh (Slug URL)"
+                                    action={
+                                        <AdminButton
                                             type="button"
+                                            variant="ghost"
                                             onClick={() => setEditForm((prev) => (prev ? { ...prev, slug: generateSlug(prev.name) } : null))}
-                                            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium"
+                                            icon={RefreshCw}
                                         >
-                                            <RefreshCw className="w-3 h-3" />
                                             Tạo lại từ tên
-                                        </button>
-                                    </div>
-                                    <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-600">
-                                        <span className="inline-flex items-center px-3.5 bg-gray-50 text-gray-500 text-xs font-mono border-r border-gray-200">
-                                            pcstore.vn/san-pham/
-                                        </span>
-                                        <input
-                                            type="text"
-                                            value={editForm.slug}
-                                            onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 text-sm font-mono text-gray-800 focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
+                                        </AdminButton>
+                                    }
+                                    prefixText="pcstore.vn/san-pham/"
+                                    value={editForm.slug}
+                                    onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
+                                    className="font-mono"
+                                />
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Danh mục
-                                        </label>
-                                        <select
-                                            value={editForm.primaryCategoryId ?? ''}
-                                            onChange={(e) => {
-                                                const catId = e.target.value ? Number(e.target.value) : null;
-                                                const selectedCat = categories.find((c) => c.id === catId);
-                                                const catName = selectedCat?.name || '';
-                                                const autoProductType = detectProductTypeFromCategory(catName);
-                                                const templateInfo = getSpecTemplateForCategory(catName);
+                                    <AdminSelect
+                                        label="Danh mục"
+                                        value={editForm.primaryCategoryId ?? ''}
+                                        onChange={(e) => {
+                                            const catId = e.target.value ? Number(e.target.value) : null;
+                                            const selectedCat = categories.find((c) => c.id === catId);
+                                            const catName = selectedCat?.name || '';
+                                            const templateInfo = getSpecTemplateForCategory(catName);
 
-                                                setEditForm((prev) => {
-                                                    if (!prev) return null;
-                                                    const mergedSpecs = mergeSpecsWithTemplate(prev.specification, templateInfo.items);
-                                                    return {
-                                                        ...prev,
-                                                        primaryCategoryId: catId,
-                                                        category: catName,
-                                                        productType: prev.productType === 'COMPONENT' && autoProductType !== 'COMPONENT' ? autoProductType : prev.productType,
-                                                        specification: mergedSpecs,
-                                                    };
-                                                });
-                                            }}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                        >
-                                            <option value="">-- Chọn danh mục --</option>
-                                            {categories.map((c) => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                            setEditForm((prev) => {
+                                                if (!prev) return null;
+                                                const mergedSpecs = mergeSpecsWithTemplate(prev.specification, templateInfo.items);
+                                                return {
+                                                    ...prev,
+                                                    primaryCategoryId: catId,
+                                                    category: catName,
+                                                    specification: mergedSpecs,
+                                                };
+                                            });
+                                        }}
+                                    >
+                                        <option value="">-- Chọn danh mục --</option>
+                                        {categories.map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </AdminSelect>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Thương hiệu
-                                        </label>
-                                        <select
-                                            value={editForm.brandId ?? ''}
-                                            onChange={(e) => setEditForm({ ...editForm, brandId: e.target.value ? Number(e.target.value) : null })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                        >
-                                            <option value="">-- Chọn thương hiệu --</option>
-                                            {brands.map((b) => (
-                                                <option key={b.id} value={b.id}>
-                                                    {b.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    <AdminSelect
+                                        label="Thương hiệu"
+                                        value={editForm.brandId ?? ''}
+                                        onChange={(e) => setEditForm({ ...editForm, brandId: e.target.value ? Number(e.target.value) : null })}
+                                    >
+                                        <option value="">-- Chọn thương hiệu --</option>
+                                        {brands.map((b) => (
+                                            <option key={b.id} value={b.id}>
+                                                {b.name}
+                                            </option>
+                                        ))}
+                                    </AdminSelect>
                                 </div>
-
-
                             </div>
                         )}
 
@@ -1863,46 +1710,33 @@ export default function ProductList() {
                         {activeEditTab === 'pricing' && (
                             <div className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Giá bán niêm yết (VNĐ)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={editForm.price}
-                                            onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) || 0 })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm font-bold text-rose-600 transition-all"
-                                        />
-                                        <p className="text-xs text-gray-400 mt-1">Hiển thị: {formatVND(editForm.price)}</p>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                            Trạng thái kinh doanh
-                                        </label>
-                                        <select
-                                            value={editForm.status}
-                                            onChange={(e) => setEditForm({ ...editForm, status: e.target.value as BackendProductStatus })}
-                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white"
-                                        >
-                                            <option value="ACTIVE">✅ Đang bán (Active)</option>
-                                            <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
-                                            <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                        Mô tả chi tiết sản phẩm
-                                    </label>
-                                    <textarea
-                                        rows={4}
-                                        value={editForm.description}
-                                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all"
+                                    <AdminInput
+                                        label="Giá bán niêm yết (VNĐ)"
+                                        type="number"
+                                        suffixText="VNĐ"
+                                        value={editForm.price}
+                                        onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) || 0 })}
+                                        helperText={`Hiển thị: ${formatVND(editForm.price)}`}
+                                        inputClassName="font-bold text-rose-600"
                                     />
+
+                                    <AdminSelect
+                                        label="Trạng thái kinh doanh"
+                                        value={editForm.status}
+                                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value as BackendProductStatus })}
+                                    >
+                                        <option value="ACTIVE">✅ Đang bán (Active)</option>
+                                        <option value="OUT_OF_STOCK">❌ Hết hàng (Out of Stock)</option>
+                                        <option value="INACTIVE">👁️ Đang ẩn (Inactive)</option>
+                                    </AdminSelect>
                                 </div>
+
+                                <AdminTextarea
+                                    label="Mô tả chi tiết sản phẩm"
+                                    rows={4}
+                                    value={editForm.description}
+                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                />
                             </div>
                         )}
 
@@ -1961,24 +1795,26 @@ export default function ProductList() {
                                 <span>Thêm vào: {selectedProduct.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => {
                                         setIsDetailModalOpen(false);
                                         handleOpenEdit(selectedProduct);
                                     }}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold hover:bg-amber-100 transition-colors"
+                                    icon={Edit}
                                 >
-                                    <Edit className="w-3.5 h-3.5" />
                                     Chỉnh sửa
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-5 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors"
                                 >
                                     Đóng
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
                     }

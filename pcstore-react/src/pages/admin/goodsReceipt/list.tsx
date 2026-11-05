@@ -31,7 +31,16 @@ import {
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import { AdminTable, type Column } from '../../../components/admin/common/table';
-import { AdminModal, type ModalTab } from '../../../components/admin/common/modal';
+import {
+    AdminModal,
+    AdminInput,
+    AdminSelect,
+    AdminButton,
+    AdminLabel,
+    AdminTextarea,
+    AdminModalFooter,
+    type ModalTab,
+} from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminGoodsReceiptService } from '../../../services/adminGoodsReceiptService';
@@ -1616,14 +1625,11 @@ export default function GoodsReceiptList() {
             >
                 <div className="space-y-5 p-2">
                     {/* Select PO */}
-                    <div className="space-y-2">
-                        <label className="block text-sm font-semibold text-gray-800">
-                            Đơn đặt hàng liên kết <span className="text-rose-500">*</span>
-                        </label>
-                        <select
+                    <div>
+                        <AdminLabel required>Đơn đặt hàng liên kết</AdminLabel>
+                        <AdminSelect
                             value={formPoId}
                             onChange={(e) => handleSelectPO(Number(e.target.value))}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-colors bg-white font-medium"
                             required
                         >
                             <option value={0}>-- Vui lòng chọn Đơn đặt hàng (PO) cần nhập kho --</option>
@@ -1634,8 +1640,8 @@ export default function GoodsReceiptList() {
                                         {po.code} - {po.name || 'Đơn nhập'} ({po.status})
                                     </option>
                                 ))}
-                        </select>
-                        <p className="text-xs text-gray-500">
+                        </AdminSelect>
+                        <p className="text-xs text-gray-500 mt-1">
                             Hệ thống sẽ lấy danh sách các mặt hàng, số lượng và đơn giá từ đơn PO đã duyệt này.
                         </p>
                     </div>
@@ -1665,9 +1671,9 @@ export default function GoodsReceiptList() {
                     {/* Preview of PO Items */}
                     {formPoId > 0 && (
                         <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            <AdminLabel className="uppercase tracking-wider">
                                 Danh sách mặt hàng trong PO ({formItems.length})
-                            </label>
+                            </AdminLabel>
                             {isLoadingPoItems ? (
                                 <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl flex items-center justify-center gap-2">
                                     <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
@@ -1711,50 +1717,48 @@ export default function GoodsReceiptList() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Receipt Code */}
-                        <div className="space-y-1.5">
-                            <label className="block text-sm font-semibold text-gray-800">
-                                Mã phiếu nhập <span className="text-rose-500">*</span>
-                            </label>
+                        <div>
+                            <AdminLabel required>Mã phiếu nhập</AdminLabel>
                             <div className="flex gap-2">
-                                <input
+                                <AdminInput
                                     type="text"
                                     value={formCode}
                                     onChange={(e) => setFormCode(e.target.value)}
                                     placeholder="Ví dụ: GR-20261028-001"
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-mono"
+                                    className="font-mono"
                                     required
                                 />
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={() => setFormCode(generateReceiptCode())}
-                                    className="px-3 py-2 text-xs bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 font-medium transition-colors"
+                                    size="sm"
+                                    className="shrink-0"
                                     title="Tự sinh mã ngẫu nhiên"
                                 >
                                     Sinh mã
-                                </button>
+                                </AdminButton>
                             </div>
                         </div>
 
                         {/* Receipt Name */}
-                        <div className="space-y-1.5">
-                            <label className="block text-sm font-semibold text-gray-800">Tên phiếu nhập</label>
-                            <input
+                        <div>
+                            <AdminLabel>Tên phiếu nhập</AdminLabel>
+                            <AdminInput
                                 type="text"
                                 value={formName}
                                 onChange={(e) => setFormName(e.target.value)}
                                 placeholder="Ví dụ: Phiếu nhận đợt 1..."
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
                         </div>
 
                         {/* Received At */}
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-800">Thời gian nhận hàng</label>
-                            <input
+                        <div className="md:col-span-2">
+                            <AdminLabel>Thời gian nhận hàng</AdminLabel>
+                            <AdminInput
                                 type="datetime-local"
                                 value={formReceivedAt}
                                 onChange={(e) => setFormReceivedAt(e.target.value)}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                             />
                         </div>
                     </div>
@@ -1784,34 +1788,30 @@ export default function GoodsReceiptList() {
                 submitText="Lưu thay đổi"
             >
                 <div className="space-y-4 p-2">
-                    <div className="space-y-1.5">
-                        <label className="block text-sm font-semibold text-gray-800">
-                            Mã phiếu nhập <span className="text-rose-500">*</span>
-                        </label>
-                        <input
+                    <div>
+                        <AdminLabel required>Mã phiếu nhập</AdminLabel>
+                        <AdminInput
                             type="text"
                             value={formCode}
                             onChange={(e) => setFormCode(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-mono"
+                            className="font-mono"
                             required
                         />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="block text-sm font-semibold text-gray-800">Tên phiếu nhập</label>
-                        <input
+                    <div>
+                        <AdminLabel>Tên phiếu nhập</AdminLabel>
+                        <AdminInput
                             type="text"
                             value={formName}
                             onChange={(e) => setFormName(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                         />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="block text-sm font-semibold text-gray-800">Thời gian nhận hàng</label>
-                        <input
+                    <div>
+                        <AdminLabel>Thời gian nhận hàng</AdminLabel>
+                        <AdminInput
                             type="datetime-local"
                             value={formReceivedAt}
                             onChange={(e) => setFormReceivedAt(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                         />
                     </div>
                 </div>
@@ -1851,41 +1851,36 @@ export default function GoodsReceiptList() {
                                 )}
                             </div>
                             <div className="flex items-center gap-2.5">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={() => setIsScanModalOpen(false)}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
                                 >
                                     Đóng
-                                </button>
-                                <button
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="secondary"
                                     onClick={handleSaveAllSerials}
                                     disabled={isSavingSerials || isCompletingReceipt}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                                    isLoading={isSavingSerials}
+                                    icon={Save}
                                     title="Lưu lại toàn bộ Serial đã quét và trạng thái"
                                 >
-                                    {isSavingSerials ? (
-                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                        <Save className="w-3.5 h-3.5" />
-                                    )}
-                                    <span>Lưu tất cả Serial & Trạng thái</span>
-                                </button>
-                                <button
+                                    Lưu tất cả Serial & Trạng thái
+                                </AdminButton>
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={handleCompleteReceipt}
                                     disabled={isSavingSerials || isCompletingReceipt || totalScannedSerials === 0}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all cursor-pointer shadow-sm shadow-emerald-600/20 disabled:opacity-50"
+                                    isLoading={isCompletingReceipt}
+                                    icon={CheckCircle2}
+                                    className="!bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-600/20"
                                     title="Xác nhận hoàn tất phiếu nhập và chuyển trạng thái đơn PO sang ĐÃ NHẬN"
                                 >
-                                    {isCompletingReceipt ? (
-                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                    )}
-                                    <span>Hoàn thành phiếu nhập (Nhập kho)</span>
-                                </button>
+                                    Hoàn thành phiếu nhập (Nhập kho)
+                                </AdminButton>
                             </div>
                         </div>
                     }
@@ -1989,9 +1984,8 @@ export default function GoodsReceiptList() {
                                             {/* Barcode input row */}
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="relative flex-1">
-                                                        <Barcode className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                                        <input
+                                                    <div className="flex-1">
+                                                        <AdminInput
                                                             type="text"
                                                             value={barcodeInput}
                                                             onChange={(e) => setBarcodeInput(e.target.value)}
@@ -2002,43 +1996,45 @@ export default function GoodsReceiptList() {
                                                                 }
                                                             }}
                                                             placeholder="Quét Barcode hoặc nhập Serial rồi nhấn Enter..."
-                                                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-mono focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                                            prefixIcon={Barcode}
+                                                            className="font-mono"
                                                             autoFocus
                                                         />
                                                     </div>
 
-                                                    <select
+                                                    <AdminSelect
                                                         value={barcodeStatus}
                                                         onChange={(e) => setBarcodeStatus(e.target.value as any)}
-                                                        className={`px-3 py-2.5 rounded-xl border text-xs font-semibold bg-white cursor-pointer ${barcodeStatus === 'GOOD_CONDITION'
+                                                        className={`!w-auto font-semibold ${barcodeStatus === 'GOOD_CONDITION'
                                                             ? 'text-emerald-700 border-emerald-300'
                                                             : 'text-rose-700 border-rose-300'
                                                             }`}
                                                     >
                                                         <option value="GOOD_CONDITION">Đạt chuẩn (Tốt)</option>
                                                         <option value="DEFECTIVE">Hàng lỗi / Hư hỏng</option>
-                                                    </select>
+                                                    </AdminSelect>
 
-                                                    <button
+                                                    <AdminButton
                                                         type="button"
                                                         onClick={handleAddSerial}
-                                                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                                                        variant="primary"
                                                     >
                                                         Thêm
-                                                    </button>
+                                                    </AdminButton>
                                                 </div>
 
                                                 {/* Tool buttons: Bulk paste, Clear */}
                                                 <div className="flex items-center justify-between gap-2 pt-1">
                                                     <div className="flex items-center gap-2 text-xs">
-                                                        <button
+                                                        <AdminButton
                                                             type="button"
+                                                            variant="secondary"
+                                                            size="sm"
                                                             onClick={() => setIsBulkModalOpen(true)}
-                                                            className="px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors font-medium flex items-center gap-1 cursor-pointer"
+                                                            icon={FileText}
                                                         >
-                                                            <FileText className="w-3.5 h-3.5 text-blue-600" />
-                                                            <span>Dán nhiều serial (Paste)</span>
-                                                        </button>
+                                                            Dán nhiều serial (Paste)
+                                                        </AdminButton>
                                                     </div>
 
                                                     {formItems[activeItemIndex].serials.length > 0 && (
@@ -2113,48 +2109,31 @@ export default function GoodsReceiptList() {
             )}
 
             {/* Bulk Serials Modal */}
-            {isBulkModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl border border-gray-100">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-bold text-gray-900 text-base">Nhập nhiều Serial cùng lúc</h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsBulkModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                            Dán danh sách các mã serial vào ô bên dưới, mỗi mã trên một dòng hoặc phân tách bởi dấu phẩy.
-                        </p>
-                        <textarea
-                            rows={6}
-                            value={bulkSerialsInput}
-                            onChange={(e) => setBulkSerialsInput(e.target.value)}
-                            placeholder="SN-20261028-0001&#10;SN-20261028-0002&#10;SN-20261028-0003..."
-                            className="w-full p-3 border border-gray-200 rounded-xl font-mono text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
-                        />
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setIsBulkModalOpen(false)}
-                                className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-xl"
-                            >
-                                Hủy bỏ
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleAddBulkSerials}
-                                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl"
-                            >
-                                Nạp vào danh sách
-                            </button>
-                        </div>
-                    </div>
+            <AdminModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+                title="Nhập nhiều Serial cùng lúc"
+                subtitle="Dán danh sách các mã serial vào ô bên dưới, mỗi mã trên một dòng hoặc phân tách bởi dấu phẩy"
+                size="md"
+                footer={
+                    <AdminModalFooter
+                        onCancel={() => setIsBulkModalOpen(false)}
+                        onSubmit={handleAddBulkSerials}
+                        cancelText="Hủy bỏ"
+                        submitText="Nạp vào danh sách"
+                    />
+                }
+            >
+                <div className="p-2 space-y-4">
+                    <AdminTextarea
+                        rows={6}
+                        value={bulkSerialsInput}
+                        onChange={(e) => setBulkSerialsInput(e.target.value)}
+                        placeholder="SN-20261028-0001&#10;SN-20261028-0002&#10;SN-20261028-0003..."
+                        className="font-mono text-xs"
+                    />
                 </div>
-            )}
+            </AdminModal>
 
             {/* ======================================================== */}
             {/* DETAIL MODAL                                             */}
@@ -2197,47 +2176,52 @@ export default function GoodsReceiptList() {
                                 {/* Status actions right on banner */}
                                 <div className="flex items-center gap-2">
                                     {(selectedReceipt.status === 'DRAFT' || selectedReceipt.status === 'PENDING') && (
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            size="sm"
+                                            variant="primary"
                                             onClick={() => {
                                                 setIsDetailModalOpen(false);
                                                 handleOpenScanModal(selectedReceipt);
                                             }}
-                                            className="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                                            icon={Barcode}
                                         >
-                                            <Barcode className="w-4 h-4" />
-                                            <span>Quét & Nhập Serial</span>
-                                        </button>
+                                            Quét & Nhập Serial
+                                        </AdminButton>
                                     )}
                                     {selectedReceipt.status === 'PENDING' && (
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            size="sm"
+                                            variant="primary"
                                             onClick={() => handleRequestStatusAction(selectedReceipt, 'CONFIRMED')}
-                                            className="px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                                            icon={CheckCircle2}
+                                            className="!bg-emerald-600 hover:!bg-emerald-700"
                                         >
-                                            <CheckCircle2 className="w-4 h-4" />
-                                            <span>Xác nhận nhập kho</span>
-                                        </button>
+                                            Xác nhận nhập kho
+                                        </AdminButton>
                                     )}
                                     {selectedReceipt.status === 'PENDING' && (
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            size="sm"
+                                            variant="danger"
                                             onClick={() => handleRequestStatusAction(selectedReceipt, 'REJECTED')}
-                                            className="px-3.5 py-2 text-xs font-bold text-rose-600 bg-white border border-rose-200 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                            icon={XCircle}
                                         >
-                                            <XCircle className="w-4 h-4" />
-                                            <span>Từ chối nhận</span>
-                                        </button>
+                                            Từ chối nhận
+                                        </AdminButton>
                                     )}
                                     {selectedReceipt.status === 'DRAFT' && (
-                                        <button
+                                        <AdminButton
                                             type="button"
+                                            size="sm"
+                                            variant="primary"
                                             onClick={() => handleRequestStatusAction(selectedReceipt, 'PENDING')}
-                                            className="px-3.5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                                            icon={Send}
                                         >
-                                            <Send className="w-4 h-4" />
-                                            <span>Gửi kiểm đếm</span>
-                                        </button>
+                                            Gửi kiểm đếm
+                                        </AdminButton>
                                     )}
                                 </div>
                             </div>
@@ -2543,14 +2527,14 @@ export default function GoodsReceiptList() {
                     {activeDetailTab === 'print' && (
                         <div className="space-y-4 p-2">
                             <div className="flex justify-end gap-2">
-                                <button
+                                <AdminButton
                                     type="button"
+                                    variant="primary"
                                     onClick={() => window.print()}
-                                    className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer"
+                                    icon={Printer}
                                 >
-                                    <Printer className="w-4 h-4" />
-                                    <span>In phiếu này (Print)</span>
-                                </button>
+                                    In phiếu này (Print)
+                                </AdminButton>
                             </div>
 
                             {/* Printable Paper Canvas */}

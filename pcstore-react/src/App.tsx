@@ -20,6 +20,7 @@ import UserList from './pages/admin/user/list';
 import CategoryList from './pages/admin/category/list';
 import BrandList from './pages/admin/brand/list';
 import ProductList from './pages/admin/product/list';
+import PCConfigList from './pages/admin/pcconfig/list';
 import SupplierList from './pages/admin/supplier/list';
 import PurchaseOrderList from './pages/admin/purchaseOrder/list';
 import GoodsReceiptList from './pages/admin/goodsReceipt/list';
@@ -27,6 +28,9 @@ import ProductSerialList from './pages/admin/serial/list';
 import WarehouseInventoryList from './pages/admin/inventory/list';
 import SupplierReturnList from './pages/admin/supplierReturn/list';
 import OrderList from './pages/admin/order/list';
+import PackagingList from './pages/admin/packaging/list';
+import HandoverList from './pages/admin/handover/list';
+import DeliveryList from './pages/admin/shipping/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -73,6 +77,8 @@ function App() {
               <Route path="brands" element={<BrandList />} />
               <Route path="product" element={<ProductList />} />
               <Route path="products" element={<ProductList />} />
+              <Route path="pcconfig" element={<PCConfigList />} />
+              <Route path="pc-config" element={<PCConfigList />} />
               <Route path="supplier" element={<SupplierList />} />
               <Route path="suppliers" element={<SupplierList />} />
               <Route path="import" element={<PurchaseOrderList />} />
@@ -94,6 +100,15 @@ function App() {
               <Route path="warehouse/inventory" element={<WarehouseInventoryList />} />
               <Route path="warehouse/products" element={<WarehouseInventoryList />} />
               <Route path="inventory" element={<WarehouseInventoryList />} />
+              <Route path="warehouse/packaging" element={<PackagingList />} />
+              <Route path="packaging" element={<PackagingList />} />
+              <Route path="warehouse/handover" element={<HandoverList />} />
+              <Route path="handover" element={<HandoverList />} />
+              <Route path="shipping/deliveries" element={<DeliveryList />} />
+              <Route path="shipping/delivery" element={<DeliveryList />} />
+              <Route path="shipping/customer-returns" element={<DeliveryList />} />
+              <Route path="deliveries" element={<DeliveryList />} />
+              <Route path="delivery" element={<DeliveryList />} />
               <Route path="warehouse/serials" element={<ProductSerialList />} />
               <Route path="warehouse/serial" element={<ProductSerialList />} />
               <Route path="serials" element={<ProductSerialList />} />

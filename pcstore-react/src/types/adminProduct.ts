@@ -1,4 +1,4 @@
-export type ProductType = 'COMPONENT' | 'LAPTOP' | 'PC';
+export type ProductType = 'COMPONENT' | 'LAPTOP' | 'PC' | 'OTHER';
 export type BackendProductStatus = 'INACTIVE' | 'ACTIVE' | 'OUT_OF_STOCK';
 
 export interface ProductResponse {
@@ -20,6 +20,22 @@ export interface ProductResponse {
   createdBy?: number | null;
   lastModifiedDate?: string | null;
   lastModifiedBy?: number | null;
+  items?: BuildingPcItemResponse[] | null;
+}
+
+export interface BuildingPcItemRequest {
+  productId: number;
+  quantity?: number;
+}
+
+export interface BuildingPcItemResponse {
+  id?: number;
+  productId: number;
+  productName?: string;
+  productCode?: string;
+  imageUrl?: string;
+  price?: number;
+  quantity: number;
 }
 
 export interface PageResponseProductResponse {
@@ -46,6 +62,7 @@ export interface ProductCreateRequest {
   brandId?: number | null;
   categoryIds?: number[];
   primaryCategoryId?: number | null;
+  items?: BuildingPcItemRequest[];
 }
 
 export interface ProductUpdateRequest {
@@ -61,6 +78,7 @@ export interface ProductUpdateRequest {
   brandId?: number | null;
   categoryIds?: number[];
   primaryCategoryId?: number | null;
+  items?: BuildingPcItemRequest[];
 }
 
 export interface ProductStatusUpdateRequest {

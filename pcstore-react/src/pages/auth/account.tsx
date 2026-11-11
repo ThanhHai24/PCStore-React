@@ -20,12 +20,16 @@ import {
     RefreshCw,
     X,
     AlertTriangle,
+    Star,
+    ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { uploadImage, validateImageFile } from '../../services/imgbbService';
 import { orderService } from '../../services/orderService';
 import { orderFulfillmentService } from '../../services/orderFulfillmentService';
+import { reviewCommentService } from '../../services/reviewCommentService';
 import type { OrderResponse, OrderStatus } from '../../types/order';
+import type { ReviewItem } from '../../types/review';
 
 export const Account: React.FC = () => {
     const { user, logout, updateProfile, changePassword, loading } = useAuth();
@@ -73,6 +77,114 @@ export const Account: React.FC = () => {
     const [cancelModalOrder, setCancelModalOrder] = useState<OrderResponse | null>(null);
     const [isCancellingOrder, setIsCancellingOrder] = useState<boolean>(false);
     const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    // Quick Product Review Modal state (for COMPLETED orders)
+    const [reviewTargetProduct, setReviewTargetProduct] = useState<{
+        productId: number;
+        productName: string;
+        orderCode: string;
+    } | null>(null);
+    const [existingOrderReview, setExistingOrderReview] = useState<ReviewItem | null>(null);
+    const [loadingExistingReview, setLoadingExistingReview] = useState<boolean>(false);
+    const [quickRating, setQuickRating] = useState<number>(5);
+    const [quickComment, setQuickComment] = useState<string>('');
+    const [quickReviewImages, setQuickReviewImages] = useState<string[]>([]);
+    const [quickNewFiles, setQuickNewFiles] = useState<{ file: File; preview: string }[]>([]);
+    const [submittingQuickReview, setSubmittingQuickReview] = useState<boolean>(false);
+    const [quickReviewError, setQuickReviewError] = useState<string | null>(null);
+    const quickReviewFileRef = useRef<HTMLInputElement>(null);
+
+    const handleOpenQuickReview = async (productId: number, productName: string, orderCode: string) => {
+        setReviewTargetProduct({ productId, productName, orderCode });
+        setQuickRating(5);
+        setQuickComment('');
+        setQuickReviewImages([]);
+        setQuickNewFiles([]);
+        setQuickReviewError(null);
+        setExistingOrderReview(null);
+        setLoadingExistingReview(true);
+
+        try {
+            const { reviews } = await reviewCommentService.getProductReviews(productId, 0, 50);
+            const mine = user ? reviews.find((r) => String(r.userId) === String(user.id)) : null;
+            if (mine) {
+                setExistingOrderReview(mine);
+                setQuickRating(mine.rating);
+                setQuickComment(mine.comment);
+                setQuickReviewImages(mine.images || []);
+            }
+        } catch {
+            // ignore
+        } finally {
+            setLoadingExistingReview(false);
+        }
+    };
+
+    const handleSubmitQuickReview = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!reviewTargetProduct || !user) return;
+        if (!quickComment.trim()) {
+            setQuickReviewError('Vui lòng nhập nhận xét của bạn về sản phẩm.');
+            return;
+        }
+
+        setSubmittingQuickReview(true);
+        setQuickReviewError(null);
+        try {
+            const uploadedUrls: string[] = [];
+            for (const f of quickNewFiles) {
+                const url = await uploadImage(f.file);
+                uploadedUrls.push(url);
+            }
+            const finalImages = [...quickReviewImages, ...uploadedUrls];
+
+            if (existingOrderReview) {
+                await reviewCommentService.updateReview(
+                    reviewTargetProduct.productId,
+                    existingOrderReview.id,
+                    {
+                        rating: quickRating,
+                        comment: quickComment.trim(),
+                        images: finalImages,
+                        author: {
+                            id: user.id,
+                            fullName: user.fullName,
+                            avatar: user.avatar,
+                            role: user.role,
+                        },
+                    }
+                );
+                setOrderActionMsg({
+                    type: 'success',
+                    text: `Đã cập nhật đánh giá cho sản phẩm "${reviewTargetProduct.productName}"!`,
+                });
+            } else {
+                await reviewCommentService.createReview(reviewTargetProduct.productId, {
+                    rating: quickRating,
+                    comment: quickComment.trim(),
+                    images: finalImages,
+                    author: {
+                        id: user.id,
+                        fullName: user.fullName,
+                        avatar: user.avatar,
+                        role: user.role,
+                    },
+                });
+                setOrderActionMsg({
+                    type: 'success',
+                    text: `Cảm ơn bạn đã đánh giá sản phẩm "${reviewTargetProduct.productName}"!`,
+                });
+            }
+
+            quickNewFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+            setQuickNewFiles([]);
+            setReviewTargetProduct(null);
+        } catch (err: any) {
+            setQuickReviewError(err.message || 'Không thể lưu đánh giá sản phẩm.');
+        } finally {
+            setSubmittingQuickReview(false);
+        }
+    };
 
     // Update edit state whenever user changes
     useEffect(() => {
@@ -684,6 +796,28 @@ export const Account: React.FC = () => {
                                                         </button>
                                                     )}
 
+                                                    {ord.status === 'COMPLETED' && ord.items && ord.items.length > 0 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (ord.items.length === 1) {
+                                                                    const firstItem = ord.items[0];
+                                                                    handleOpenQuickReview(
+                                                                        firstItem.productId,
+                                                                        firstItem.productName || `Sản phẩm #${firstItem.productId}`,
+                                                                        ord.code
+                                                                    );
+                                                                } else {
+                                                                    setSelectedOrderDetail(ord);
+                                                                }
+                                                            }}
+                                                            className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"
+                                                        >
+                                                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                                                            <span>Đánh giá sản phẩm</span>
+                                                        </button>
+                                                    )}
+
                                                     {ord.status === 'PENDING' && (
                                                         <button
                                                             type="button"
@@ -969,21 +1103,55 @@ export const Account: React.FC = () => {
                             <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wide">
                                 Danh sách sản phẩm ({selectedOrderDetail.items?.length || 0})
                             </h4>
-                            <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                            <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
                                 {selectedOrderDetail.items?.map((it) => (
                                     <div key={it.id} className="p-3 flex items-center justify-between gap-3 bg-white">
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-bold text-gray-800 truncate">
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/product/${it.productId}`)}
+                                                className="font-bold text-gray-800 hover:text-blue-600 truncate block text-left cursor-pointer"
+                                            >
                                                 {it.productName || `Sản phẩm #${it.productId}`}
-                                            </p>
+                                            </button>
                                             <div className="flex items-center space-x-2 text-[11px] text-gray-500 mt-0.5">
                                                 <span>Đơn giá: {formatVND(it.unitPrice)}</span>
                                                 <span>•</span>
                                                 <span>SL: x{it.quantity}</span>
                                             </div>
                                         </div>
-                                        <div className="text-right shrink-0 font-black text-gray-900">
-                                            {formatVND(it.subtotal || it.unitPrice * it.quantity)}
+                                        <div className="text-right shrink-0 space-y-1">
+                                            <div className="font-black text-gray-900">
+                                                {formatVND(it.subtotal || it.unitPrice * it.quantity)}
+                                            </div>
+                                            {selectedOrderDetail.status === 'COMPLETED' && (
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleOpenQuickReview(
+                                                                it.productId,
+                                                                it.productName || `Sản phẩm #${it.productId}`,
+                                                                selectedOrderDetail.code
+                                                            )
+                                                        }
+                                                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold transition-colors cursor-pointer"
+                                                    >
+                                                        <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
+                                                        <span>Đánh giá</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            navigate(`/product/${it.productId}?review=true`)
+                                                        }
+                                                        className="inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold transition-colors cursor-pointer"
+                                                        title="Mở trang sản phẩm để xem đánh giá"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -1074,6 +1242,238 @@ export const Account: React.FC = () => {
                                 )}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Đánh Giá Nhanh Sản Phẩm Trong Đơn Đã Hoàn Tất */}
+            {reviewTargetProduct && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !submittingQuickReview) {
+                            setReviewTargetProduct(null);
+                        }
+                    }}
+                >
+                    <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <div>
+                                <h3 className="text-sm font-extrabold text-gray-900">
+                                    {existingOrderReview
+                                        ? 'Chỉnh sửa đánh giá sản phẩm'
+                                        : 'Đánh giá sản phẩm đã mua'}
+                                </h3>
+                                <p className="text-[11px] text-gray-500 truncate max-w-xs">
+                                    Đơn #{reviewTargetProduct.orderCode} • {reviewTargetProduct.productName}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setReviewTargetProduct(null)}
+                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {loadingExistingReview ? (
+                            <div className="py-8 flex flex-col items-center justify-center space-y-2">
+                                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                                <p className="text-xs text-gray-500">Đang kiểm tra đánh giá của bạn...</p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmitQuickReview} className="space-y-4 text-xs">
+                                {quickReviewError && (
+                                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                                        <span>{quickReviewError}</span>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block font-bold text-gray-700 mb-1.5">
+                                        Mức độ hài lòng của bạn:
+                                    </label>
+                                    <div className="flex items-center justify-center space-x-2 bg-amber-50/60 border border-amber-200 p-3 rounded-2xl">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => setQuickRating(s)}
+                                                className="p-1 focus:outline-none hover:scale-110 transition-transform cursor-pointer"
+                                            >
+                                                <Star
+                                                    className={`w-7 h-7 ${
+                                                        s <= quickRating
+                                                            ? 'fill-amber-400 text-amber-400'
+                                                            : 'fill-gray-200 text-gray-300'
+                                                    }`}
+                                                />
+                                            </button>
+                                        ))}
+                                        <span className="font-extrabold text-amber-700 ml-2">
+                                            {quickRating}/5 sao
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block font-bold text-gray-700 mb-1">
+                                        Nhận xét của bạn <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        rows={4}
+                                        required
+                                        value={quickComment}
+                                        onChange={(e) => setQuickComment(e.target.value)}
+                                        placeholder="Chia sẻ cảm nhận về chất lượng sản phẩm, tốc độ giao hàng, đóng gói..."
+                                        className="w-full border border-gray-300 rounded-xl p-3 outline-none focus:border-blue-500 leading-relaxed"
+                                    />
+                                </div>
+
+                                {/* Upload images */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold text-gray-700">
+                                            Hình ảnh thực tế (Tối đa 4 ảnh)
+                                        </span>
+                                        <input
+                                            ref={quickReviewFileRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={(e) => {
+                                                const files = Array.from(e.target.files || []);
+                                                if (
+                                                    quickReviewImages.length +
+                                                        quickNewFiles.length +
+                                                        files.length >
+                                                    4
+                                                ) {
+                                                    setQuickReviewError('Tối đa 4 ảnh cho mỗi đánh giá.');
+                                                    return;
+                                                }
+                                                const next: { file: File; preview: string }[] = [];
+                                                for (const f of files) {
+                                                    const v = validateImageFile(f, 32);
+                                                    if (!v.valid) {
+                                                        setQuickReviewError(v.error || 'Ảnh không hợp lệ');
+                                                        return;
+                                                    }
+                                                    next.push({ file: f, preview: URL.createObjectURL(f) });
+                                                }
+                                                setQuickReviewError(null);
+                                                setQuickNewFiles((prev) => [...prev, ...next]);
+                                                if (quickReviewFileRef.current)
+                                                    quickReviewFileRef.current.value = '';
+                                            }}
+                                            className="hidden"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => quickReviewFileRef.current?.click()}
+                                            className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <Camera className="w-3.5 h-3.5" />
+                                            <span>Đính kèm ảnh</span>
+                                        </button>
+                                    </div>
+
+                                    {(quickReviewImages.length > 0 || quickNewFiles.length > 0) && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {quickReviewImages.map((url, idx) => (
+                                                <div
+                                                    key={`old-${idx}`}
+                                                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-gray-200"
+                                                >
+                                                    <img
+                                                        src={url}
+                                                        alt="Ảnh"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setQuickReviewImages((prev) =>
+                                                                prev.filter((_, i) => i !== idx)
+                                                            )
+                                                        }
+                                                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 cursor-pointer"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {quickNewFiles.map((item, idx) => (
+                                                <div
+                                                    key={`new-${idx}`}
+                                                    className="relative w-14 h-14 rounded-xl overflow-hidden border border-blue-300"
+                                                >
+                                                    <img
+                                                        src={item.preview}
+                                                        alt="Ảnh mới"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            URL.revokeObjectURL(item.preview);
+                                                            setQuickNewFiles((prev) =>
+                                                                prev.filter((_, i) => i !== idx)
+                                                            );
+                                                        }}
+                                                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 cursor-pointer"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            navigate(`/product/${reviewTargetProduct.productId}#reviews`)
+                                        }
+                                        className="text-xs text-blue-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <span>Xem trang sản phẩm</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                    </button>
+
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            type="button"
+                                            disabled={submittingQuickReview}
+                                            onClick={() => setReviewTargetProduct(null)}
+                                            className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 cursor-pointer"
+                                        >
+                                            Hủy
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={submittingQuickReview}
+                                            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {submittingQuickReview && (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            )}
+                                            <span>
+                                                {submittingQuickReview
+                                                    ? 'Đang gửi...'
+                                                    : existingOrderReview
+                                                    ? 'Cập nhật'
+                                                    : 'Gửi đánh giá'}
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}

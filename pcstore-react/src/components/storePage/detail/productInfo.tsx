@@ -64,19 +64,28 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
             {/* Ratings & Stats bar */}
             <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 border-b border-gray-100 pb-3">
-                <div className="flex items-center space-x-1 text-amber-400 font-semibold">
+                <a
+                    href="#reviews"
+                    className="flex items-center space-x-1 text-amber-400 font-semibold hover:opacity-80 transition-opacity"
+                >
                     <Star className="w-4 h-4 fill-amber-400 stroke-amber-400" />
                     <span>{product.rating.toFixed(1)}</span>
-                    <span className="text-blue-600 font-normal">({product.reviewCount} đánh giá)</span>
-                </div>
+                    <span className="text-blue-600 font-normal hover:underline">
+                        ({product.reviewCount} đánh giá)
+                    </span>
+                </a>
                 <div className="flex items-center space-x-1">
                     <Eye className="w-4 h-4 text-gray-400" />
                     <span>{product.viewCount}</span>
                 </div>
-                <div className="flex items-center space-x-1">
+                <a
+                    href="#reviews"
+                    className="flex items-center space-x-1 hover:text-blue-600 transition-colors"
+                    title="Xem bình luận & hỏi đáp"
+                >
                     <MessageSquare className="w-4 h-4 text-gray-400" />
-                    <span>{product.commentCount}</span>
-                </div>
+                    <span>{product.commentCount} bình luận</span>
+                </a>
                 <div className="flex items-center space-x-1">
                     <ShoppingBag className="w-4 h-4 text-gray-400" />
                     <span>{product.purchaseCount}</span>

@@ -211,25 +211,23 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                     type="button"
                                     onClick={() => !tab.disabled && handleTabClick(tab.id)}
                                     disabled={tab.disabled}
-                                    className={`relative flex items-center gap-2 px-3 py-2 text font-semibold transition-all cursor-pointer ${
-                                        isActive
+                                    className={`relative flex items-center gap-2 px-3 py-2 text font-semibold transition-all cursor-pointer ${isActive
                                             ? `bg-white text-blue-600 border-b-2 border-b-blue-600 z-10
                                                 before:content-[''] before:absolute before:bottom-0 before:-left-3 before:w-3 before:h-3 before:bg-[radial-gradient(circle_at_top_left,transparent_12px,#ffffff_12px)]
                                                 after:content-[''] after:absolute after:bottom-0 after:-right-3 after:w-3 after:h-3 after:bg-[radial-gradient(circle_at_top_right,transparent_12px,#ffffff_12px)]`
                                             : tab.disabled
-                                            ? 'text-gray-300 cursor-not-allowed'
-                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-t-lg'
-                                    }`}
+                                                ? 'text-gray-300 cursor-not-allowed'
+                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-t-lg'
+                                        }`}
                                 >
                                     {tab.icon && renderIconNode(tab.icon, `w-4 h-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`)}
                                     <span>{tab.label}</span>
                                     {tab.badge !== undefined && (
                                         <span
-                                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                                isActive
+                                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive
                                                     ? 'bg-blue-700 text-blue-100'
                                                     : 'bg-gray-200 text-gray-600'
-                                            }`}
+                                                }`}
                                         >
                                             {tab.badge}
                                         </span>

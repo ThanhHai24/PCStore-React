@@ -48,6 +48,7 @@ import {
     Layers,
     Download,
     Warehouse,
+    MessageSquare,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -99,7 +100,7 @@ const navItems: NavItem[] = [
             { path: '/admin/brand', label: 'Quản lý thương hiệu', icon: Award },
             { path: '/admin/category', label: 'Quản lý danh mục', icon: FolderTree },
             { path: '/admin/pcconfig', label: 'Quản lý cấu hình PC', icon: PcCase },
-
+            { path: '/admin/reviews', label: 'Đánh giá & Bình luận', icon: MessageSquare },
         ],
     },
     {

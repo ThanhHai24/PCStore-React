@@ -69,6 +69,21 @@ export const API_ENDPOINTS = {
     PRODUCT_SERIAL_DETAIL: (id: string | number) => `${API_BASE_URL}/api/product-serials/${id}`,
     PRODUCT_SERIAL_BY_NUMBER: (serialNumber: string) => `${API_BASE_URL}/api/product-serials/by-serial/${encodeURIComponent(serialNumber)}`,
     PRODUCT_SERIALS_BY_PRODUCT: (productId: string | number) => `${API_BASE_URL}/api/product-serials/by-product/${productId}`,
+    WARRANTY_POLICIES: `${API_BASE_URL}/api/admin/warranty-policies`,
+    WARRANTY_POLICY_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-policies/${id}`,
+    WARRANTY_POLICY_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-policies/${id}/status`,
+    WARRANTIES: `${API_BASE_URL}/api/admin/warranties`,
+    WARRANTY_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/warranties/${id}`,
+    WARRANTY_BY_SERIAL: (serial: string) => `${API_BASE_URL}/api/admin/warranties/by-serial/${encodeURIComponent(serial)}`,
+    WARRANTY_EXTEND: (id: string | number) => `${API_BASE_URL}/api/admin/warranties/${id}/extend`,
+    WARRANTY_VOID: (id: string | number) => `${API_BASE_URL}/api/admin/warranties/${id}/void`,
+    WARRANTY_HISTORY: (serial: string) => `${API_BASE_URL}/api/admin/warranties/history/${encodeURIComponent(serial)}`,
+    WARRANTY_REQUESTS: `${API_BASE_URL}/api/admin/warranty-requests`,
+    WARRANTY_REQUEST_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-requests/${id}`,
+    WARRANTY_REQUEST_TECHNICAL: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-requests/${id}/technical`,
+    WARRANTY_REQUEST_PARTS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-requests/${id}/parts`,
+    WARRANTY_PARTS: `${API_BASE_URL}/api/admin/warranty-parts`,
+    WARRANTY_PART_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-parts/${id}/status`,
   },
   CATEGORIES: {
     LIST: `${API_BASE_URL}/api/categories`,
@@ -86,6 +101,14 @@ export const API_ENDPOINTS = {
     LIST: `${API_BASE_URL}/api/products`,
     DETAIL: (id: string | number) => `${API_BASE_URL}/api/products/${id}`,
     BY_SLUG: (slug: string) => `${API_BASE_URL}/api/products/by-slug/${slug}`,
+    REVIEWS: (productId: string | number) => `${API_BASE_URL}/api/products/${productId}/reviews`,
+    REVIEW_DETAIL: (productId: string | number, id: string | number) =>
+      `${API_BASE_URL}/api/products/${productId}/reviews/${id}`,
+    COMMENTS: (productId: string | number) => `${API_BASE_URL}/api/products/${productId}/comments`,
+    COMMENT_DETAIL: (productId: string | number, id: string | number) =>
+      `${API_BASE_URL}/api/products/${productId}/comments/${id}`,
+    COMMENT_REPLIES: (productId: string | number, id: string | number) =>
+      `${API_BASE_URL}/api/products/${productId}/comments/${id}/replies`,
   },
 } as const;
 

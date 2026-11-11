@@ -31,6 +31,13 @@ import OrderList from './pages/admin/order/list';
 import PackagingList from './pages/admin/packaging/list';
 import HandoverList from './pages/admin/handover/list';
 import DeliveryList from './pages/admin/shipping/list';
+import WarrantyPolicyList from './pages/admin/warranty/policyList';
+import ProductWarrantyList from './pages/admin/warranty/productWarrantyList';
+import WarrantyRequestList from './pages/admin/warranty/requestList';
+import TechnicalHandlingList from './pages/admin/warranty/technicalHandlingList';
+import SparePartsList from './pages/admin/warranty/sparePartsList';
+import WarrantyHistoryList from './pages/admin/warranty/warrantyHistoryList';
+import ReviewCommentList from './pages/admin/review/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -79,6 +86,9 @@ function App() {
               <Route path="products" element={<ProductList />} />
               <Route path="pcconfig" element={<PCConfigList />} />
               <Route path="pc-config" element={<PCConfigList />} />
+              <Route path="reviews" element={<ReviewCommentList />} />
+              <Route path="review" element={<ReviewCommentList />} />
+              <Route path="comments" element={<ReviewCommentList />} />
               <Route path="supplier" element={<SupplierList />} />
               <Route path="suppliers" element={<SupplierList />} />
               <Route path="import" element={<PurchaseOrderList />} />
@@ -113,6 +123,20 @@ function App() {
               <Route path="warehouse/serial" element={<ProductSerialList />} />
               <Route path="serials" element={<ProductSerialList />} />
               <Route path="serial" element={<ProductSerialList />} />
+
+              {/* Warranty & Technical Service Routes */}
+              <Route path="warranty/policies" element={<WarrantyPolicyList />} />
+              <Route path="warranty/policy" element={<WarrantyPolicyList />} />
+              <Route path="warranty-policies" element={<WarrantyPolicyList />} />
+              <Route path="warranty/products" element={<ProductWarrantyList />} />
+              <Route path="warranty/product" element={<ProductWarrantyList />} />
+              <Route path="warranty-products" element={<ProductWarrantyList />} />
+              <Route path="warranty/requests" element={<WarrantyRequestList />} />
+              <Route path="warranty/request" element={<WarrantyRequestList />} />
+              <Route path="warranty-requests" element={<WarrantyRequestList />} />
+              <Route path="warranty/technical-handling" element={<TechnicalHandlingList />} />
+              <Route path="warranty/spare-parts" element={<SparePartsList />} />
+              <Route path="warranty/history" element={<WarrantyHistoryList />} />
             </Route>
           </Routes>
         </CartProvider>

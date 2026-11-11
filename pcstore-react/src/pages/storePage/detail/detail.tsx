@@ -248,7 +248,21 @@ export const ProductDetail: React.FC = () => {
 
             {/* Product Reviews Section */}
             <div className="pt-2">
-                <ProductReviews product={product} />
+                <ProductReviews
+                    product={product}
+                    onStatsChange={({ avgRating, reviewCount, commentCount }) => {
+                        setProduct((prev) =>
+                            prev
+                                ? {
+                                      ...prev,
+                                      rating: avgRating,
+                                      reviewCount,
+                                      commentCount,
+                                  }
+                                : prev
+                        );
+                    }}
+                />
             </div>
         </div>
     );

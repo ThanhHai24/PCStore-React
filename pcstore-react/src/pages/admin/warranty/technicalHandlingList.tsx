@@ -23,7 +23,11 @@ import {
     Trash2,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -377,26 +381,16 @@ export default function TechnicalHandlingList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        onClick={() => {
-                            setSelectedRequest(item);
-                            setDetailTab('diagnostic');
-                            setIsDetailOpen(true);
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
-                        title="Xem chi tiết"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => handleOpenHandling(item)}
-                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition"
-                        title="Cập nhật xử lý kỹ thuật"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => {
+                        setSelectedRequest(item);
+                        setDetailTab('diagnostic');
+                        setIsDetailOpen(true);
+                    }}
+                    viewLabel="Xem chi tiết"
+                    onEdit={() => handleOpenHandling(item)}
+                    editLabel="Cập nhật xử lý kỹ thuật"
+                />
             ),
         },
     ];

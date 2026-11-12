@@ -680,25 +680,14 @@ export const Header: React.FC = () => {
                             </span>
                         </Link>
 
-                        {/* 2. KHÁCH HÀNG LIÊN HỆ */}
+                        {/* 2. TRA CỨU BẢO HÀNH */}
                         <Link
-                            to="/contact"
+                            to="/warranty"
                             className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
                         >
-                            <PhoneCall className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
+                            <ShieldCheck className="w-6 h-6 mb-0.5 text-white group-hover:scale-110 transition-transform" />
                             <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
-                                Khách Hàng Liên Hệ
-                            </span>
-                        </Link>
-
-                        {/* 3. TIN TỨC CÔNG NGHỆ */}
-                        <Link
-                            to="/news"
-                            className="flex flex-col items-center justify-center p-2 px-2 rounded-lg hover:bg-white/10 transition-all text-center group"
-                        >
-                            <Newspaper className="w-6 h-6 mb-0.5 group-hover:scale-110 transition-transform" />
-                            <span className="text-[11px] leading-tight font-bold text-blue-50 group-hover:text-white">
-                                Tin Tức Công Nghệ
+                                Tra Cứu Bảo Hành
                             </span>
                         </Link>
 
@@ -862,10 +851,19 @@ export const Header: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2 p-3 bg-blue-50 border-b border-blue-100">
                             <Link
                                 to="/build-pc"
+                                onClick={() => setIsMobileMenuOpen(false)}
                                 className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
                             >
                                 <Cpu className="w-4 h-4 text-blue-600" />
                                 <span>Xây Dựng Cấu Hình</span>
+                            </Link>
+                            <Link
+                                to="/warranty"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="flex items-center space-x-2 p-2 rounded-lg bg-white shadow-sm text-xs font-semibold text-blue-700"
+                            >
+                                <ShieldCheck className="w-4 h-4 text-blue-600" />
+                                <span>Tra Cứu Bảo Hành</span>
                             </Link>
                             <Link
                                 to="/contact"

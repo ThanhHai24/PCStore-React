@@ -30,7 +30,11 @@ import {
     ShoppingBag,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -782,34 +786,29 @@ export default function WarehouseInventoryList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetail(item)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xem Thẻ kho & Danh sách Serial"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => navigate(`/admin/warehouse/serials?productId=${item.productId}`)}
-                        className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-                        title="Tra cứu Serial của sản phẩm này"
-                    >
-                        <Barcode className="w-4 h-4" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleOpenStatusChange(item)}
-                        className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                        title="Đổi trạng thái kinh doanh kho"
-                    >
-                        <SlidersHorizontal className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(item)}
+                    viewLabel="Xem Thẻ kho & Danh sách Serial"
+                    actions={[
+                        {
+                            key: 'status-change',
+                            label: 'Đổi trạng thái kinh doanh kho',
+                            description: 'Cập nhật trạng thái mở bán / hết hàng',
+                            icon: SlidersHorizontal,
+                            variant: 'warning',
+                            onClick: () => handleOpenStatusChange(item),
+                        },
+                        {
+                            key: 'lookup-serials',
+                            label: 'Tra cứu Serial sản phẩm',
+                            description: 'Mở danh sách Serial thuộc sản phẩm này',
+                            icon: Barcode,
+                            variant: 'primary',
+                            onClick: () =>
+                                navigate(`/admin/warehouse/serials?productId=${item.productId}`),
+                        },
+                    ]}
+                />
             ),
         },
     ];

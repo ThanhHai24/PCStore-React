@@ -184,7 +184,70 @@ export function formatReviewDate(isoStr?: string | null): string {
   }
 }
 
-// ==================== RESPONSE ERROR HANDLER ====================
+// ==================== RESPONSE ERROR HANDLER & READ HELPER ====================
+
+/**
+ * Helper gọi GET API an toàn cho cả endpoint Public và endpoint yêu cầu JWT:
+ * - Nếu có token trong localStorage, đính kèm Authorization header.
+ * - Nếu gặp 401/403 (ví dụ token cũ trên public endpoint), thử gọi không kèm token;
+ *   nếu vẫn 401 thì dùng fetchWithAuth để tự động refresh token.
+ */
+async function fetchReadApi(url: string): Promise<Response> {
+  const token = localStorage.getItem('pcstore_token');
+  const baseHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (!token) {
+    return fetch(url, {
+      method: 'GET',
+      headers: baseHeaders,
+    });
+  }
+
+  const authRes = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...baseHeaders,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (authRes.status === 401 || authRes.status === 403) {
+    // Thử gọi public (không đính kèm token) phòng trường hợp token hết hạn nhưng API cho phép public
+    const publicRes = await fetch(url, {
+      method: 'GET',
+      headers: baseHeaders,
+    });
+    if (publicRes.ok) {
+      return publicRes;
+    }
+    // Nếu public cũng trả về 401, gọi fetchWithAuth để refresh token
+    if (publicRes.status === 401) {
+      return fetchWithAuth(url, {
+        method: 'GET',
+        headers: baseHeaders,
+      });
+    }
+    return authRes;
+  }
+
+  return authRes;
+}
+
+/**
+ * Trích xuất mảng dữ liệu linh hoạt từ nhiều cấu trúc response (PageResponse, mảng trực tiếp, data wrapper)
+ */
+function extractContentArray<T>(data: any): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.content)) return data.content;
+  if (Array.isArray(data.data)) return data.data;
+  if (data.data && Array.isArray(data.data.content)) return data.data.content;
+  if (Array.isArray(data.items)) return data.items;
+  if (Array.isArray(data.results)) return data.results;
+  return [];
+}
 
 async function handleApiResponse<T>(
   res: Response,
@@ -398,13 +461,10 @@ export const reviewCommentService = {
     rawPage: PageResponseReviewResponse;
   }> {
     const url = `${API_ENDPOINTS.PRODUCTS.REVIEWS(productId)}?page=${page}&size=${size}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const res = await fetchReadApi(url);
 
     const data = await handleApiResponse<PageResponseReviewResponse>(res, 'review');
-    const content = Array.isArray(data?.content) ? data.content : [];
+    const content = extractContentArray<ReviewResponse>(data);
     const reviews = content.map((item) => mapReviewResponseToItem(item, productMeta));
     const summary = calculateReviewSummary(reviews);
 
@@ -419,10 +479,7 @@ export const reviewCommentService = {
     productId: number | string,
     reviewId: number | string
   ): Promise<ReviewItem> {
-    const res = await fetch(API_ENDPOINTS.PRODUCTS.REVIEW_DETAIL(productId, reviewId), {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const res = await fetchReadApi(API_ENDPOINTS.PRODUCTS.REVIEW_DETAIL(productId, reviewId));
     const dto = await handleApiResponse<ReviewResponse>(res, 'review');
     return mapReviewResponseToItem(dto);
   },
@@ -525,41 +582,76 @@ export const reviewCommentService = {
     rawPage: PageResponseCommentResponse;
   }> {
     const url = `${API_ENDPOINTS.PRODUCTS.COMMENTS(productId)}?page=${page}&size=${size}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const res = await fetchReadApi(url);
 
     const rootPage = await handleApiResponse<PageResponseCommentResponse>(res, 'comment');
-    const rootDtos = Array.isArray(rootPage?.content) ? rootPage.content : [];
+    const allFetchedDtos = extractContentArray<CommentResponse>(rootPage);
+
+    // Tách bình luận gốc (parentId == null) và các phản hồi (parentId != null) nếu API trả chung trong cùng 1 danh sách
+    const rootDtos = allFetchedDtos.filter((c) => c.parentId == null);
+    const inlineRepliesMap = new Map<string, CommentResponse[]>();
+    allFetchedDtos.forEach((c) => {
+      if (c.parentId != null) {
+        const key = String(c.parentId);
+        const list = inlineRepliesMap.get(key) || [];
+        list.push(c);
+        inlineRepliesMap.set(key, list);
+      }
+    });
 
     // Fetch direct replies for each root comment in parallel
     const commentsWithReplies = await Promise.all(
       rootDtos.map(async (rootDto) => {
+        const replyDtoMap = new Map<string, CommentResponse>();
+
+        // 1. Lấy các phản hồi đã có sẵn trong response gốc hoặc nested replies
+        const preloaded = inlineRepliesMap.get(String(rootDto.id)) || [];
+        preloaded.forEach((r) => replyDtoMap.set(String(r.id), r));
+
+        const nestedReplies = Array.isArray((rootDto as any).replies)
+          ? ((rootDto as any).replies as CommentResponse[])
+          : [];
+        nestedReplies.forEach((r) => {
+          if (r && r.id != null) replyDtoMap.set(String(r.id), r);
+        });
+
+        // 2. Truy vấn phản hồi từ endpoint ?parentId={id}
         try {
           const replyUrl = `${API_ENDPOINTS.PRODUCTS.COMMENTS(productId)}?parentId=${rootDto.id}&page=0&size=50`;
-          const replyRes = await fetch(replyUrl, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          });
+          const replyRes = await fetchReadApi(replyUrl);
           if (replyRes.ok) {
-            const replyPage: PageResponseCommentResponse = await replyRes.json();
-            const activeReplies = (replyPage.content || [])
-              .filter((r) => !r.isDeleted)
-              .map((r) => mapCommentResponseToItem(r, [], productMeta));
-            return mapCommentResponseToItem(rootDto, activeReplies, productMeta);
+            const replyPage = await replyRes.json().catch(() => null);
+            const fetchedReplies = extractContentArray<CommentResponse>(replyPage);
+            fetchedReplies.forEach((r) => {
+              // Chỉ nhận những comment thực sự là con của rootDto.id
+              if (r && r.id != null && String(r.parentId) === String(rootDto.id)) {
+                replyDtoMap.set(String(r.id), r);
+              }
+            });
           }
         } catch {
           // ignore reply load error for single item
         }
-        return mapCommentResponseToItem(rootDto, [], productMeta);
+
+        const activeReplies = Array.from(replyDtoMap.values())
+          .filter((r) => !r.isDeleted)
+          .sort(
+            (a, b) =>
+              new Date(a.createdDate || 0).getTime() - new Date(b.createdDate || 0).getTime()
+          )
+          .map((r) => mapCommentResponseToItem(r, [], productMeta));
+
+        return mapCommentResponseToItem(rootDto, activeReplies, productMeta);
       })
     );
 
     // Filter out soft-deleted root comments that have no active replies
-    const visibleComments = commentsWithReplies.filter(
-      (c) => !c.isDeleted || c.replies.length > 0
-    );
+    const visibleComments = commentsWithReplies
+      .filter((c) => !c.isDeleted || c.replies.length > 0)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
 
     const totalCount = visibleComments.reduce(
       (acc, c) => acc + (c.isDeleted ? 0 : 1) + c.replies.length,
@@ -580,13 +672,11 @@ export const reviewCommentService = {
     size: number = 50
   ): Promise<CommentItem[]> {
     const url = `${API_ENDPOINTS.PRODUCTS.COMMENTS(productId)}?parentId=${parentId}&page=${page}&size=${size}`;
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const res = await fetchReadApi(url);
     const data = await handleApiResponse<PageResponseCommentResponse>(res, 'comment');
-    return (data.content || [])
-      .filter((r) => !r.isDeleted)
+    const items = extractContentArray<CommentResponse>(data);
+    return items
+      .filter((r) => !r.isDeleted && String(r.parentId) === String(parentId))
       .map((r) => mapCommentResponseToItem(r, []));
   },
 
@@ -722,11 +812,25 @@ export const reviewCommentService = {
         page: 0,
         size: 100,
       });
-      const completedOrders = ordersPage.content || [];
-      return completedOrders.some((order) =>
-        order.status === 'COMPLETED' &&
-        (order.items || []).some((item) => String(item.productId) === String(productId))
-      );
+      const completedOrders = extractContentArray<any>(ordersPage);
+      for (const order of completedOrders) {
+        if (order.status && order.status !== 'COMPLETED') continue;
+        if (Array.isArray(order.items) && order.items.length > 0) {
+          if (order.items.some((item: any) => String(item.productId) === String(productId))) {
+            return true;
+          }
+        } else if (order.id != null) {
+          try {
+            const detail = await orderService.getOrderById(order.id);
+            if ((detail?.items || []).some((item) => String(item.productId) === String(productId))) {
+              return true;
+            }
+          } catch {
+            // ignore detail error
+          }
+        }
+      }
+      return false;
     } catch {
       return false;
     }

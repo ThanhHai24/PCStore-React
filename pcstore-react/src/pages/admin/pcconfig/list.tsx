@@ -23,7 +23,11 @@ import {
     DollarSign,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -1258,44 +1262,32 @@ export default function PCConfigList() {
             header: 'Thao tác',
             align: 'right',
             render: (p: AdminProductItem) => (
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedProduct(p);
-                            setActiveDetailTab('overview');
-                            setIsDetailModalOpen(true);
-                        }}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="Xem chi tiết cấu hình"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(p)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="Chỉnh sửa cấu hình"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleToggleStatus(p)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                        title={p.status === 'ACTIVE' ? 'Tạm ẩn cấu hình' : 'Mở bán cấu hình'}
-                    >
-                        {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => handleDeleteProduct(p)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Xóa cấu hình PC"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => {
+                        setSelectedProduct(p);
+                        setActiveDetailTab('overview');
+                        setIsDetailModalOpen(true);
+                    }}
+                    viewLabel="Xem chi tiết cấu hình"
+                    onEdit={() => handleOpenEditModal(p)}
+                    editLabel="Chỉnh sửa cấu hình"
+                    moreActions={[
+                        {
+                            key: 'toggle-status',
+                            label: p.status === 'ACTIVE' ? 'Tạm ẩn cấu hình' : 'Mở bán cấu hình',
+                            description:
+                                p.status === 'ACTIVE'
+                                    ? 'Ngừng hiển thị cấu hình trên cửa hàng'
+                                    : 'Hiển thị lại cấu hình PC',
+                            icon: p.status === 'ACTIVE' ? EyeOff : Eye,
+                            variant: p.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: () => handleToggleStatus(p),
+                        },
+                    ]}
+                    onDelete={() => handleDeleteProduct(p)}
+                    deleteLabel="Xóa cấu hình PC"
+                    deleteDescription="Xóa cấu hình PC khỏi hệ thống"
+                />
             ),
         },
     ];
@@ -1448,6 +1440,7 @@ export default function PCConfigList() {
             <AdminFilter
                 fields={filterFields}
                 searchQuery={searchQuery}
+                values={filters}
                 onSearch={(val) => {
                     setSearchQuery(val);
                     setCurrentPage(1);

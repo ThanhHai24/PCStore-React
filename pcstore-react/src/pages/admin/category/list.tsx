@@ -21,7 +21,11 @@ import {
     Loader2
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -827,46 +831,31 @@ export const CategoryList: React.FC = () => {
             header: 'Thao tác',
             align: 'right',
             render: (cat) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetailModal(cat)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-                        title="Xem chi tiết danh mục"
-                    >
-                        <Eye className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleOpenEditModal(cat)}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-amber-200"
-                        title="Chỉnh sửa danh mục"
-                    >
-                        <Edit className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleOpenToggleStatusModal(cat)}
-                        className={`p-1.5 rounded-lg transition-colors border ${cat.status === 'ACTIVE'
-                            ? 'text-amber-600 border-amber-200 hover:bg-amber-50'
-                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                            }`}
-                        title={cat.status === 'ACTIVE' ? 'Tạm ẩn danh mục' : 'Hiển thị danh mục'}
-                    >
-                        {cat.status === 'ACTIVE' ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDeleteModal(cat)}
-                        className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600 transition-colors"
-                        title="Xóa danh mục"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetailModal(cat)}
+                    viewLabel="Xem chi tiết danh mục"
+                    onEdit={() => handleOpenEditModal(cat)}
+                    editLabel="Chỉnh sửa danh mục"
+                    moreActions={[
+                        {
+                            key: 'toggle-status',
+                            label:
+                                cat.status === 'ACTIVE'
+                                    ? 'Tạm ẩn danh mục'
+                                    : 'Hiển thị danh mục',
+                            description:
+                                cat.status === 'ACTIVE'
+                                    ? 'Ẩn danh mục trên thanh menu'
+                                    : 'Kích hoạt hiển thị danh mục',
+                            icon: cat.status === 'ACTIVE' ? EyeOff : Eye,
+                            variant: cat.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: () => handleOpenToggleStatusModal(cat),
+                        },
+                    ]}
+                    onDelete={() => handleOpenDeleteModal(cat)}
+                    deleteLabel="Xóa danh mục"
+                    deleteDescription="Xóa danh mục khỏi hệ thống"
+                />
             ),
         },
     ];

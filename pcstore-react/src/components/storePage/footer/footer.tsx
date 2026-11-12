@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin, X } from 'lucide-react';
 import MessendgerLogo from "../../../assets/images/facebook_messenger.png";
 import ZaloLogo from "../../../assets/images/zalo.png";
@@ -311,9 +312,14 @@ export const Footer: React.FC = () => {
                                 </a>
                             </li>
                             <li>
-                                <a href="#" className="hover:text-blue-600 transition-colors">
+                                <Link to="/warranty" className="hover:text-blue-600 transition-colors font-semibold text-blue-700">
+                                    Tra cứu thời hạn bảo hành (Serial)
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/warranty" className="hover:text-blue-600 transition-colors">
                                     Gửi yêu cầu bảo hành
-                                </a>
+                                </Link>
                             </li>
                             <li>
                                 <a href="#" className="hover:text-blue-600 transition-colors">
@@ -340,9 +346,9 @@ export const Footer: React.FC = () => {
                                 </a>
                             </li>
                             <li>
-                                <a href="#" className="hover:text-blue-600 transition-colors">
+                                <Link to="/warranty" className="hover:text-blue-600 transition-colors">
                                     Chính sách bảo hành
-                                </a>
+                                </Link>
                             </li>
                             <li>
                                 <a href="#" className="hover:text-blue-600 transition-colors">

@@ -30,7 +30,11 @@ import {
     Save,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -1276,89 +1280,61 @@ export default function GoodsReceiptList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    {/* View Detail */}
-                    <button
-                        type="button"
-                        onClick={() => handleViewDetail(item)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xem chi tiết phiếu nhập & Serial"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-
-                    {/* Scan & Input Serials (DRAFT or PENDING) */}
-                    {(item.status === 'DRAFT' || item.status === 'PENDING') && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenScanModal(item)}
-                            className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            title="Quét & Nhập Serial cho phiếu này"
-                        >
-                            <Barcode className="w-4 h-4" />
-                        </button>
-                    )}
-
-                    {/* Edit info (DRAFT only) */}
-                    {item.status === 'DRAFT' && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(item)}
-                            className="p-1.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer"
-                            title="Chỉnh sửa thông tin phiếu nhập"
-                        >
-                            <Edit className="w-4 h-4" />
-                        </button>
-                    )}
-
-                    {/* Send / Transition from DRAFT to PENDING */}
-                    {item.status === 'DRAFT' && (
-                        <button
-                            type="button"
-                            onClick={() => handleRequestStatusAction(item, 'PENDING')}
-                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                            title="Gửi chuyển sang trạng thái Đang kiểm hàng (PENDING)"
-                        >
-                            <Send className="w-4 h-4" />
-                        </button>
-                    )}
-
-                    {/* Confirm Inbound (PENDING only) - Giai đoạn 4: Hoàn tất quy trình */}
-                    {item.status === 'PENDING' && (
-                        <button
-                            type="button"
-                            onClick={() => handleRequestStatusAction(item, 'CONFIRMED')}
-                            className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                            title="Xác nhận hoàn tất nhập kho (CONFIRMED)"
-                        >
-                            <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                    )}
-
-                    {/* Reject (PENDING only) */}
-                    {item.status === 'PENDING' && (
-                        <button
-                            type="button"
-                            onClick={() => handleRequestStatusAction(item, 'REJECTED')}
-                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Từ chối nhận hàng (REJECTED)"
-                        >
-                            <XCircle className="w-4 h-4" />
-                        </button>
-                    )}
-
-                    {/* Delete (DRAFT only) */}
-                    {item.status === 'DRAFT' && (
-                        <button
-                            type="button"
-                            onClick={() => setDeleteTargetReceipt(item)}
-                            className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Xóa phiếu nhập nháp"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleViewDetail(item)}
+                    viewLabel="Xem chi tiết phiếu nhập & Serial"
+                    onEdit={item.status === 'DRAFT' ? () => handleOpenEditModal(item) : undefined}
+                    editLabel="Chỉnh sửa thông tin phiếu nhập"
+                    actions={[
+                        ...(item.status === 'DRAFT' || item.status === 'PENDING'
+                            ? [
+                                  {
+                                      key: 'scan-serial',
+                                      label: 'Quét & Nhập Serial',
+                                      description: 'Kiểm đếm và gán mã Serial sản phẩm',
+                                      icon: Barcode,
+                                      variant: 'primary' as const,
+                                      onClick: () => handleOpenScanModal(item),
+                                  },
+                              ]
+                            : []),
+                    ]}
+                    moreActions={[
+                        {
+                            key: 'send-pending',
+                            label: 'Chuyển sang Đang kiểm hàng',
+                            description: 'Gửi sang trạng thái PENDING',
+                            icon: Send,
+                            variant: 'primary',
+                            hidden: item.status !== 'DRAFT',
+                            onClick: () => handleRequestStatusAction(item, 'PENDING'),
+                        },
+                        {
+                            key: 'confirm-inbound',
+                            label: 'Xác nhận hoàn tất nhập kho',
+                            description: 'Cập nhật tồn kho & Serial (CONFIRMED)',
+                            icon: CheckCircle2,
+                            variant: 'success',
+                            hidden: item.status !== 'PENDING',
+                            onClick: () => handleRequestStatusAction(item, 'CONFIRMED'),
+                        },
+                        {
+                            key: 'reject-inbound',
+                            label: 'Từ chối nhận hàng',
+                            description: 'Từ chối lô hàng này (REJECTED)',
+                            icon: XCircle,
+                            variant: 'danger',
+                            hidden: item.status !== 'PENDING',
+                            dividerBefore: true,
+                            onClick: () => handleRequestStatusAction(item, 'REJECTED'),
+                        },
+                    ]}
+                    onDelete={
+                        item.status === 'DRAFT' ? () => setDeleteTargetReceipt(item) : undefined
+                    }
+                    deleteLabel="Xóa phiếu nhập nháp"
+                    deleteDescription="Xóa phiếu nhập đang ở trạng thái nháp"
+                />
             ),
         },
     ];

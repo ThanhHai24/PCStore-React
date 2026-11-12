@@ -1,5 +1,15 @@
 import React, { forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import {
+    SelectDropdown,
+    SelectDropdownMenu,
+    type AdminSelectOption,
+    type SelectDropdownProps,
+    type SelectDropdownMenuProps,
+} from './selectDropdown';
+
+export { SelectDropdown, SelectDropdownMenu };
+export type { AdminSelectOption, SelectDropdownProps, SelectDropdownMenuProps };
 
 /* Helper to render either a Lucide component or an instantiated React element */
 export const renderIconNode = (
@@ -186,21 +196,26 @@ AdminInput.displayName = 'AdminInput';
 /* =========================================================================
    3. ADMIN SELECT COMPONENT
    ========================================================================= */
-export interface AdminSelectOption {
-    label: string;
-    value: string | number;
-    disabled?: boolean;
-}
-
-export interface AdminSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface AdminSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
     label?: React.ReactNode;
     required?: boolean;
     action?: React.ReactNode;
     error?: string;
     helperText?: string;
     options?: AdminSelectOption[];
+    placeholder?: string;
+    icon?: React.ReactNode | React.ElementType;
+    searchable?: boolean;
+    searchPlaceholder?: string;
+    clearable?: boolean;
+    size?: 'sm' | 'md' | 'lg';
+    variant?: 'default' | 'filter' | 'compact';
+    onValueChange?: (value: string, option?: AdminSelectOption) => void;
     containerClassName?: string;
     selectClassName?: string;
+    menuClassName?: string;
+    minMenuWidth?: number;
+    align?: 'left' | 'right';
 }
 
 export const AdminSelect = forwardRef<HTMLSelectElement, AdminSelectProps>(
@@ -212,9 +227,20 @@ export const AdminSelect = forwardRef<HTMLSelectElement, AdminSelectProps>(
             error,
             helperText,
             options,
+            placeholder,
+            icon,
+            searchable,
+            searchPlaceholder,
+            clearable,
+            size = 'md',
+            variant = 'default',
+            onValueChange,
             children,
             containerClassName = '',
             selectClassName = '',
+            menuClassName = '',
+            minMenuWidth,
+            align = 'left',
             className = '',
             id,
             ...props
@@ -223,27 +249,33 @@ export const AdminSelect = forwardRef<HTMLSelectElement, AdminSelectProps>(
     ) => {
         const selectId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
-        const baseSelectStyles =
-            'w-full px-3 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-sm text-gray-800 transition-all bg-white disabled:bg-gray-50 disabled:text-gray-500';
-
-        const errorStyles = error ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500' : '';
-
         const selectElement = (
-            <select
+            <SelectDropdown
                 ref={ref}
                 id={selectId}
+                name={props.name}
+                value={props.value as string | number | undefined}
+                defaultValue={props.defaultValue as string | number | undefined}
+                onChange={props.onChange}
+                onValueChange={onValueChange}
+                options={options}
+                placeholder={placeholder}
+                icon={icon}
+                searchable={searchable}
+                searchPlaceholder={searchPlaceholder}
+                clearable={clearable}
+                disabled={props.disabled}
                 required={required}
-                className={`${baseSelectStyles} ${errorStyles} ${selectClassName} ${className}`}
-                {...props}
+                error={Boolean(error)}
+                size={size}
+                variant={variant}
+                triggerClassName={`${selectClassName} ${className}`.trim()}
+                menuClassName={menuClassName}
+                minMenuWidth={minMenuWidth}
+                align={align}
             >
-                {options
-                    ? options.map((opt) => (
-                          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-                              {opt.label}
-                          </option>
-                      ))
-                    : children}
-            </select>
+                {children}
+            </SelectDropdown>
         );
 
         if (label || action || error || helperText) {

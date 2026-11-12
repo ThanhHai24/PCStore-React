@@ -8,6 +8,8 @@ import {
     AdminInput,
     AdminSelect,
     AdminTextarea,
+    SelectDropdown,
+    SelectDropdownMenu,
     renderIconNode,
 } from './formElements';
 
@@ -20,6 +22,8 @@ export {
     AdminInput,
     AdminSelect,
     AdminTextarea,
+    SelectDropdown,
+    SelectDropdownMenu,
     renderIconNode,
 };
 export type {
@@ -32,6 +36,8 @@ export type {
     AdminInputProps,
     AdminSelectProps,
     AdminSelectOption,
+    SelectDropdownProps,
+    SelectDropdownMenuProps,
     AdminTextareaProps,
 } from './formElements';
 

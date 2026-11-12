@@ -39,7 +39,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     return (
         <ToastProvider position="bottom-right" defaultDuration={4000}>
-            <div className="min-h-screen bg-gray-100 text-gray-900 flex transition-colors font-sans">
+            <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex transition-colors font-sans">
                 {/* Sidebar */}
                 <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(!collapsed)} />
 
@@ -52,7 +52,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     <Header onToggleSidebar={() => setCollapsed(!collapsed)} />
 
                     {/* Main Body */}
-                    <main className="flex-1 p-4 lg:p-8 overflow-x-hidden overflow-y-auto bg-gray-100 min-w-0">
+                    <main className="flex-1 p-4 lg:p-8 overflow-x-hidden overflow-y-auto bg-[#F8FAFC] min-w-0">
                         <div className="w-full mx-auto space-y-6 min-w-0">
                             {children ?? <Outlet />}
                         </div>

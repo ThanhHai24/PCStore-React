@@ -22,7 +22,11 @@ import {
     X,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -841,25 +845,19 @@ export default function ProductSerialList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => handleViewDetail(item)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xem chi tiết & Vòng đời Serial"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handlePrintBarcode(item)}
-                        className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-                        title="In tem mã vạch Barcode"
-                    >
-                        <Printer className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleViewDetail(item)}
+                    viewLabel="Xem chi tiết & Vòng đời Serial"
+                    actions={[
+                        {
+                            key: 'print-barcode',
+                            label: 'In tem mã vạch Barcode',
+                            icon: Printer,
+                            variant: 'primary',
+                            onClick: () => handlePrintBarcode(item),
+                        },
+                    ]}
+                />
             ),
         },
     ];

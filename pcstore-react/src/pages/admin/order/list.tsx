@@ -39,7 +39,11 @@ import {
     AlertTriangle,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -1329,7 +1333,10 @@ export default function OrderList() {
                 align: 'right',
                 render: (order) => {
                     const canDelete = order.status !== 'COMPLETED';
-                    const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED' || order.status === 'PROCESSING';
+                    const canCancel =
+                        order.status === 'PENDING' ||
+                        order.status === 'CONFIRMED' ||
+                        order.status === 'PROCESSING';
 
                     return (
                         <div
@@ -1365,61 +1372,52 @@ export default function OrderList() {
                                     type="button"
                                     onClick={() => navigate('/admin/warehouse/handover')}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all cursor-pointer mr-1"
-                                    title="Bàn giao ĐVVC )"
+                                    title="Bàn giao ĐVVC"
                                 >
                                     <Truck className="w-3.5 h-3.5" />
                                     <span>Bàn giao ĐVVC</span>
                                 </button>
                             )}
 
-                            <button
-                                type="button"
-                                onClick={() => handleOpenDetail(order)}
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                                title="Xem chi tiết đơn hàng"
-                            >
-                                <Eye className="w-4 h-4" />
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={(e) => handlePrintOrder(order, e)}
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                                title="In hóa đơn / phiếu giao hàng"
-                            >
-                                <Printer className="w-4 h-4" />
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={(e) => handlePromptStatusChange(order, order.status, e)}
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                                title="Cập nhật trạng thái đơn"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </button>
-
-                            {canCancel && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => handlePromptStatusChange(order, 'CANCELLED', e)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                    title="Hủy đơn hàng này"
-                                >
-                                    <Ban className="w-4 h-4" />
-                                </button>
-                            )}
-
-                            {canDelete && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => handlePromptDelete(order, e)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                    title="Xóa đơn hàng"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            )}
+                            <AdminActionDropdown
+                                onView={() => handleOpenDetail(order)}
+                                viewLabel="Xem chi tiết đơn hàng"
+                                actions={[
+                                    {
+                                        key: 'status-update',
+                                        label: 'Cập nhật trạng thái đơn',
+                                        description: 'Thay đổi tiến độ xử lý đơn hàng',
+                                        icon: RefreshCw,
+                                        variant: 'warning',
+                                        onClick: (e) =>
+                                            handlePromptStatusChange(order, order.status, e),
+                                    },
+                                ]}
+                                moreActions={[
+                                    {
+                                        key: 'print-order',
+                                        label: 'In hóa đơn / phiếu giao hàng',
+                                        description: 'Xuất bản in hóa đơn cho khách',
+                                        icon: Printer,
+                                        variant: 'primary',
+                                        onClick: (e) => handlePrintOrder(order, e),
+                                    },
+                                    {
+                                        key: 'cancel-order',
+                                        label: 'Hủy đơn hàng này',
+                                        description: 'Hủy đơn và hoàn trả tồn kho',
+                                        icon: Ban,
+                                        variant: 'danger',
+                                        hidden: !canCancel,
+                                        dividerBefore: true,
+                                        onClick: (e) =>
+                                            handlePromptStatusChange(order, 'CANCELLED', e),
+                                    },
+                                ]}
+                                onDelete={canDelete ? (e) => handlePromptDelete(order, e) : undefined}
+                                deleteLabel="Xóa đơn hàng"
+                                deleteDescription="Xóa đơn hàng khỏi hệ thống"
+                            />
                         </div>
                     );
                 },

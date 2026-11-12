@@ -20,7 +20,11 @@ import {
     Loader2,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminButton,
@@ -574,32 +578,21 @@ export const ReviewCommentList: React.FC = () => {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => setSelectedReview(item)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xem chi tiết đánh giá"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() =>
-                            setDeleteTarget({
-                                type: 'review',
-                                productId: String(item.productId),
-                                id: item.id,
-                                title: `Đánh giá ${item.rating} sao của ${item.userName}`,
-                                subtitle: item.comment,
-                            })
-                        }
-                        className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xóa đánh giá"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => setSelectedReview(item)}
+                    viewLabel="Xem chi tiết đánh giá"
+                    onDelete={() =>
+                        setDeleteTarget({
+                            type: 'review',
+                            productId: String(item.productId),
+                            id: item.id,
+                            title: `Đánh giá ${item.rating} sao của ${item.userName}`,
+                            subtitle: item.comment,
+                        })
+                    }
+                    deleteLabel="Xóa đánh giá"
+                    deleteDescription="Xóa bài đánh giá này khỏi sản phẩm"
+                />
             ),
         },
     ];
@@ -714,37 +707,32 @@ export const ReviewCommentList: React.FC = () => {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setSelectedComment(item);
-                            setReplyText('');
-                            setReplyFiles([]);
-                        }}
-                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                        title="Xem hội thoại & trả lời khách hàng"
-                    >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>Trả lời</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() =>
-                            setDeleteTarget({
-                                type: 'comment',
-                                productId: String(item.productId),
-                                id: item.id,
-                                title: `Bình luận của ${item.userName}`,
-                                subtitle: item.content,
-                            })
-                        }
-                        className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xóa bình luận"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    actions={[
+                        {
+                            key: 'reply',
+                            label: 'Xem hội thoại & trả lời khách hàng',
+                            icon: MessageSquare,
+                            variant: 'primary',
+                            onClick: () => {
+                                setSelectedComment(item);
+                                setReplyText('');
+                                setReplyFiles([]);
+                            },
+                        },
+                    ]}
+                    onDelete={() =>
+                        setDeleteTarget({
+                            type: 'comment',
+                            productId: String(item.productId),
+                            id: item.id,
+                            title: `Bình luận của ${item.userName}`,
+                            subtitle: item.content,
+                        })
+                    }
+                    deleteLabel="Xóa bình luận"
+                    deleteDescription="Xóa câu hỏi / bình luận này"
+                />
             ),
         },
     ];

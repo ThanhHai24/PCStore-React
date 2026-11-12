@@ -24,7 +24,11 @@ import {
     Tag,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -358,36 +362,35 @@ export default function WarrantyRequestList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        onClick={() => {
-                            setSelectedRequest(item);
-                            setDetailTab('overview');
-                            setIsDetailOpen(true);
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
-                        title="Xem chi tiết phiếu"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setSelectedRequest(item);
-                            setIsPrintOpen(true);
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                        title="In phiếu tiếp nhận"
-                    >
-                        <Printer className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => navigate('/admin/warranty/technical-handling')}
-                        className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition"
-                        title="Chuyển sang xử lý kỹ thuật"
-                    >
-                        <Wrench className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => {
+                        setSelectedRequest(item);
+                        setDetailTab('overview');
+                        setIsDetailOpen(true);
+                    }}
+                    viewLabel="Xem chi tiết phiếu"
+                    actions={[
+                        {
+                            key: 'technical',
+                            label: 'Chuyển sang xử lý kỹ thuật',
+                            description: 'Mở trang kỹ thuật viên chẩn đoán & sửa chữa',
+                            icon: Wrench,
+                            variant: 'warning',
+                            onClick: () => navigate('/admin/warranty/technical-handling'),
+                        },
+                        {
+                            key: 'print',
+                            label: 'In phiếu tiếp nhận',
+                            description: 'Xuất bản in biên nhận bảo hành',
+                            icon: Printer,
+                            variant: 'primary',
+                            onClick: () => {
+                                setSelectedRequest(item);
+                                setIsPrintOpen(true);
+                            },
+                        },
+                    ]}
+                />
             ),
         },
     ];

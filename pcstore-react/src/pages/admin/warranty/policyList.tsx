@@ -21,7 +21,11 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -649,29 +653,15 @@ export default function WarrantyPolicyList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        onClick={() => handleOpenDetail(item)}
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                        title="Xem chi tiết"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => handleOpenEdit(item)}
-                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition-colors"
-                        title="Chỉnh sửa"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => handleDeleteClick(item)}
-                        className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
-                        title="Xóa chính sách"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(item)}
+                    viewLabel="Xem chi tiết chính sách"
+                    onEdit={() => handleOpenEdit(item)}
+                    editLabel="Chỉnh sửa chính sách"
+                    onDelete={() => handleDeleteClick(item)}
+                    deleteLabel="Xóa chính sách"
+                    deleteDescription="Xóa chính sách bảo hành này"
+                />
             ),
         },
     ];

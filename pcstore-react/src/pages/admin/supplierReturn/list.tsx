@@ -46,7 +46,11 @@ import {
     Filter,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -983,28 +987,23 @@ export default function SupplierReturnList() {
                         </button>
                     )}
 
-                    {/* Xem chi tiết */}
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetail(order)}
-                        className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                        title="Xem chi tiết & Tiến trình"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-
-                    {/* In biên bản */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            handleOpenDetail(order);
-                            setActiveDetailTab('print');
-                        }}
-                        className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
-                        title="In biên bản xuất hoàn & Bàn giao ĐVVC"
-                    >
-                        <Printer className="w-4 h-4" />
-                    </button>
+                    {/* Xem chi tiết & In biên bản */}
+                    <AdminActionDropdown
+                        onView={() => handleOpenDetail(order)}
+                        viewLabel="Xem chi tiết & Tiến trình"
+                        actions={[
+                            {
+                                key: 'print',
+                                label: 'In biên bản xuất hoàn & Bàn giao ĐVVC',
+                                icon: Printer,
+                                variant: 'primary',
+                                onClick: () => {
+                                    handleOpenDetail(order);
+                                    setActiveDetailTab('print');
+                                },
+                            },
+                        ]}
+                    />
                 </div>
             ),
         },

@@ -8,10 +8,15 @@ import {
     Calendar,
 } from 'lucide-react';
 import { SearchBar } from './searchbar';
+import { SelectDropdown, type AdminSelectOption } from './selectDropdown';
 
 export interface FilterOption {
     label: string;
     value: string | number | boolean;
+    description?: string;
+    icon?: React.ReactNode | React.ElementType;
+    badge?: React.ReactNode;
+    dotColor?: string;
 }
 
 export interface FilterField {
@@ -67,27 +72,36 @@ export const FilterSelect: React.FC<FilterSelectProps> = ({
     icon: Icon,
     className = '',
 }) => {
+    const hasEmptyOption = options.some((opt) => String(opt.value) === '');
+    const normalizedOptions: AdminSelectOption[] = [
+        ...(hasEmptyOption
+            ? []
+            : [
+                  {
+                      label: label ? `${label}: ${placeholder}` : placeholder,
+                      value: '',
+                  },
+              ]),
+        ...options.map((opt) => ({
+            label: opt.label,
+            value: String(opt.value),
+            description: opt.description,
+            icon: opt.icon,
+            badge: opt.badge,
+            dotColor: opt.dotColor,
+        })),
+    ];
+
     return (
         <div className={`relative inline-flex items-center ${className}`}>
-            <div className="relative w-full">
-                {Icon && (
-                    <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                )}
-                <select
-                    value={value ?? ''}
-                    onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
-                    className={`w-full appearance-none bg-white border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl py-2 pr-8 shadow-sm transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 cursor-pointer ${Icon ? 'pl-9' : 'pl-3.5'
-                        }`}
-                >
-                    <option value="">{label ? `${label}: ${placeholder}` : placeholder}</option>
-                    {options.map((opt) => (
-                        <option key={String(opt.value)} value={String(opt.value)}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-            </div>
+            <SelectDropdown
+                variant="filter"
+                value={value ?? ''}
+                options={normalizedOptions}
+                placeholder={label ? `${label}: ${placeholder}` : placeholder}
+                icon={Icon}
+                onValueChange={(val) => onChange(val === '' ? undefined : val)}
+            />
         </div>
     );
 };
@@ -103,7 +117,7 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
     showSearch = true,
     searchBarClassName,
     fields = [],
-    values = {},
+    values: externalValues,
     onChange,
     onFilterChange,
     onReset,
@@ -113,8 +127,17 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
     const activeSearchChange = onSearchChange || onSearch;
     const activeOnChange = onChange || onFilterChange;
 
+    const [internalValues, setInternalValues] = useState<Record<string, any>>(externalValues || {});
+    const values = externalValues !== undefined ? externalValues : internalValues;
+
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (externalValues !== undefined) {
+            setInternalValues(externalValues);
+        }
+    }, [externalValues]);
 
     // Count active filters (excluding search)
     const activeFilterCount = Object.values(values).filter(
@@ -124,6 +147,10 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            const targetEl = event.target as HTMLElement | null;
+            if (targetEl?.closest?.('[data-admin-select-portal="true"]')) {
+                return;
+            }
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
@@ -138,15 +165,16 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
     }, [isOpen]);
 
     const handleFieldChange = (fieldId: string, val: any) => {
-        if (!activeOnChange) return;
         const updated = { ...values, [fieldId]: val };
         if (val === undefined || val === '') {
             delete updated[fieldId];
         }
-        activeOnChange(updated);
+        setInternalValues(updated);
+        activeOnChange?.(updated);
     };
 
     const handleResetAll = () => {
+        setInternalValues({});
         activeSearchChange?.('');
         onReset?.();
         if (activeOnChange) {
@@ -202,7 +230,10 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                                             {activeFilterCount > 0 && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => activeOnChange?.({})}
+                                                    onClick={() => {
+                                                        setInternalValues({});
+                                                        activeOnChange?.({});
+                                                    }}
                                                     className="text-[11px] font-semibold text-red-500 hover:underline"
                                                 >
                                                     Xóa bộ lọc

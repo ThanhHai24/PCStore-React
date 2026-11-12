@@ -27,7 +27,11 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -425,36 +429,41 @@ export default function ProductWarrantyList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        onClick={() => handleOpenDetail(item)}
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition"
-                        title="Xem chi tiết bảo hành"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => handleOpenIntake(item)}
-                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-md transition"
-                        title="Tiếp nhận bảo hành"
-                    >
-                        <Wrench className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => handleOpenExtend(item)}
-                        className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition"
-                        title="Gia hạn bảo hành"
-                    >
-                        <Calendar className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => navigate(`/admin/warranty/history?serial=${encodeURIComponent(item.serialNumber)}`)}
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition"
-                        title="Tra cứu lịch sử bảo hành"
-                    >
-                        <History className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(item)}
+                    viewLabel="Xem chi tiết bảo hành"
+                    actions={[
+                        {
+                            key: 'intake',
+                            label: 'Tiếp nhận bảo hành',
+                            description: 'Tạo phiếu tiếp nhận bảo hành cho Serial này',
+                            icon: Wrench,
+                            variant: 'warning',
+                            onClick: () => handleOpenIntake(item),
+                        },
+                        {
+                            key: 'extend',
+                            label: 'Gia hạn bảo hành',
+                            description: 'Cộng thêm số tháng bảo hành',
+                            icon: Calendar,
+                            variant: 'success',
+                            onClick: () => handleOpenExtend(item),
+                        },
+                        {
+                            key: 'history',
+                            label: 'Tra cứu lịch sử bảo hành',
+                            description: 'Xem toàn bộ dòng thời gian bảo hành',
+                            icon: History,
+                            variant: 'primary',
+                            onClick: () =>
+                                navigate(
+                                    `/admin/warranty/history?serial=${encodeURIComponent(
+                                        item.serialNumber
+                                    )}`
+                                ),
+                        },
+                    ]}
+                />
             ),
         },
     ];

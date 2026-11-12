@@ -124,6 +124,23 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product, onStats
     // Lightbox Image Preview
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+    // Giữ tham chiếu ổn định tới onStatsChange và thông tin hiển thị sản phẩm để tránh vòng lặp re-fetch vô tận
+    const onStatsChangeRef = useRef(onStatsChange);
+    useEffect(() => {
+        onStatsChangeRef.current = onStatsChange;
+    }, [onStatsChange]);
+
+    const productMetaRef = useRef({
+        name: product?.title,
+        image: product?.images?.[0],
+    });
+    useEffect(() => {
+        productMetaRef.current = {
+            name: product?.title,
+            image: product?.images?.[0],
+        };
+    }, [product?.title, product?.images]);
+
     // Load reviews & comments from Backend API
     const fetchAllReviewsAndComments = useCallback(async () => {
         if (!product?.id) return;
@@ -131,17 +148,14 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product, onStats
         setLoadingReviews(true);
         setLoadingComments(true);
 
-        await syncAdminUserDirectoryIfPossible(user?.role);
+        // Chạy đồng bộ danh bạ user (nếu là ADMIN) song song, không chặn việc tải đánh giá/bình luận
+        syncAdminUserDirectoryIfPossible(user?.role).catch(() => {});
+
+        const meta = productMetaRef.current;
 
         const [revResult, cmtResult] = await Promise.allSettled([
-            reviewCommentService.getProductReviews(product.id, 0, 50, {
-                name: product.title,
-                image: product.images?.[0],
-            }),
-            reviewCommentService.getProductComments(product.id, 0, 50, {
-                name: product.title,
-                image: product.images?.[0],
-            }),
+            reviewCommentService.getProductReviews(product.id, 0, 50, meta),
+            reviewCommentService.getProductComments(product.id, 0, 50, meta),
         ]);
 
         let currentAvg = 0;
@@ -166,14 +180,14 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product, onStats
         }
         setLoadingComments(false);
 
-        if (onStatsChange) {
-            onStatsChange({
+        if (onStatsChangeRef.current) {
+            onStatsChangeRef.current({
                 avgRating: currentAvg,
                 reviewCount: currentRevCount,
                 commentCount: currentCmtCount,
             });
         }
-    }, [product?.id, product?.title, product?.images, user?.role, onStatsChange]);
+    }, [product?.id, user?.role]);
 
     useEffect(() => {
         fetchAllReviewsAndComments();
@@ -233,13 +247,13 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product, onStats
                 (acc, c) => acc + (c.isDeleted ? 0 : 1) + c.replies.length,
                 0
             );
-            onStatsChange?.({
+            onStatsChangeRef.current?.({
                 avgRating: summary.avgRating,
                 reviewCount: summary.totalReviews,
                 commentCount: totalComments,
             });
         },
-        [onStatsChange]
+        []
     );
 
     // ==================== REVIEW HANDLERS ====================

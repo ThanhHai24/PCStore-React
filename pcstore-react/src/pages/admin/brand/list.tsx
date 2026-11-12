@@ -23,7 +23,11 @@ import {
     User
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -676,43 +680,31 @@ export default function BrandList() {
             header: 'Thao tác',
             align: 'right',
             render: (brand) => (
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetail(brand)}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-                        title="Xem chi tiết thương hiệu"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleOpenEdit(brand, e)}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-amber-200"
-                        title="Chỉnh sửa thông tin"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleToggleStatus(brand, e)}
-                        className={`p-1.5 rounded-lg transition-colors border ${brand.status === 'ACTIVE'
-                            ? 'text-amber-600 border-amber-200 hover:bg-amber-50'
-                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                            }`}
-                        title={brand.status === 'ACTIVE' ? 'Ẩn thương hiệu' : 'Kích hoạt thương hiệu'}
-                    >
-                        {brand.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleDeleteBrand(brand, e)}
-                        className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600 transition-colors"
-                        title="Xóa thương hiệu"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(brand)}
+                    viewLabel="Xem chi tiết thương hiệu"
+                    onEdit={(e) => handleOpenEdit(brand, e)}
+                    editLabel="Chỉnh sửa thông tin"
+                    moreActions={[
+                        {
+                            key: 'toggle-status',
+                            label:
+                                brand.status === 'ACTIVE'
+                                    ? 'Ẩn thương hiệu'
+                                    : 'Kích hoạt thương hiệu',
+                            description:
+                                brand.status === 'ACTIVE'
+                                    ? 'Tạm ẩn thương hiệu trên cửa hàng'
+                                    : 'Hiển thị lại thương hiệu',
+                            icon: brand.status === 'ACTIVE' ? EyeOff : CheckCircle2,
+                            variant: brand.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: (e) => handleToggleStatus(brand, e),
+                        },
+                    ]}
+                    onDelete={(e) => handleDeleteBrand(brand, e)}
+                    deleteLabel="Xóa thương hiệu"
+                    deleteDescription="Xóa thương hiệu khỏi hệ thống"
+                />
             ),
         },
     ];
@@ -848,6 +840,8 @@ export default function BrandList() {
             {/* Filter Section */}
             <AdminFilter
                 fields={filterFields}
+                searchQuery={searchQuery}
+                values={filters}
                 onSearch={handleSearch}
                 onFilterChange={handleFilterChange}
                 onReset={handleFilterReset}

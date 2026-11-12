@@ -33,7 +33,11 @@ import {
     Loader2
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -732,70 +736,36 @@ export const UserList: React.FC = () => {
             header: 'Thao tác',
             align: 'right',
             render: (user) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDetailModal(user);
-                        }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-                        title="Xem chi tiết tài khoản"
-                    >
-                        <Eye className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditModal(user);
-                        }}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-amber-200"
-                        title="Chỉnh sửa tài khoản"
-                    >
-                        <Edit className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenRoleModal(user);
-                        }}
-                        className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200"
-                        title="Phân quyền tài khoản"
-                    >
-                        <Key className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenToggleStatusModal(user);
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors border ${user.status === 'ACTIVE'
-                            ? 'text-amber-600 border-amber-200 hover:bg-amber-50'
-                            : 'text-emerald-600 border-emerald-200 hover:bg-emerald-50'
-                            }`}
-                        title={user.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
-                    >
-                        {user.status === 'ACTIVE' ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDeleteModal(user);
-                        }}
-                        className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-600 transition-colors"
-                        title="Xóa tài khoản"
-                    >
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetailModal(user)}
+                    viewLabel="Xem chi tiết tài khoản"
+                    onEdit={() => handleOpenEditModal(user)}
+                    editLabel="Chỉnh sửa tài khoản"
+                    moreActions={[
+                        {
+                            key: 'role',
+                            label: 'Phân quyền tài khoản',
+                            description: 'Thay đổi vai trò truy cập hệ thống',
+                            icon: Key,
+                            variant: 'primary',
+                            onClick: () => handleOpenRoleModal(user),
+                        },
+                        {
+                            key: 'toggle-status',
+                            label: user.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+                            description:
+                                user.status === 'ACTIVE'
+                                    ? 'Tạm ngưng quyền đăng nhập'
+                                    : 'Khôi phục quyền đăng nhập',
+                            icon: user.status === 'ACTIVE' ? Lock : Unlock,
+                            variant: user.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: () => handleOpenToggleStatusModal(user),
+                        },
+                    ]}
+                    onDelete={() => handleOpenDeleteModal(user)}
+                    deleteLabel="Xóa tài khoản"
+                    deleteDescription="Xóa tài khoản khỏi hệ thống"
+                />
             ),
         },
     ];

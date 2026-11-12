@@ -94,9 +94,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
             {/* Warranty & In-stock line */}
             <div className="flex flex-wrap items-center justify-between text-xs sm:text-sm">
-                <div>
+                <div className="flex items-center gap-2">
                     <span className="text-gray-500">Bảo hành: </span>
                     <span className="text-red-600 font-semibold">{product.warrantyInfo}</span>
+                    <Link
+                        to="/warranty"
+                        className="text-[11px] text-blue-600 hover:underline font-medium bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
+                    >
+                        Tra cứu S/N
+                    </Link>
                 </div>
                 <div>
                     <span className="text-gray-500">Tình trạng: </span>

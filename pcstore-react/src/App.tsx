@@ -7,6 +7,7 @@ import BuildPc from './pages/storePage/builder/builder';
 import Cart from './pages/storePage/cart/cart';
 import PaymentResult from './pages/storePage/cart/paymentResult';
 import ProductCompare from './pages/storePage/compare/compare';
+import WarrantyLookup from './pages/storePage/warranty/warrantyLookup';
 import Login from './pages/auth/login';
 import Account from './pages/auth/account';
 import Register from './pages/auth/register';
@@ -38,6 +39,8 @@ import TechnicalHandlingList from './pages/admin/warranty/technicalHandlingList'
 import SparePartsList from './pages/admin/warranty/sparePartsList';
 import WarrantyHistoryList from './pages/admin/warranty/warrantyHistoryList';
 import ReviewCommentList from './pages/admin/review/list';
+import RevenueReportPage from './pages/admin/reports/sales/revenueReport';
+import OrderStatusReportPage from './pages/admin/reports/sales/orderStatusReport';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -63,6 +66,10 @@ function App() {
               <Route path="product/:id" element={<ProductDetail />} />
               <Route path="compare" element={<ProductCompare />} />
               <Route path="build-pc" element={<BuildPc />} />
+              <Route path="warranty" element={<WarrantyLookup />} />
+              <Route path="warranty-lookup" element={<WarrantyLookup />} />
+              <Route path="tra-cuu-bao-hanh" element={<WarrantyLookup />} />
+              <Route path="bao-hanh" element={<WarrantyLookup />} />
               <Route path="cart" element={<Cart />} />
               <Route path="vnpay-return" element={<PaymentResult />} />
               <Route path="login" element={<Login />} />
@@ -137,6 +144,12 @@ function App() {
               <Route path="warranty/technical-handling" element={<TechnicalHandlingList />} />
               <Route path="warranty/spare-parts" element={<SparePartsList />} />
               <Route path="warranty/history" element={<WarrantyHistoryList />} />
+
+              {/* Sales Reports Routes */}
+              <Route path="reports/sales/revenue" element={<RevenueReportPage />} />
+              <Route path="reports/revenue" element={<RevenueReportPage />} />
+              <Route path="reports/sales/orders" element={<OrderStatusReportPage />} />
+              <Route path="reports/orders" element={<OrderStatusReportPage />} />
             </Route>
           </Routes>
         </CartProvider>

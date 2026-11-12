@@ -1,5 +1,28 @@
-import React from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    AlertCircle,
+    Loader2,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    Search,
+    X,
+} from 'lucide-react';
+import { SelectDropdown } from './selectDropdown';
+import {
+    AdminActionDropdown,
+    TableRowActions,
+    type AdminActionItem,
+    type AdminActionDropdownProps,
+    type ActionItemVariant,
+} from './actionDropdown';
+
+export { AdminActionDropdown, TableRowActions };
+export type { AdminActionItem, AdminActionDropdownProps, ActionItemVariant };
+
+export type SortDirection = 'asc' | 'desc';
 
 export interface Column<T> {
     key: string;
@@ -9,6 +32,8 @@ export interface Column<T> {
     className?: string;
     headerClassName?: string;
     align?: 'left' | 'center' | 'right';
+    sortable?: boolean;
+    sortValue?: (item: T) => string | number;
 }
 
 export interface AdminTableProps<T> {
@@ -18,6 +43,26 @@ export interface AdminTableProps<T> {
     loading?: boolean;
     emptyText?: string;
     emptyIcon?: React.ElementType;
+
+    // Search & Toolbar (optional built-in support)
+    searchable?: boolean;
+    searchQuery?: string;
+    onSearchChange?: (query: string) => void;
+    searchPlaceholder?: string;
+    searchFilterFn?: (item: T, query: string) => boolean;
+    toolbarLeft?: React.ReactNode;
+    toolbarRight?: React.ReactNode;
+
+    // Sorting (controlled or uncontrolled)
+    sortKey?: string;
+    sortDirection?: SortDirection;
+    defaultSortKey?: string;
+    defaultSortDirection?: SortDirection;
+    onSortChange?: (key: string, direction: SortDirection) => void;
+    disableClientSort?: boolean;
+
+    // Summary row at bottom of tbody
+    summaryRow?: React.ReactNode;
 
     // Pagination
     currentPage?: number;
@@ -49,6 +94,20 @@ export function AdminTable<T>({
     loading = false,
     emptyText = 'Không tìm thấy dữ liệu phù hợp.',
     emptyIcon: EmptyIcon = AlertCircle,
+    searchable = false,
+    searchQuery: controlledSearchQuery,
+    onSearchChange,
+    searchPlaceholder = 'Tìm kiếm trong bảng...',
+    searchFilterFn,
+    toolbarLeft,
+    toolbarRight,
+    sortKey: controlledSortKey,
+    sortDirection: controlledSortDirection,
+    defaultSortKey = '',
+    defaultSortDirection = 'desc',
+    onSortChange,
+    disableClientSort = false,
+    summaryRow,
     currentPage = 1,
     totalPages = 1,
     totalItems,
@@ -66,21 +125,109 @@ export function AdminTable<T>({
     rowClassName = '',
     onRowClick,
 }: AdminTableProps<T>) {
+    const [internalSearch, setInternalSearch] = useState('');
+    const [internalSortKey, setInternalSortKey] = useState<string>(defaultSortKey);
+    const [internalSortDir, setInternalSortDir] = useState<SortDirection>(defaultSortDirection);
+
+    const activeSearch = controlledSearchQuery !== undefined ? controlledSearchQuery : internalSearch;
+    const activeSortKey = controlledSortKey !== undefined ? controlledSortKey : internalSortKey;
+    const activeSortDir = controlledSortDirection !== undefined ? controlledSortDirection : internalSortDir;
+
+    const handleSearchInput = (val: string) => {
+        if (onSearchChange) {
+            onSearchChange(val);
+        } else {
+            setInternalSearch(val);
+        }
+    };
+
+    const handleHeaderSortClick = (col: Column<T>) => {
+        if (!col.sortable) return;
+        const nextDir: SortDirection =
+            activeSortKey === col.key ? (activeSortDir === 'asc' ? 'desc' : 'asc') : 'desc';
+        if (onSortChange) {
+            onSortChange(col.key, nextDir);
+        } else {
+            setInternalSortKey(col.key);
+            setInternalSortDir(nextDir);
+        }
+    };
+
+    const processedData = useMemo(() => {
+        let list = [...data];
+
+        // Optional built-in client search if no external handler filters data
+        if (searchable && activeSearch.trim() && !onSearchChange) {
+            const q = activeSearch.trim().toLowerCase();
+            list = list.filter((item) => {
+                if (searchFilterFn) return searchFilterFn(item, q);
+                return Object.values(item as Record<string, unknown>).some((v) =>
+                    String(v ?? '')
+                        .toLowerCase()
+                        .includes(q)
+                );
+            });
+        }
+
+        // Optional client-side sorting when a sortable column is active
+        if (!disableClientSort && activeSortKey && !onSortChange) {
+            const sortCol = columns.find((c) => c.key === activeSortKey);
+            if (sortCol && sortCol.sortable) {
+                list.sort((a, b) => {
+                    const valA = sortCol.sortValue
+                        ? sortCol.sortValue(a)
+                        : sortCol.accessorKey
+                          ? (a[sortCol.accessorKey] as unknown as string | number)
+                          : ((a as Record<string, unknown>)[sortCol.key] as string | number);
+                    const valB = sortCol.sortValue
+                        ? sortCol.sortValue(b)
+                        : sortCol.accessorKey
+                          ? (b[sortCol.accessorKey] as unknown as string | number)
+                          : ((b as Record<string, unknown>)[sortCol.key] as string | number);
+
+                    if (typeof valA === 'number' && typeof valB === 'number') {
+                        return activeSortDir === 'asc' ? valA - valB : valB - valA;
+                    }
+                    const strA = String(valA ?? '');
+                    const strB = String(valB ?? '');
+                    return activeSortDir === 'asc'
+                        ? strA.localeCompare(strB, 'vi')
+                        : strB.localeCompare(strA, 'vi');
+                });
+            }
+        }
+
+        return list;
+    }, [
+        data,
+        searchable,
+        activeSearch,
+        onSearchChange,
+        searchFilterFn,
+        disableClientSort,
+        activeSortKey,
+        activeSortDir,
+        onSortChange,
+        columns,
+    ]);
+
     const getRowKey = (item: T): string | number => {
         if (typeof rowKey === 'function') return rowKey(item);
         return item[rowKey] as unknown as string | number;
     };
 
-    const isAllSelected = data.length > 0 && data.every((item) => selectedKeys.includes(getRowKey(item)));
-    const isSomeSelected = data.some((item) => selectedKeys.includes(getRowKey(item))) && !isAllSelected;
+    const isAllSelected =
+        processedData.length > 0 && processedData.every((item) => selectedKeys.includes(getRowKey(item)));
+    const isSomeSelected =
+        processedData.some((item) => selectedKeys.includes(getRowKey(item))) && !isAllSelected;
 
     const handleSelectAll = () => {
         if (!onSelectionChange) return;
         if (isAllSelected) {
-            const currentPageKeys = data.map(getRowKey);
+            const currentPageKeys = processedData.map(getRowKey);
             onSelectionChange(selectedKeys.filter((k) => !currentPageKeys.includes(k)));
         } else {
-            const currentPageKeys = data.map(getRowKey);
+            const currentPageKeys = processedData.map(getRowKey);
             const newKeys = Array.from(new Set([...selectedKeys, ...currentPageKeys]));
             onSelectionChange(newKeys);
         }
@@ -95,17 +242,82 @@ export function AdminTable<T>({
         }
     };
 
-    const itemsCount = totalItems !== undefined ? totalItems : data.length;
+    const itemsCount = totalItems !== undefined ? totalItems : processedData.length;
     const calcPageSize = pageSize || 10;
     const mergedPageSizeOptions = Array.from(new Set([...pageSizeOptions, calcPageSize])).sort((a, b) => a - b);
     const startItem = itemsCount > 0 ? (currentPage - 1) * calcPageSize + 1 : 0;
     const endItem = Math.min(currentPage * calcPageSize, itemsCount);
 
+    // Tạo danh sách trang hiển thị dạng: 1 2 ... 5 6 7 ... 9 10
+    const paginationItems = useMemo<(number | 'ellipsis-left' | 'ellipsis-right')[]>(() => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
+
+        if (currentPage <= 3) {
+            return [1, 2, 3, 4, 'ellipsis-right', totalPages - 1, totalPages];
+        }
+
+        if (currentPage === 4) {
+            return [1, 2, 3, 4, 5, 'ellipsis-right', totalPages - 1, totalPages];
+        }
+
+        if (currentPage >= totalPages - 2) {
+            return [1, 2, 'ellipsis-left', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        }
+
+        if (currentPage === totalPages - 3) {
+            return [1, 2, 'ellipsis-left', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        }
+
+        return [
+            1,
+            2,
+            'ellipsis-left',
+            currentPage - 1,
+            currentPage,
+            currentPage + 1,
+            'ellipsis-right',
+            totalPages - 1,
+            totalPages,
+        ];
+    }, [currentPage, totalPages]);
+
     return (
-        <div className={`bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden ${className}`}>
+        <div className={`bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden ${className}`}>
+            {(searchable || toolbarLeft || toolbarRight) && (
+                <div className="px-5 py-3.5 border-b border-[#E2E8F0] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
+                        {toolbarLeft}
+                        {searchable && (
+                            <div className="relative w-full sm:w-72">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={activeSearch}
+                                    onChange={(e) => handleSearchInput(e.target.value)}
+                                    placeholder={searchPlaceholder}
+                                    className="w-full pl-9 pr-8 py-2 text-xs font-medium bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all"
+                                />
+                                {activeSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSearchInput('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    {toolbarRight && <div className="flex items-center gap-2 shrink-0">{toolbarRight}</div>}
+                </div>
+            )}
+
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                    <thead className="bg-gray-50 text-gray-500 font-semibold uppercase border-b border-gray-100">
+                    <thead className="bg-[#F8FAFC] text-slate-500 font-semibold uppercase border-b border-[#E2E8F0]">
                         <tr>
                             {selectable && (
                                 <th className="px-4 py-3.5 w-10 text-center">
@@ -116,7 +328,7 @@ export function AdminTable<T>({
                                             if (input) input.indeterminate = isSomeSelected;
                                         }}
                                         onChange={handleSelectAll}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                                        className="w-4 h-4 text-[#2563EB] rounded border-gray-300 focus:ring-[#2563EB] cursor-pointer"
                                     />
                                 </th>
                             )}
@@ -125,20 +337,50 @@ export function AdminTable<T>({
                                     col.align === 'center'
                                         ? 'text-center'
                                         : col.align === 'right'
-                                            ? 'text-right'
-                                            : 'text-left';
+                                          ? 'text-right'
+                                          : 'text-left';
+                                const isSorted = activeSortKey === col.key;
+                                const justifyClass =
+                                    col.align === 'center'
+                                        ? 'justify-center'
+                                        : col.align === 'right'
+                                          ? 'justify-end'
+                                          : 'justify-start';
+
                                 return (
                                     <th
                                         key={col.key}
-                                        className={`px-4 py-3.5 ${alignClass} ${col.headerClassName || col.className || ''}`}
+                                        onClick={() => col.sortable && handleHeaderSortClick(col)}
+                                        className={`px-4 py-3.5 ${alignClass} ${
+                                            col.sortable
+                                                ? 'cursor-pointer select-none hover:bg-slate-100/80 hover:text-slate-800 transition-colors'
+                                                : ''
+                                        } ${col.headerClassName || col.className || ''}`}
                                     >
-                                        {col.header}
+                                        {col.sortable ? (
+                                            <div className={`inline-flex items-center gap-1.5 ${justifyClass}`}>
+                                                <span>{col.header}</span>
+                                                <span className="inline-flex items-center">
+                                                    {isSorted ? (
+                                                        activeSortDir === 'asc' ? (
+                                                            <ArrowUp className="w-3.5 h-3.5 text-[#2563EB]" />
+                                                        ) : (
+                                                            <ArrowDown className="w-3.5 h-3.5 text-[#2563EB]" />
+                                                        )
+                                                    ) : (
+                                                        <ArrowUpDown className="w-3.5 h-3.5 text-slate-300" />
+                                                    )}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            col.header
+                                        )}
                                     </th>
                                 );
                             })}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-[#E2E8F0]">
                         {loading ? (
                             <tr>
                                 <td
@@ -146,12 +388,12 @@ export function AdminTable<T>({
                                     className="px-4 py-12 text-center text-gray-400"
                                 >
                                     <div className="flex flex-col items-center justify-center space-y-2">
-                                        <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
+                                        <Loader2 className="w-7 h-7 text-[#2563EB] animate-spin" />
                                         <p className="text-xs font-semibold text-gray-500">Đang tải dữ liệu...</p>
                                     </div>
                                 </td>
                             </tr>
-                        ) : data.length === 0 ? (
+                        ) : processedData.length === 0 ? (
                             <tr>
                                 <td
                                     colSpan={columns.length + (selectable ? 1 : 0)}
@@ -164,51 +406,61 @@ export function AdminTable<T>({
                                 </td>
                             </tr>
                         ) : (
-                            data.map((item, index) => {
-                                const key = getRowKey(item);
-                                const isSelected = selectedKeys.includes(key);
-                                const customRowClass =
-                                    typeof rowClassName === 'function' ? rowClassName(item, index) : rowClassName;
+                            <>
+                                {processedData.map((item, index) => {
+                                    const key = getRowKey(item);
+                                    const isSelected = selectedKeys.includes(key);
+                                    const customRowClass =
+                                        typeof rowClassName === 'function' ? rowClassName(item, index) : rowClassName;
 
-                                return (
-                                    <tr
-                                        key={key}
-                                        onClick={() => onRowClick?.(item)}
-                                        className={`hover:bg-gray-50/80 transition-colors ${isSelected ? 'bg-blue-50/40' : ''
+                                    return (
+                                        <tr
+                                            key={key}
+                                            onClick={() => onRowClick?.(item)}
+                                            className={`hover:bg-[#F8FAFC] transition-colors ${
+                                                isSelected ? 'bg-blue-50/40' : ''
                                             } ${onRowClick ? 'cursor-pointer' : ''} ${customRowClass}`}
-                                    >
-                                        {selectable && (
-                                            <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => handleSelectRow(key)}
-                                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
-                                                />
-                                            </td>
-                                        )}
-                                        {columns.map((col) => {
-                                            const alignClass =
-                                                col.align === 'center'
-                                                    ? 'text-center'
-                                                    : col.align === 'right'
-                                                        ? 'text-right'
-                                                        : 'text-left';
-                                            const cellContent = col.render
-                                                ? col.render(item, index)
-                                                : col.accessorKey
-                                                    ? (item[col.accessorKey] as unknown as React.ReactNode)
-                                                    : null;
-
-                                            return (
-                                                <td key={col.key} className={`px-4 py-3 ${alignClass} ${col.className || ''}`}>
-                                                    {cellContent}
+                                        >
+                                            {selectable && (
+                                                <td
+                                                    className="px-4 py-3 text-center"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => handleSelectRow(key)}
+                                                        className="w-4 h-4 text-[#2563EB] rounded border-gray-300 focus:ring-[#2563EB] cursor-pointer"
+                                                    />
                                                 </td>
-                                            );
-                                        })}
-                                    </tr>
-                                );
-                            })
+                                            )}
+                                            {columns.map((col) => {
+                                                const alignClass =
+                                                    col.align === 'center'
+                                                        ? 'text-center'
+                                                        : col.align === 'right'
+                                                          ? 'text-right'
+                                                          : 'text-left';
+                                                const cellContent = col.render
+                                                    ? col.render(item, index)
+                                                    : col.accessorKey
+                                                      ? (item[col.accessorKey] as unknown as React.ReactNode)
+                                                      : null;
+
+                                                return (
+                                                    <td
+                                                        key={col.key}
+                                                        className={`px-4 py-3.5 ${alignClass} ${col.className || ''}`}
+                                                    >
+                                                        {cellContent}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+                                {summaryRow}
+                            </>
                         )}
                     </tbody>
                 </table>
@@ -216,33 +468,32 @@ export function AdminTable<T>({
 
             {/* Pagination Row */}
             {showPagination && (
-                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="text-xs text-gray-500 font-medium">
-                        Hiển thị <span className="font-bold text-gray-800">{startItem}</span> - {' '}
-                        <span className="font-bold text-gray-800">{endItem}</span> / {' '}
-                        <span className="font-bold text-gray-900">{itemsCount}</span> {itemUnitName}
+                <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC] flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <p className="text-xs text-slate-500 font-medium">
+                        Hiển thị <span className="font-bold text-slate-800">{startItem}</span> -{' '}
+                        <span className="font-bold text-slate-800">{endItem}</span> /{' '}
+                        <span className="font-bold text-slate-900">{itemsCount}</span> {itemUnitName}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4">
                         {showPageSizeSelector && (
                             <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 font-medium hidden sm:inline">Số bản ghi:</span>
-                                <div className="relative inline-block">
-                                    <select
-                                        value={calcPageSize}
-                                        onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-                                        disabled={!onPageSizeChange}
-                                        aria-label="Số bản ghi trên 1 trang"
-                                        className="appearance-none bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl pl-3 pr-8 py-1.5 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 cursor-pointer hover:border-gray-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                    >
-                                        {mergedPageSizeOptions.map((size) => (
-                                            <option key={size} value={size}>
-                                                {size} / trang
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
+                                <span className="text-xs text-slate-500 font-medium hidden sm:inline">Số bản ghi:</span>
+                                <SelectDropdown
+                                    variant="compact"
+                                    size="sm"
+                                    value={calcPageSize}
+                                    disabled={!onPageSizeChange}
+                                    ariaLabel="Số bản ghi trên 1 trang"
+                                    minMenuWidth={135}
+                                    align="right"
+                                    searchable={false}
+                                    options={mergedPageSizeOptions.map((size) => ({
+                                        label: `${size} / trang`,
+                                        value: size,
+                                    }))}
+                                    onValueChange={(val) => onPageSizeChange?.(Number(val))}
+                                />
                             </div>
                         )}
 
@@ -252,31 +503,45 @@ export function AdminTable<T>({
                                     type="button"
                                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                                     disabled={currentPage === 1}
-                                    className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 rounded-xl border border-[#E2E8F0] bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                     title="Trang trước"
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                    <button
-                                        key={page}
-                                        type="button"
-                                        onClick={() => onPageChange(page)}
-                                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${currentPage === page
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                {paginationItems.map((item) => {
+                                    if (item === 'ellipsis-left' || item === 'ellipsis-right') {
+                                        return (
+                                            <span
+                                                key={item}
+                                                className="w-8 h-8 inline-flex items-center justify-center text-xs font-bold text-slate-400 select-none"
+                                            >
+                                                ...
+                                            </span>
+                                        );
+                                    }
+
+                                    return (
+                                        <button
+                                            key={item}
+                                            type="button"
+                                            onClick={() => onPageChange(item)}
+                                            className={`min-w-8 h-8 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                currentPage === item
+                                                    ? 'bg-[#2563EB] text-white shadow-sm'
+                                                    : 'bg-white text-slate-600 border border-[#E2E8F0] hover:bg-slate-50'
                                             }`}
-                                    >
-                                        {page}
-                                    </button>
-                                ))}
+                                        >
+                                            {item}
+                                        </button>
+                                    );
+                                })}
 
                                 <button
                                     type="button"
                                     onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="p-2 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 rounded-xl border border-[#E2E8F0] bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                                     title="Trang kế tiếp"
                                 >
                                     <ChevronRight className="w-4 h-4" />
@@ -290,4 +555,5 @@ export function AdminTable<T>({
     );
 }
 
+export const DataTable = AdminTable;
 export default AdminTable;

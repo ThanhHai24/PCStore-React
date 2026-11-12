@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
     getProductById,
@@ -173,6 +173,36 @@ export const ProductDetail: React.FC = () => {
         };
     }, [id]);
 
+    const handleStatsChange = useCallback(
+        ({
+            avgRating,
+            reviewCount,
+            commentCount,
+        }: {
+            avgRating: number;
+            reviewCount: number;
+            commentCount: number;
+        }) => {
+            setProduct((prev) => {
+                if (!prev) return prev;
+                if (
+                    prev.rating === avgRating &&
+                    prev.reviewCount === reviewCount &&
+                    prev.commentCount === commentCount
+                ) {
+                    return prev;
+                }
+                return {
+                    ...prev,
+                    rating: avgRating,
+                    reviewCount,
+                    commentCount,
+                };
+            });
+        },
+        []
+    );
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[450px] space-y-3">
@@ -250,18 +280,7 @@ export const ProductDetail: React.FC = () => {
             <div className="pt-2">
                 <ProductReviews
                     product={product}
-                    onStatsChange={({ avgRating, reviewCount, commentCount }) => {
-                        setProduct((prev) =>
-                            prev
-                                ? {
-                                      ...prev,
-                                      rating: avgRating,
-                                      reviewCount,
-                                      commentCount,
-                                  }
-                                : prev
-                        );
-                    }}
+                    onStatsChange={handleStatsChange}
                 />
             </div>
         </div>

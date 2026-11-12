@@ -24,7 +24,11 @@ import {
     AlertCircle
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -1193,43 +1197,28 @@ export default function ProductList() {
             header: 'Thao tác',
             align: 'right',
             render: (p) => (
-                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetail(p)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="Xem chi tiết sản phẩm"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleOpenEdit(p, e)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="Chỉnh sửa sản phẩm"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleToggleStockStatus(p, e)}
-                        className={`p-1.5 rounded-lg transition-colors ${p.status === 'ACTIVE'
-                            ? 'text-gray-500 hover:text-rose-600 hover:bg-rose-50'
-                            : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50'
-                            }`}
-                        title={p.status === 'ACTIVE' ? 'Đổi sang Hết hàng' : 'Đổi sang Đang bán'}
-                    >
-                        {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleDeleteProduct(p, e)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Xóa sản phẩm"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(p)}
+                    viewLabel="Xem chi tiết sản phẩm"
+                    onEdit={(e) => handleOpenEdit(p, e)}
+                    editLabel="Chỉnh sửa sản phẩm"
+                    moreActions={[
+                        {
+                            key: 'toggle-stock',
+                            label: p.status === 'ACTIVE' ? 'Đổi sang Hết hàng' : 'Đổi sang Đang bán',
+                            description:
+                                p.status === 'ACTIVE'
+                                    ? 'Tạm ngừng nhận đặt mua'
+                                    : 'Mở bán lại sản phẩm này',
+                            icon: p.status === 'ACTIVE' ? EyeOff : CheckCircle2,
+                            variant: p.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: (e) => handleToggleStockStatus(p, e),
+                        },
+                    ]}
+                    onDelete={(e) => handleDeleteProduct(p, e)}
+                    deleteLabel="Xóa sản phẩm"
+                    deleteDescription="Xóa sản phẩm khỏi danh mục"
+                />
             ),
         },
     ];
@@ -1384,6 +1373,7 @@ export default function ProductList() {
             <AdminFilter
                 fields={filterFields}
                 searchQuery={searchQuery}
+                values={filters}
                 onSearch={handleSearch}
                 onFilterChange={handleFilterChange}
                 onReset={handleFilterReset}

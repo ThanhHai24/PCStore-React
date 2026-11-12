@@ -3,8 +3,6 @@ import {
     Building2,
     Plus,
     Edit,
-    Trash2,
-    Eye,
     CheckCircle2,
     Download,
     Package,
@@ -19,9 +17,14 @@ import {
     Calendar,
     Clock,
     XCircle,
+    ArrowUpDown,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -29,6 +32,7 @@ import {
     AdminButton,
     AdminLabel,
     AdminTextarea,
+    type AdminSelectOption,
     type ModalTab,
 } from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
@@ -202,7 +206,54 @@ export default function SupplierList() {
         status: BackendSupplierStatus;
     } | null>(null);
 
-    // Filter fields configuration for AdminFilter
+    // Options cho Select Dropdown trạng thái NCC
+    const supplierStatusOptions: AdminSelectOption[] = [
+        {
+            label: 'Đang hợp tác (ACTIVE)',
+            value: 'ACTIVE',
+            dotColor: 'bg-emerald-500',
+            badge: 'ACTIVE',
+            description: 'Cho phép tạo đơn đặt hàng (PO) và phiếu nhập kho từ đối tác này',
+        },
+        {
+            label: 'Ngừng hợp tác (INACTIVE)',
+            value: 'INACTIVE',
+            dotColor: 'bg-gray-400',
+            badge: 'INACTIVE',
+            description: 'Tạm khóa giao dịch đặt hàng mới với nhà cung cấp này',
+        },
+    ];
+
+    // Options cho Select Dropdown sắp xếp danh sách NCC
+    const supplierSortOptions: AdminSelectOption[] = [
+        {
+            label: 'Mới thêm gần nhất',
+            value: 'createdDate,DESC',
+            description: 'Sắp xếp theo ngày tạo từ mới đến cũ',
+        },
+        {
+            label: 'Cũ nhất trước',
+            value: 'createdDate,ASC',
+            description: 'Sắp xếp theo ngày tạo từ cũ đến mới',
+        },
+        {
+            label: 'Tên nhà cung cấp (A → Z)',
+            value: 'name,ASC',
+            description: 'Sắp xếp theo bảng chữ cái tăng dần',
+        },
+        {
+            label: 'Tên nhà cung cấp (Z → A)',
+            value: 'name,DESC',
+            description: 'Sắp xếp theo bảng chữ cái giảm dần',
+        },
+        {
+            label: 'Mã nhà cung cấp (A → Z)',
+            value: 'code,ASC',
+            description: 'Sắp xếp theo mã định danh NCC',
+        },
+    ];
+
+    // Filter fields configuration for AdminFilter (hiển thị bên trong popover khi bấm nút Bộ lọc)
     const filterFields: FilterField[] = [
         {
             id: 'status',
@@ -211,9 +262,29 @@ export default function SupplierList() {
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: 'Đang hợp tác (ACTIVE)', value: 'ACTIVE' },
-                { label: 'Ngừng hợp tác (INACTIVE)', value: 'INACTIVE' },
+                {
+                    label: 'Đang hợp tác',
+                    value: 'ACTIVE',
+                    dotColor: 'bg-emerald-500',
+                    badge: 'ACTIVE',
+                    description: 'Đang hoạt động giao dịch nhập hàng',
+                },
+                {
+                    label: 'Ngừng hợp tác',
+                    value: 'INACTIVE',
+                    dotColor: 'bg-gray-400',
+                    badge: 'INACTIVE',
+                    description: 'Tạm dừng hợp tác phân phối',
+                },
             ],
+        },
+        {
+            id: 'sort',
+            label: 'Sắp xếp theo',
+            type: 'select',
+            icon: ArrowUpDown,
+            placeholder: 'Mặc định (Mới nhất)',
+            options: supplierSortOptions,
         },
     ];
 
@@ -236,12 +307,14 @@ export default function SupplierList() {
                     statusParam = filters.status;
                 }
 
+                const activeSort = filters.sort || 'createdDate,DESC';
+
                 const response = await adminSupplierService.getAllSuppliers({
                     keyword: searchQuery.trim() || undefined,
                     status: statusParam,
                     page: currentPage - 1, // API backend dùng 0-based index
                     size: pageSize,
-                    sort: ['createdDate,DESC', 'id,DESC'],
+                    sort: [activeSort, 'id,DESC'],
                 });
 
                 const mappedItems = response.content.map(mapBackendSupplierToItem);
@@ -257,7 +330,7 @@ export default function SupplierList() {
                 setIsRefreshing(false);
             }
         },
-        [searchQuery, filters.status, quickStatus, currentPage, pageSize, toast]
+        [searchQuery, filters.status, filters.sort, quickStatus, currentPage, pageSize, toast]
     );
 
     // Gọi loadSuppliers khi dependencies thay đổi
@@ -752,35 +825,38 @@ export default function SupplierList() {
             header: 'Thao tác',
             align: 'right',
             render: (sup) => (
-                <div
-                    className="flex items-center justify-end gap-1"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <button
-                        type="button"
-                        onClick={() => handleOpenDetail(sup)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                        title="Xem hồ sơ chi tiết NCC"
-                    >
-                        <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleOpenEdit(sup, e)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
-                        title="Chỉnh sửa thông tin"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={(e) => handleOpenDelete(sup, e)}
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Xóa nhà cung cấp"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    onView={() => handleOpenDetail(sup)}
+                    viewLabel="Xem hồ sơ chi tiết NCC"
+                    onEdit={(e) => handleOpenEdit(sup, e)}
+                    editLabel="Chỉnh sửa thông tin"
+                    moreActions={[
+                        {
+                            key: 'toggle-status',
+                            label:
+                                sup.status === 'ACTIVE'
+                                    ? 'Ngừng hợp tác'
+                                    : 'Kích hoạt hợp tác',
+                            description:
+                                sup.status === 'ACTIVE'
+                                    ? 'Tạm dừng giao dịch nhập hàng'
+                                    : 'Mở lại giao dịch với đối tác',
+                            icon: sup.status === 'ACTIVE' ? XCircle : CheckCircle2,
+                            variant: sup.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: (e) => handleToggleStatus(sup, e),
+                        },
+                        {
+                            key: 'copy-code',
+                            label: 'Sao chép mã NCC',
+                            badge: sup.code,
+                            icon: Copy,
+                            onClick: () => handleCopy(sup.code, 'Mã nhà cung cấp'),
+                        },
+                    ]}
+                    onDelete={(e) => handleOpenDelete(sup, e)}
+                    deleteLabel="Xóa nhà cung cấp"
+                    deleteDescription="Xóa mềm đối tác khỏi hệ thống"
+                />
             ),
         },
     ];
@@ -1050,16 +1126,14 @@ export default function SupplierList() {
                         <AdminSelect
                             label="Trạng thái hoạt động"
                             value={addForm.status}
+                            options={supplierStatusOptions}
                             onChange={(e) =>
                                 setAddForm({
                                     ...addForm,
                                     status: e.target.value as BackendSupplierStatus,
                                 })
                             }
-                        >
-                            <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
-                            <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
-                        </AdminSelect>
+                        />
                     </div>
                 )}
 
@@ -1179,16 +1253,14 @@ export default function SupplierList() {
                             <AdminSelect
                                 label="Trạng thái hoạt động"
                                 value={editForm.status}
+                                options={supplierStatusOptions}
                                 onChange={(e) =>
                                     setEditForm({
                                         ...editForm,
                                         status: e.target.value as BackendSupplierStatus,
                                     })
                                 }
-                            >
-                                <option value="ACTIVE">Đang hợp tác (ACTIVE)</option>
-                                <option value="INACTIVE">Ngừng hợp tác (INACTIVE)</option>
-                            </AdminSelect>
+                            />
                         </div>
                     )}
 

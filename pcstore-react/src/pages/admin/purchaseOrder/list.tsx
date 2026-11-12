@@ -35,7 +35,11 @@ import {
     X,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import {
+    AdminTable,
+    AdminActionDropdown,
+    type Column,
+} from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminInput,
@@ -1221,72 +1225,49 @@ export default function PurchaseOrderList() {
                 const isApproved = order.status === 'APPROVED';
 
                 return (
-                    <div
-                        className="flex items-center justify-end gap-1"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => handleOpenDetail(order)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
-                            title="Xem chi tiết đơn"
-                        >
-                            <Eye className="w-4 h-4" />
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => handlePrintOrder(order)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                            title="In đơn đặt hàng PO"
-                        >
-                            <Printer className="w-4 h-4" />
-                        </button>
-
-                        {isApproved && (
-                            <button
-                                type="button"
-                                onClick={() => navigate(`/admin/import-ticket?purchaseOrderId=${order.numericId}`)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
-                                title="Lập phiếu nhập kho cho đơn này (Goods Receipt)"
-                            >
-                                <Ticket className="w-4 h-4" />
-                            </button>
-                        )}
-
-                        {isDraft ? (
-                            <button
-                                type="button"
-                                onClick={(e) => handleOpenEdit(order, e)}
-                                className="p-1.5 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                                title="Chỉnh sửa đơn nháp"
-                            >
-                                <Edit className="w-4 h-4" />
-                            </button>
-                        ) : null}
-
-                        {isDraft ? (
-                            <button
-                                type="button"
-                                onClick={(e) => handleOpenDelete(order, e)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Xóa đơn nháp"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        ) : null}
-
-                        {(isDraft || isPending || isApproved) && (
-                            <button
-                                type="button"
-                                onClick={(e) => handlePromptStatusChange(order, 'CANCELLED', e)}
-                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Hủy đơn này"
-                            >
-                                <Ban className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
+                    <AdminActionDropdown
+                        onView={() => handleOpenDetail(order)}
+                        viewLabel="Xem chi tiết đơn"
+                        onEdit={isDraft ? (e) => handleOpenEdit(order, e) : undefined}
+                        editLabel="Chỉnh sửa đơn nháp"
+                        actions={[
+                            {
+                                key: 'print',
+                                label: 'In đơn đặt hàng PO',
+                                description: 'Xuất bản in đơn đặt hàng',
+                                icon: Printer,
+                                variant: 'primary',
+                                onClick: () => handlePrintOrder(order),
+                            },
+                        ]}
+                        moreActions={[
+                            {
+                                key: 'create-gr',
+                                label: 'Lập phiếu nhập kho (GR)',
+                                description: 'Tạo phiếu nhập kho từ đơn PO này',
+                                icon: Ticket,
+                                variant: 'success',
+                                hidden: !isApproved,
+                                onClick: () =>
+                                    navigate(
+                                        `/admin/import-ticket?purchaseOrderId=${order.numericId}`
+                                    ),
+                            },
+                            {
+                                key: 'cancel-po',
+                                label: 'Hủy đơn đặt hàng',
+                                description: 'Hủy bỏ đơn đặt hàng này',
+                                icon: Ban,
+                                variant: 'danger',
+                                hidden: !(isDraft || isPending || isApproved),
+                                dividerBefore: true,
+                                onClick: (e) => handlePromptStatusChange(order, 'CANCELLED', e),
+                            },
+                        ]}
+                        onDelete={isDraft ? (e) => handleOpenDelete(order, e) : undefined}
+                        deleteLabel="Xóa đơn nháp"
+                        deleteDescription="Xóa vĩnh viễn đơn nháp này"
+                    />
                 );
             },
         },

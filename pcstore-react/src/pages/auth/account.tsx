@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { uploadImage, validateImageFile } from '../../services/imgbbService';
+import { DragAndDropUpload } from '../../components/admin/common/dragAndDropUpload';
 import { orderService } from '../../services/orderService';
 import { orderFulfillmentService } from '../../services/orderFulfillmentService';
 import { reviewCommentService } from '../../services/reviewCommentService';
@@ -887,22 +888,8 @@ export const Account: React.FC = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Ảnh đại diện</label>
-                                    <div className="flex items-center space-x-3">
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileChange}
-                                            accept="image/*"
-                                            className="hidden"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => fileInputRef.current?.click()}
-                                            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
-                                        >
-                                            Chọn ảnh từ máy
-                                        </button>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-xs font-semibold text-gray-700">Ảnh đại diện</label>
                                         {(avatar || selectedAvatarFile) && (
                                             <button
                                                 type="button"
@@ -913,6 +900,25 @@ export const Account: React.FC = () => {
                                             </button>
                                         )}
                                     </div>
+                                    <DragAndDropUpload
+                                        multiple={false}
+                                        accept="image/*"
+                                        maxSizeMB={32}
+                                        title="Kéo thả ảnh đại diện mới vào đây hoặc"
+                                        browseText="chọn từ máy tính"
+                                        subtitle="PNG, JPG, WEBP, GIF · Tối đa 32 MB"
+                                        onFileSelect={(file) => {
+                                            const check = validateImageFile(file, 32);
+                                            if (!check.valid) {
+                                                setUploadError(check.error || 'Tệp ảnh không hợp lệ');
+                                                return;
+                                            }
+                                            setSelectedAvatarFile(file);
+                                            const url = URL.createObjectURL(file);
+                                            setPreviewUrl(url);
+                                            setUploadError(null);
+                                        }}
+                                    />
                                 </div>
 
                                 <button

@@ -21,7 +21,7 @@ export interface Product {
   discountPercent?: string;
   badge?: "HOT" | "NEW" | string;
   inStock: boolean;
-  stockQuantity?: number; // Tồn kho thực tế (mặc định 10 nếu không khai báo)
+  stockQuantity?: number;
   warrantyInfo: string; // e.g. "Bảo hành theo từng linh kiện"
 
   rating: number; // e.g. 0.0 or 5.0

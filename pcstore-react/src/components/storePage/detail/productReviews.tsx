@@ -22,6 +22,7 @@ import type { Product } from '../../../types/product';
 import type { ReviewItem, CommentItem, ReviewSummary } from '../../../types/review';
 import { useAuth } from '../../../context/AuthContext';
 import { uploadImage, validateImageFile } from '../../../services/imgbbService';
+import { DragAndDropUpload } from '../../admin/common/dragAndDropUpload';
 import {
     reviewCommentService,
     syncAdminUserDirectoryIfPossible,
@@ -1684,28 +1685,34 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({ product, onStats
                             </div>
 
                             {/* Image Attachments for Review */}
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="font-bold text-gray-700">
-                                        Hình ảnh thực tế (Tùy chọn, tối đa 4 ảnh)
-                                    </label>
-                                    <input
-                                        ref={reviewFileInputRef}
-                                        type="file"
+                            <div className="space-y-3">
+                                <label className="block text-sm font-bold text-gray-700">
+                                    Hình ảnh thực tế (Tùy chọn, tối đa 4 ảnh)
+                                </label>
+
+                                {reviewExistingImages.length + reviewNewFiles.length < 4 && (
+                                    <DragAndDropUpload
+                                        multiple={true}
                                         accept="image/*"
-                                        multiple
-                                        onChange={handleSelectReviewImages}
-                                        className="hidden"
+                                        maxFiles={4 - (reviewExistingImages.length + reviewNewFiles.length)}
+                                        maxSizeMB={32}
+                                        title="Kéo thả ảnh thực tế sản phẩm vào đây hoặc"
+                                        browseText="chọn từ máy tính"
+                                        subtitle={`PNG, JPG, WEBP, GIF · Tối đa ${
+                                            4 - (reviewExistingImages.length + reviewNewFiles.length)
+                                        } ảnh tiếp theo (32 MB / tệp)`}
+                                        onFilesSelect={(files) => {
+                                            const validItems: { file: File; preview: string }[] = [];
+                                            for (const file of files) {
+                                                const check = validateImageFile(file, 32);
+                                                if (check.valid) {
+                                                    validItems.push({ file, preview: URL.createObjectURL(file) });
+                                                }
+                                            }
+                                            setReviewNewFiles((prev) => [...prev, ...validItems]);
+                                        }}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => reviewFileInputRef.current?.click()}
-                                        className="text-blue-600 hover:text-blue-700 font-bold flex items-center space-x-1 cursor-pointer"
-                                    >
-                                        <Camera className="w-3.5 h-3.5" />
-                                        <span>Thêm ảnh</span>
-                                    </button>
-                                </div>
+                                )}
 
                                 {(reviewExistingImages.length > 0 ||
                                     reviewNewFiles.length > 0) && (

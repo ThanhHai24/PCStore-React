@@ -591,7 +591,6 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
             <tr className="bg-gray-50/80 text-gray-700 font-bold uppercase text-left border-b border-gray-200">
               <th className="px-4 py-3 w-1/3 sm:w-1/4">Thông số</th>
               <th className="px-4 py-3">Giá trị chi tiết</th>
-              {items.some((i) => i.warranty) && <th className="px-4 py-3 w-28 text-center">Bảo hành</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -603,15 +602,7 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                 <td className="px-4 py-3 text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
                   {item.name}
                 </td>
-                {items.some((i) => i.warranty) && (
-                  <td className="px-4 py-3 text-center text-xs text-gray-600">
-                    {item.warranty && (
-                      <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        {item.warranty}
-                      </span>
-                    )}
-                  </td>
-                )}
+
               </tr>
             ))}
           </tbody>
@@ -689,11 +680,10 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
           <button
             type="button"
             onClick={() => setIsRawMode(!isRawMode)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-3xs cursor-pointer ${
-              isRawMode
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-3xs cursor-pointer ${isRawMode
+              ? 'bg-slate-900 text-white border-slate-900'
+              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
             title="Chuyển đổi xem dạng JSON thô"
           >
             <Code className="w-3.5 h-3.5" />
@@ -747,11 +737,10 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
               return (
                 <div
                   key={part.id}
-                  className={`p-3.5 rounded-2xl border transition-all ${
-                    isSelected
-                      ? 'bg-white border-blue-200 shadow-xs ring-1 ring-blue-500/10'
-                      : 'bg-gray-50/60 border-gray-200 hover:border-gray-300'
-                  }`}
+                  className={`p-3.5 rounded-2xl border transition-all ${isSelected
+                    ? 'bg-white border-blue-200 shadow-xs ring-1 ring-blue-500/10'
+                    : 'bg-gray-50/60 border-gray-200 hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {/* Left: Slot Info & Image */}
@@ -769,9 +758,8 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                         </div>
                       ) : (
                         <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs uppercase shrink-0 ${
-                            isSelected ? 'bg-blue-600 text-white shadow-xs' : 'bg-gray-200 text-gray-600'
-                          }`}
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs uppercase shrink-0 ${isSelected ? 'bg-blue-600 text-white shadow-xs' : 'bg-gray-200 text-gray-600'
+                            }`}
                         >
                           {part.key.slice(0, 3)}
                         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
     Users,
     UserCheck,
@@ -12,7 +12,6 @@ import {
     Eye,
     CheckCircle2,
     XCircle,
-    X,
     Save,
     Mail,
     Phone,
@@ -30,7 +29,7 @@ import {
     RefreshCw,
     AlertCircle,
     Wrench,
-    Loader2
+    Briefcase,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import {
@@ -41,11 +40,8 @@ import {
 import {
     AdminModal,
     AdminInput,
-    AdminSelect,
     AdminButton,
     AdminLabel,
-    AdminTextarea,
-    AdminModalFooter,
     type ModalTab,
 } from '../../../components/admin/common/modal';
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
@@ -58,6 +54,8 @@ import type {
     UserCreateRequest,
     UserUpdateRequest,
 } from '../../../types/adminUser';
+
+export type AccountTabType = 'STAFF' | 'CUSTOMER';
 
 export interface UserItem {
     id: string;
@@ -118,58 +116,103 @@ const ROLE_OPTIONS: Array<{
     icon: React.ElementType;
     color: string;
 }> = [
-        {
-            role: 'CUSTOMER',
-            title: 'Khách hàng',
-            desc: 'Mua sắm & xem đơn hàng',
-            icon: User,
-            color: 'border-blue-200 bg-blue-50/50 text-blue-700',
-        },
-        {
-            role: 'STAFF_SALES',
-            title: 'Nhân viên bán hàng',
-            desc: 'Tư vấn & bán hàng',
-            icon: UserCheck,
-            color: 'border-amber-200 bg-amber-50/50 text-amber-700',
-        },
-        {
-            role: 'STAFF_WAREHOUSE',
-            title: 'Thủ kho',
-            desc: 'Quản lý & xuất nhập kho',
-            icon: Package,
-            color: 'border-indigo-200 bg-indigo-50/50 text-indigo-700',
-        },
-        {
-            role: 'STAFF_TECH',
-            title: 'Kỹ thuật viên',
-            desc: 'Lắp ráp & bảo hành',
-            icon: Wrench,
-            color: 'border-cyan-200 bg-cyan-50/50 text-cyan-700',
-        },
-        {
-            role: 'MANAGER',
-            title: 'Quản lý',
-            desc: 'Quản lý & báo cáo',
-            icon: PieChart,
-            color: 'border-purple-200 bg-purple-50/50 text-purple-700',
-        },
-        {
-            role: 'ADMIN',
-            title: 'Quản trị viên',
-            desc: 'Toàn quyền hệ thống',
-            icon: Shield,
-            color: 'border-rose-200 bg-rose-50/50 text-rose-700',
-        },
-    ];
+    {
+        role: 'CUSTOMER',
+        title: 'Khách hàng',
+        desc: 'Mua sắm & xem đơn hàng',
+        icon: User,
+        color: 'border-blue-200 bg-blue-50/50 text-blue-700',
+    },
+    {
+        role: 'STAFF_SALES',
+        title: 'Nhân viên bán hàng',
+        desc: 'Tư vấn & bán hàng',
+        icon: UserCheck,
+        color: 'border-amber-200 bg-amber-50/50 text-amber-700',
+    },
+    {
+        role: 'STAFF_WAREHOUSE',
+        title: 'Thủ kho',
+        desc: 'Quản lý & xuất nhập kho',
+        icon: Package,
+        color: 'border-indigo-200 bg-indigo-50/50 text-indigo-700',
+    },
+    {
+        role: 'STAFF_TECH',
+        title: 'Kỹ thuật viên',
+        desc: 'Lắp ráp & bảo hành',
+        icon: Wrench,
+        color: 'border-cyan-200 bg-cyan-50/50 text-cyan-700',
+    },
+    {
+        role: 'MANAGER',
+        title: 'Quản lý',
+        desc: 'Quản lý & báo cáo',
+        icon: PieChart,
+        color: 'border-purple-200 bg-purple-50/50 text-purple-700',
+    },
+    {
+        role: 'ADMIN',
+        title: 'Quản trị viên',
+        desc: 'Toàn quyền hệ thống',
+        icon: Shield,
+        color: 'border-rose-200 bg-rose-50/50 text-rose-700',
+    },
+];
 
-export const UserList: React.FC = () => {
+const STAFF_ROLES: BackendRole[] = ['ADMIN', 'MANAGER', 'STAFF_SALES', 'STAFF_WAREHOUSE', 'STAFF_TECH'];
+const STAFF_ROLE_OPTIONS = ROLE_OPTIONS.filter((r) => r.role !== 'CUSTOMER');
+
+interface UserListProps {
+    defaultTab?: AccountTabType;
+}
+
+export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { toast } = useToast();
     const toastRef = useRef(toast);
 
     useEffect(() => {
         toastRef.current = toast;
     }, [toast]);
+
+    // Active Account Tab: 'STAFF' | 'CUSTOMER'
+    const getInitialTab = (): AccountTabType => {
+        if (defaultTab) return defaultTab;
+        const tabParam = searchParams.get('tab');
+        if (tabParam === 'customer' || tabParam === 'customers' || location.pathname.includes('customer')) {
+            return 'CUSTOMER';
+        }
+        return 'STAFF';
+    };
+
+    const [accountTab, setAccountTab] = useState<AccountTabType>(getInitialTab);
+
+    // Sync tab when defaultTab or location changes
+    useEffect(() => {
+        if (defaultTab && defaultTab !== accountTab) {
+            setAccountTab(defaultTab);
+        } else if (location.pathname.includes('customer') && accountTab !== 'CUSTOMER') {
+            setAccountTab('CUSTOMER');
+        }
+    }, [defaultTab, location.pathname]);
+
+    // Tab counters & overview statistics
+    const [staffTotalCount, setStaffTotalCount] = useState<number>(0);
+    const [customerTotalCount, setCustomerTotalCount] = useState<number>(0);
+    const [staffStats, setStaffStats] = useState({
+        total: 0,
+        managers: 0,
+        operational: 0,
+        active: 0,
+    });
+    const [customerStats, setCustomerStats] = useState({
+        total: 0,
+        active: 0,
+        banned: 0,
+    });
 
     // Data & Pagination States
     const [users, setUsers] = useState<UserItem[]>([]);
@@ -213,7 +256,7 @@ export const UserList: React.FC = () => {
     const [deleteTargetUser, setDeleteTargetUser] = useState<UserItem | null>(null);
     const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-    // Lock/Unlock (Toggle Status) Confirmation Popup State
+    // Lock/Unlock Confirmation Popup State
     const [statusTargetUser, setStatusTargetUser] = useState<UserItem | null>(null);
     const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
 
@@ -226,7 +269,7 @@ export const UserList: React.FC = () => {
         password: '',
         address: '',
         citizenIdentificationCard: '',
-        role: 'CUSTOMER' as BackendRole,
+        role: (accountTab === 'STAFF' ? 'STAFF_SALES' : 'CUSTOMER') as BackendRole,
         status: 'ACTIVE' as BackendStatus,
     });
 
@@ -242,14 +285,75 @@ export const UserList: React.FC = () => {
         status: 'ACTIVE' as BackendStatus,
     });
 
-    const [roleFormRole, setRoleFormRole] = useState<BackendRole>('CUSTOMER');
+    const [roleFormRole, setRoleFormRole] = useState<BackendRole>('STAFF_SALES');
 
-    // Fetch users from backend API
+    // Load counts and summary statistics in background
+    const loadCounts = useCallback(async () => {
+        try {
+            const [
+                customerAllRes,
+                customerActiveRes,
+                customerBannedRes,
+                ...staffResList
+            ] = await Promise.all([
+                adminUserService.getAllUsers({ role: 'CUSTOMER', size: 1 }).catch(() => null),
+                adminUserService.getAllUsers({ role: 'CUSTOMER', status: 'ACTIVE', size: 1 }).catch(() => null),
+                adminUserService.getAllUsers({ role: 'CUSTOMER', status: 'BANNED', size: 1 }).catch(() => null),
+                ...STAFF_ROLES.map((r) => adminUserService.getAllUsers({ role: r, size: 50 }).catch(() => null)),
+            ]);
+
+            if (customerAllRes) {
+                const totalCust = customerAllRes.totalElements || 0;
+                setCustomerTotalCount(totalCust);
+                setCustomerStats({
+                    total: totalCust,
+                    active: customerActiveRes?.totalElements || 0,
+                    banned: customerBannedRes?.totalElements || 0,
+                });
+            }
+
+            let staffSum = 0;
+            let managersCount = 0;
+            let opsCount = 0;
+            let activeStaffCount = 0;
+
+            staffResList.forEach((r, idx) => {
+                const role = STAFF_ROLES[idx];
+                const content = r?.content || [];
+                const count = r?.totalElements ?? content.length;
+                staffSum += count;
+                if (role === 'ADMIN' || role === 'MANAGER') {
+                    managersCount += count;
+                } else {
+                    opsCount += count;
+                }
+                content.forEach((u) => {
+                    if (u.status === 'ACTIVE') activeStaffCount++;
+                });
+            });
+
+            setStaffTotalCount(staffSum);
+            setStaffStats({
+                total: staffSum,
+                managers: managersCount,
+                operational: opsCount,
+                active: activeStaffCount,
+            });
+        } catch {
+            // Silently ignore background stats loading errors
+        }
+    }, []);
+
+    // Initial load of counts
+    useEffect(() => {
+        loadCounts();
+    }, [loadCounts]);
+
+    // Fetch users from backend API depending on active tab
     const loadUsers = useCallback(async () => {
         const storedToken = localStorage.getItem('pcstore_token');
         const storedRefresh = localStorage.getItem('pcstore_refresh_token');
 
-        // If completely unauthenticated, avoid spamming the backend API
         if (!storedToken && !storedRefresh) {
             setLoading(false);
             setApiError('Phiên làm việc đã hết hạn hoặc chưa đăng nhập. Vui lòng đăng nhập tài khoản quản trị.');
@@ -261,21 +365,85 @@ export const UserList: React.FC = () => {
 
         setLoading(true);
         setApiError(null);
-        try {
-            const res = await adminUserService.getAllUsers({
-                keyword: debouncedSearch.trim() || undefined,
-                role: filterValues.role || undefined,
-                status: filterValues.status || undefined,
-                page: currentPage - 1, // backend is 0-indexed
-                size: pageSize,
-                sort: ['createdDate,DESC'],
-            });
 
-            const content = res.content || [];
-            const mappedUsers = content.map(mapBackendUserToItem);
-            setUsers(mappedUsers);
-            setTotalPages(res.totalPages || 1);
-            setTotalElements(res.totalElements ?? mappedUsers.length);
+        try {
+            if (accountTab === 'CUSTOMER') {
+                // Fetch Customers directly via backend role filter
+                const res = await adminUserService.getAllUsers({
+                    keyword: debouncedSearch.trim() || undefined,
+                    role: 'CUSTOMER',
+                    status: filterValues.status || undefined,
+                    page: currentPage - 1,
+                    size: pageSize,
+                    sort: ['createdDate,DESC'],
+                });
+
+                const content = res.content || [];
+                const mappedUsers = content.map(mapBackendUserToItem);
+                setUsers(mappedUsers);
+                setTotalPages(res.totalPages || 1);
+                setTotalElements(res.totalElements ?? mappedUsers.length);
+
+                if (!debouncedSearch.trim() && !filterValues.status) {
+                    setCustomerTotalCount(res.totalElements ?? mappedUsers.length);
+                }
+            } else {
+                // accountTab === 'STAFF'
+                if (filterValues.role) {
+                    // Filter by specific staff role
+                    const res = await adminUserService.getAllUsers({
+                        keyword: debouncedSearch.trim() || undefined,
+                        role: filterValues.role,
+                        status: filterValues.status || undefined,
+                        page: currentPage - 1,
+                        size: pageSize,
+                        sort: ['createdDate,DESC'],
+                    });
+
+                    const content = res.content || [];
+                    const mappedUsers = content.map(mapBackendUserToItem);
+                    setUsers(mappedUsers);
+                    setTotalPages(res.totalPages || 1);
+                    setTotalElements(res.totalElements ?? mappedUsers.length);
+                } else {
+                    // All Staff roles: fetch all staff roles in parallel to prevent customer data pollution
+                    const staffResList = await Promise.all(
+                        STAFF_ROLES.map((r) =>
+                            adminUserService.getAllUsers({
+                                keyword: debouncedSearch.trim() || undefined,
+                                role: r,
+                                status: filterValues.status || undefined,
+                                page: 0,
+                                size: 100,
+                                sort: ['createdDate,DESC'],
+                            })
+                        )
+                    );
+
+                    const allItems: UserItem[] = [];
+                    staffResList.forEach((r) => {
+                        (r.content || []).forEach((u) => {
+                            allItems.push(mapBackendUserToItem(u));
+                        });
+                    });
+
+                    // Deduplicate by ID
+                    const uniqueItems = Array.from(new Map(allItems.map((item) => [item.id, item])).values());
+                    // Sort DESC by ID
+                    uniqueItems.sort((a, b) => Number(b.id) - Number(a.id));
+
+                    const startIndex = (currentPage - 1) * pageSize;
+                    const paged = uniqueItems.slice(startIndex, startIndex + pageSize);
+
+                    setUsers(paged);
+                    setTotalElements(uniqueItems.length);
+                    setTotalPages(Math.max(1, Math.ceil(uniqueItems.length / pageSize)));
+
+                    if (!debouncedSearch.trim() && !filterValues.status) {
+                        setStaffTotalCount(uniqueItems.length);
+                    }
+                }
+            }
         } catch (err: any) {
             const message = err.message || 'Không thể tải danh sách tài khoản từ máy chủ.';
             setApiError(message);
@@ -283,7 +451,6 @@ export const UserList: React.FC = () => {
             setTotalElements(0);
             setTotalPages(1);
 
-            // Don't spam toast if it's an unauthenticated/session expiration error
             const isAuthError =
                 message.includes('Phiên làm việc hết hạn') ||
                 message.includes('chưa đăng nhập') ||
@@ -297,14 +464,29 @@ export const UserList: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, filterValues.role, filterValues.status, currentPage, pageSize]);
+    }, [accountTab, debouncedSearch, filterValues.role, filterValues.status, currentPage, pageSize]);
 
-    // Re-fetch when dependencies change
+    // Trigger loadUsers whenever criteria change
     useEffect(() => {
         loadUsers();
     }, [loadUsers]);
 
-    // Reset to page 1 when search or filter values change
+    // Handle Tab Switch
+    const handleTabChange = (newTab: AccountTabType) => {
+        if (newTab === accountTab) return;
+        setAccountTab(newTab);
+        setSearchQuery('');
+        setDebouncedSearch('');
+        setFilterValues({ role: '', status: '' });
+        setCurrentPage(1);
+
+        // Update URL search query without reloading
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set('tab', newTab.toLowerCase());
+        setSearchParams(newParams, { replace: true });
+    };
+
+    // Reset page on search or filter change
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
         setCurrentPage(1);
@@ -329,23 +511,36 @@ export const UserList: React.FC = () => {
     // Export CSV
     const handleExportUsers = () => {
         if (users.length === 0) {
-            toast.info('Không có dữ liệu người dùng để xuất.', 'Thông báo');
+            toast.info(`Không có dữ liệu ${accountTab === 'STAFF' ? 'nhân viên' : 'khách hàng'} để xuất.`, 'Thông báo');
             return;
         }
-        const headers = ['ID,Tên đăng nhập,Họ và tên,Email,Số điện thoại,Vai trò,Trạng thái,Ngày tạo'];
-        const rows = users.map(
-            (u) =>
-                `"${u.id}","${u.username}","${u.fullName}","${u.email}","${u.phone}","${u.role}","${u.status}","${u.createdAt}"`
+
+        const isStaff = accountTab === 'STAFF';
+        const headers = isStaff
+            ? ['ID,Tên đăng nhập,Họ và tên,Email,Số điện thoại,Số CCCD,Vai trò,Trạng thái,Ngày tham gia']
+            : ['ID,Tên đăng nhập,Họ và tên,Email,Số điện thoại,Địa chỉ,Trạng thái,Ngày đăng ký'];
+
+        const rows = users.map((u) =>
+            isStaff
+                ? `"${u.id}","${u.username}","${u.fullName}","${u.email}","${u.phone}","${u.citizenIdentificationCard}","${u.role}","${u.status}","${u.createdAt}"`
+                : `"${u.id}","${u.username}","${u.fullName}","${u.email}","${u.phone}","${u.address}","${u.status}","${u.createdAt}"`
         );
+
         const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n');
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `danh_sach_nguoi_dung_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute(
+            'download',
+            `${isStaff ? 'danh_sach_nhan_vien' : 'danh_sach_khach_hang'}_${new Date().toISOString().split('T')[0]}.csv`
+        );
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success('Danh sách tài khoản đã được kết xuất ra file CSV thành công!', 'Xuất file thành công');
+        toast.success(
+            `Danh sách ${isStaff ? 'nhân viên' : 'khách hàng'} đã được xuất ra file CSV thành công!`,
+            'Xuất file thành công'
+        );
     };
 
     // Open detail modal
@@ -372,14 +567,14 @@ export const UserList: React.FC = () => {
         setIsEditModalOpen(true);
     };
 
-    // Open role change modal
+    // Open role modal
     const handleOpenRoleModal = (user: UserItem) => {
         setSelectedUser(user);
         setRoleFormRole(user.role);
         setIsRoleModalOpen(true);
     };
 
-    // Handlers: Add User via Real API
+    // Add User via API
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.username.trim() || !formData.fullName.trim() || !formData.email.trim()) {
@@ -395,6 +590,7 @@ export const UserList: React.FC = () => {
 
         setIsSubmitting(true);
         try {
+            const targetRole = accountTab === 'CUSTOMER' ? 'CUSTOMER' : formData.role;
             const payload: UserCreateRequest = {
                 username: formData.username.trim(),
                 fullName: formData.fullName.trim(),
@@ -403,12 +599,16 @@ export const UserList: React.FC = () => {
                 phoneNumber: formData.phone.trim() || undefined,
                 address: formData.address.trim() || undefined,
                 citizenIdentificationCard: formData.citizenIdentificationCard.trim() || undefined,
-                role: formData.role,
+                role: targetRole,
                 status: formData.status,
             };
 
             const created = await adminUserService.createUser(payload);
-            toast.success(`Đã thêm mới tài khoản "${created.fullName}" thành công!`, 'Tạo tài khoản');
+            const isStaff = accountTab === 'STAFF';
+            toast.success(
+                `Đã thêm mới ${isStaff ? 'nhân viên' : 'khách hàng'} "${created.fullName}" thành công!`,
+                'Tạo tài khoản'
+            );
             setIsAddModalOpen(false);
             setFormData({
                 username: '',
@@ -418,18 +618,19 @@ export const UserList: React.FC = () => {
                 password: '',
                 address: '',
                 citizenIdentificationCard: '',
-                role: 'CUSTOMER',
+                role: isStaff ? 'STAFF_SALES' : 'CUSTOMER',
                 status: 'ACTIVE',
             });
             await loadUsers();
+            loadCounts();
         } catch (err: any) {
-            toast.error(err.message || 'Thêm người dùng không thành công.', 'Lỗi');
+            toast.error(err.message || 'Thêm tài khoản không thành công.', 'Lỗi');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Handlers: Update User via Real API
+    // Update User via API
     const handleUpdateUser = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!editingUser) return;
@@ -466,6 +667,7 @@ export const UserList: React.FC = () => {
                 setDetailUser(mapBackendUserToItem(updated));
             }
             await loadUsers();
+            loadCounts();
         } catch (err: any) {
             toast.error(err.message || 'Cập nhật tài khoản thất bại.', 'Lỗi');
         } finally {
@@ -473,12 +675,12 @@ export const UserList: React.FC = () => {
         }
     };
 
-    // Handlers: Open Lock/Unlock Confirmation Modal
+    // Open Lock/Unlock Confirmation Modal
     const handleOpenToggleStatusModal = (user: UserItem) => {
         setStatusTargetUser(user);
     };
 
-    // Handlers: Confirm Toggle status (ACTIVE <-> BANNED) via Real API
+    // Confirm Toggle status (ACTIVE <-> BANNED)
     const handleConfirmToggleStatus = async () => {
         if (!statusTargetUser) return;
 
@@ -504,6 +706,7 @@ export const UserList: React.FC = () => {
             }
 
             setStatusTargetUser(null);
+            loadCounts();
         } catch (err: any) {
             toast.error(err.message || 'Không thể thay đổi trạng thái tài khoản.', 'Lỗi');
         } finally {
@@ -511,7 +714,7 @@ export const UserList: React.FC = () => {
         }
     };
 
-    // Handlers: Save Role via Real API
+    // Save Role via API
     const handleSaveRole = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser) return;
@@ -527,7 +730,7 @@ export const UserList: React.FC = () => {
 
             const updated = await adminUserService.updateUser(selectedUser.id, payload);
             toast.success(
-                `Đã cập nhật phân quyền "${roleFormRole}" cho tài khoản "${updated.fullName}"!`,
+                `Đã cập nhật vai trò "${roleFormRole}" cho tài khoản "${updated.fullName}"!`,
                 'Phân quyền thành công'
             );
             setIsRoleModalOpen(false);
@@ -539,6 +742,10 @@ export const UserList: React.FC = () => {
             if (detailUser && detailUser.id === selectedUser.id) {
                 setDetailUser({ ...detailUser, role: updated.role });
             }
+
+            // If a customer was promoted to staff or vice versa, reload data
+            await loadUsers();
+            loadCounts();
         } catch (err: any) {
             toast.error(err.message || 'Cập nhật phân quyền thất bại.', 'Lỗi');
         } finally {
@@ -546,7 +753,7 @@ export const UserList: React.FC = () => {
         }
     };
 
-    // Handlers: Delete User via Real API (with confirmation popup)
+    // Delete User via API
     const handleOpenDeleteModal = (user: UserItem) => {
         setDeleteTargetUser(user);
     };
@@ -568,6 +775,7 @@ export const UserList: React.FC = () => {
             }
             setDeleteTargetUser(null);
             await loadUsers();
+            loadCounts();
         } catch (err: any) {
             toast.error(err.message || 'Không thể xóa tài khoản người dùng.', 'Lỗi xóa tài khoản');
         } finally {
@@ -575,18 +783,17 @@ export const UserList: React.FC = () => {
         }
     };
 
-    // Filter fields configuration
-    const filterFields: FilterField[] = [
+    // Filter fields configuration for Staff Tab
+    const staffFilterFields: FilterField[] = [
         {
             id: 'role',
-            label: 'Vai trò',
-            placeholder: 'Tất cả vai trò',
+            label: 'Vai trò nhân viên',
+            placeholder: 'Tất cả vai trò nhân viên',
             icon: Shield,
             options: [
-                { label: 'Tất cả vai trò', value: '' },
+                { label: 'Tất cả vai trò nhân viên', value: '' },
                 { label: 'Quản trị viên (ADMIN)', value: 'ADMIN' },
                 { label: 'Quản lý (MANAGER)', value: 'MANAGER' },
-                { label: 'Khách hàng (CUSTOMER)', value: 'CUSTOMER' },
                 { label: 'Nhân viên bán hàng (STAFF_SALES)', value: 'STAFF_SALES' },
                 { label: 'Thủ kho (STAFF_WAREHOUSE)', value: 'STAFF_WAREHOUSE' },
                 { label: 'Kỹ thuật viên (STAFF_TECH)', value: 'STAFF_TECH' },
@@ -595,6 +802,22 @@ export const UserList: React.FC = () => {
         {
             id: 'status',
             label: 'Trạng thái',
+            placeholder: 'Tất cả trạng thái',
+            icon: Lock,
+            options: [
+                { label: 'Tất cả trạng thái', value: '' },
+                { label: 'Hoạt động (ACTIVE)', value: 'ACTIVE' },
+                { label: 'Ngưng hoạt động (INACTIVE)', value: 'INACTIVE' },
+                { label: 'Bị khóa/cấm (BANNED)', value: 'BANNED' },
+            ],
+        },
+    ];
+
+    // Filter fields configuration for Customer Tab
+    const customerFilterFields: FilterField[] = [
+        {
+            id: 'status',
+            label: 'Trạng thái tài khoản',
             placeholder: 'Tất cả trạng thái',
             icon: Lock,
             options: [
@@ -682,20 +905,20 @@ export const UserList: React.FC = () => {
         }
     };
 
-    // Table columns definition
-    const userTableColumns: Column<UserItem>[] = [
+    // Table columns for STAFF
+    const staffTableColumns: Column<UserItem>[] = [
         {
             key: 'user',
-            header: 'Người dùng',
+            header: 'Nhân viên',
             render: (user) => (
                 <div className="flex items-center gap-3">
                     <img
                         src={user.avatar}
                         alt={user.fullName}
-                        className="w-9 h-9 rounded-full object-cover border border-gray-200"
+                        className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
                     />
                     <div>
-                        <p className="font-bold text-gray-900">{user.fullName}</p>
+                        <p className="font-bold text-gray-900 text-xs sm:text-sm">{user.fullName}</p>
                         <p className="text-[11px] text-gray-400 font-medium">@{user.username}</p>
                     </div>
                 </div>
@@ -706,19 +929,32 @@ export const UserList: React.FC = () => {
             header: 'Liên hệ',
             render: (user) => (
                 <div>
-                    <p className="text-gray-800 flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-gray-400" /> {user.email}
+                    <p className="text-gray-800 flex items-center gap-1 text-xs">
+                        <Mail className="w-3 h-3 text-gray-400 shrink-0" /> {user.email}
                     </p>
                     <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-gray-400" /> {user.phone}
+                        <Phone className="w-3 h-3 text-gray-400 shrink-0" /> {user.phone}
                     </p>
                 </div>
             ),
         },
         {
             key: 'role',
-            header: 'Vai trò',
+            header: 'Vai trò / Chức vụ',
             render: (user) => renderRoleBadge(user.role),
+        },
+        {
+            key: 'citizenIdentificationCard',
+            header: 'Số CCCD',
+            render: (user) => (
+                <span className="text-xs font-mono text-gray-700">
+                    {user.citizenIdentificationCard !== 'Chưa cập nhật' ? (
+                        user.citizenIdentificationCard
+                    ) : (
+                        <span className="text-gray-400 italic">Chưa có</span>
+                    )}
+                </span>
+            ),
         },
         {
             key: 'status',
@@ -727,9 +963,9 @@ export const UserList: React.FC = () => {
         },
         {
             key: 'createdAt',
-            header: 'Ngày tạo',
+            header: 'Ngày tham gia',
             accessorKey: 'createdAt',
-            className: 'font-medium text-gray-600',
+            className: 'font-medium text-gray-600 text-xs',
         },
         {
             key: 'actions',
@@ -738,15 +974,114 @@ export const UserList: React.FC = () => {
             render: (user) => (
                 <AdminActionDropdown
                     onView={() => handleOpenDetailModal(user)}
-                    viewLabel="Xem chi tiết tài khoản"
+                    viewLabel="Xem chi tiết nhân viên"
                     onEdit={() => handleOpenEditModal(user)}
-                    editLabel="Chỉnh sửa tài khoản"
+                    editLabel="Chỉnh sửa thông tin"
                     moreActions={[
                         {
                             key: 'role',
-                            label: 'Phân quyền tài khoản',
-                            description: 'Thay đổi vai trò truy cập hệ thống',
+                            label: 'Phân quyền chức vụ',
+                            description: 'Thay đổi chức vụ truy cập hệ thống',
                             icon: Key,
+                            variant: 'primary',
+                            onClick: () => handleOpenRoleModal(user),
+                        },
+                        {
+                            key: 'toggle-status',
+                            label: user.status === 'ACTIVE' ? 'Khóa tài khoản' : 'Mở khóa tài khoản',
+                            description:
+                                user.status === 'ACTIVE'
+                                    ? 'Tạm ngưng quyền truy cập'
+                                    : 'Khôi phục quyền truy cập',
+                            icon: user.status === 'ACTIVE' ? Lock : Unlock,
+                            variant: user.status === 'ACTIVE' ? 'warning' : 'success',
+                            onClick: () => handleOpenToggleStatusModal(user),
+                        },
+                    ]}
+                    onDelete={() => handleOpenDeleteModal(user)}
+                    deleteLabel="Xóa tài khoản"
+                    deleteDescription="Xóa nhân viên khỏi hệ thống"
+                />
+            ),
+        },
+    ];
+
+    // Table columns for CUSTOMER
+    const customerTableColumns: Column<UserItem>[] = [
+        {
+            key: 'user',
+            header: 'Khách hàng',
+            render: (user) => (
+                <div className="flex items-center gap-3">
+                    <img
+                        src={user.avatar}
+                        alt={user.fullName}
+                        className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
+                    />
+                    <div>
+                        <p className="font-bold text-gray-900 text-xs sm:text-sm">{user.fullName}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">@{user.username}</p>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'contact',
+            header: 'Liên hệ',
+            render: (user) => (
+                <div>
+                    <p className="text-gray-800 flex items-center gap-1 text-xs">
+                        <Mail className="w-3 h-3 text-gray-400 shrink-0" /> {user.email}
+                    </p>
+                    <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
+                        <Phone className="w-3 h-3 text-gray-400 shrink-0" /> {user.phone}
+                    </p>
+                </div>
+            ),
+        },
+        {
+            key: 'address',
+            header: 'Địa chỉ giao hàng',
+            render: (user) => (
+                <div className="max-w-xs truncate text-xs text-gray-700 flex items-center gap-1" title={user.address}>
+                    <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                    <span className="truncate">
+                        {user.address !== 'Chưa cập nhật' ? (
+                            user.address
+                        ) : (
+                            <span className="text-gray-400 italic">Chưa cập nhật</span>
+                        )}
+                    </span>
+                </div>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Trạng thái',
+            render: (user) => renderStatusBadge(user.status),
+        },
+        {
+            key: 'createdAt',
+            header: 'Ngày đăng ký',
+            accessorKey: 'createdAt',
+            className: 'font-medium text-gray-600 text-xs',
+        },
+        {
+            key: 'actions',
+            header: 'Thao tác',
+            align: 'right',
+            render: (user) => (
+                <AdminActionDropdown
+                    onView={() => handleOpenDetailModal(user)}
+                    viewLabel="Xem chi tiết khách hàng"
+                    onEdit={() => handleOpenEditModal(user)}
+                    editLabel="Chỉnh sửa thông tin"
+                    moreActions={[
+                        {
+                            key: 'role',
+                            label: 'Nâng quyền nhân viên',
+                            description: 'Chuyển tài khoản khách thành nhân viên',
+                            icon: ShieldCheck,
                             variant: 'primary',
                             onClick: () => handleOpenRoleModal(user),
                         },
@@ -764,7 +1099,7 @@ export const UserList: React.FC = () => {
                     ]}
                     onDelete={() => handleOpenDeleteModal(user)}
                     deleteLabel="Xóa tài khoản"
-                    deleteDescription="Xóa tài khoản khỏi hệ thống"
+                    deleteDescription="Xóa khách hàng khỏi hệ thống"
                 />
             ),
         },
@@ -784,6 +1119,8 @@ export const UserList: React.FC = () => {
         { id: 'security', label: 'Phân quyền & Trạng thái', icon: Shield },
     ];
 
+    const isStaffTab = accountTab === 'STAFF';
+
     return (
         <div className="w-full space-y-6 min-w-0 font-sans">
             {/* Header Title & Actions */}
@@ -794,15 +1131,20 @@ export const UserList: React.FC = () => {
                         <span>Quản lý tài khoản</span>
                     </h1>
                     <p className="text-xs text-gray-500 mt-1">
-                        Quản lý người dùng, phân quyền truy cập hệ thống và theo dõi trạng thái tài khoản qua API máy chủ.
+                        {isStaffTab
+                            ? 'Quản lý tài khoản nhân viên, phân quyền chức vụ và giám sát hoạt động nhân sự.'
+                            : 'Quản lý danh sách khách hàng, thông tin giao hàng và trạng thái tài khoản người dùng.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        onClick={() => loadUsers()}
+                        onClick={() => {
+                            loadUsers();
+                            loadCounts();
+                        }}
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
                         title="Tải lại danh sách"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
@@ -811,7 +1153,7 @@ export const UserList: React.FC = () => {
                     <button
                         type="button"
                         onClick={handleExportUsers}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors cursor-pointer"
                     >
                         <Download className="w-3.5 h-3.5 text-gray-500" />
                         <span className="hidden sm:inline">Xuất CSV</span>
@@ -827,15 +1169,15 @@ export const UserList: React.FC = () => {
                                 password: '',
                                 address: '',
                                 citizenIdentificationCard: '',
-                                role: 'CUSTOMER',
+                                role: isStaffTab ? 'STAFF_SALES' : 'CUSTOMER',
                                 status: 'ACTIVE',
                             });
                             setIsAddModalOpen(true);
                         }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                     >
                         <Plus className="w-4 h-4 text-white" />
-                        <span>Thêm tài khoản</span>
+                        <span>{isStaffTab ? 'Thêm nhân viên' : 'Thêm khách hàng'}</span>
                     </button>
                 </div>
             </div>
@@ -860,7 +1202,10 @@ export const UserList: React.FC = () => {
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => loadUsers()}
+                                onClick={() => {
+                                    loadUsers();
+                                    loadCounts();
+                                }}
                                 className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors"
                             >
                                 <RefreshCw className="w-3.5 h-3.5" />
@@ -871,19 +1216,138 @@ export const UserList: React.FC = () => {
                 </div>
             )}
 
+            {/* TAB SWITCHER: 2 TABS NHÂN VIÊN & KHÁCH HÀNG */}
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-200/80 shadow-xs w-fit">
+                <button
+                    type="button"
+                    onClick={() => handleTabChange('STAFF')}
+                    className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isStaffTab
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                    <ShieldCheck className={`w-4 h-4 ${isStaffTab ? 'text-white' : 'text-blue-600'}`} />
+                    <span>Nhân viên</span>
+                    <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                            isStaffTab ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
+                        }`}
+                    >
+                        {staffTotalCount}
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() => handleTabChange('CUSTOMER')}
+                    className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        !isStaffTab
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                >
+                    <Users className={`w-4 h-4 ${!isStaffTab ? 'text-white' : 'text-emerald-600'}`} />
+                    <span>Khách hàng</span>
+                    <span
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                            !isStaffTab ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                        }`}
+                    >
+                        {customerTotalCount}
+                    </span>
+                </button>
+            </div>
+
+            {/* STATS OVERVIEW CARDS */}
+            {isStaffTab ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Briefcase className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tổng nhân viên</p>
+                            <p className="text-xl font-bold text-gray-900 mt-0.5">{staffStats.total || staffTotalCount}</p>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                            <PieChart className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Quản lý & Điều hành</p>
+                            <p className="text-xl font-bold text-purple-700 mt-0.5">{staffStats.managers}</p>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
+                            <Wrench className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Vận hành & Kỹ thuật</p>
+                            <p className="text-xl font-bold text-cyan-700 mt-0.5">{staffStats.operational}</p>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Đang hoạt động</p>
+                            <p className="text-xl font-bold text-emerald-700 mt-0.5">{staffStats.active}</p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tổng khách hàng</p>
+                            <p className="text-xl font-bold text-gray-900 mt-0.5">{customerStats.total || customerTotalCount}</p>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Đang hoạt động</p>
+                            <p className="text-xl font-bold text-emerald-700 mt-0.5">{customerStats.active}</p>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                            <XCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tài khoản bị khóa</p>
+                            <p className="text-xl font-bold text-rose-700 mt-0.5">{customerStats.banned}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Reusable Admin Filter Toolbar */}
             <AdminFilter
                 searchQuery={searchQuery}
                 onSearchChange={handleSearchChange}
-                searchPlaceholder="Tìm kiếm tài khoản (tên, username, email, SĐT)..."
-                fields={filterFields}
+                searchPlaceholder={
+                    isStaffTab
+                        ? 'Tìm kiếm nhân viên (tên, username, email, SĐT)...'
+                        : 'Tìm kiếm khách hàng (tên, username, email, SĐT)...'
+                }
+                fields={isStaffTab ? staffFilterFields : customerFilterFields}
                 values={filterValues}
                 onChange={handleFilterChange}
             />
 
-            {/* User Data Table */}
+            {/* Data Table */}
             <AdminTable
-                columns={userTableColumns}
+                columns={isStaffTab ? staffTableColumns : customerTableColumns}
                 data={users}
                 rowKey="id"
                 loading={loading}
@@ -898,11 +1362,11 @@ export const UserList: React.FC = () => {
                     setCurrentPage(1);
                 }}
                 onRowClick={(user) => handleOpenDetailModal(user)}
-                itemUnitName="người dùng"
+                itemUnitName={isStaffTab ? 'nhân viên' : 'khách hàng'}
                 emptyText={
                     loading
-                        ? 'Đang tải danh sách người dùng...'
-                        : 'Không tìm thấy tài khoản người dùng nào thỏa mãn điều kiện lọc.'
+                        ? `Đang tải danh sách ${isStaffTab ? 'nhân viên' : 'khách hàng'}...`
+                        : `Không tìm thấy tài khoản ${isStaffTab ? 'nhân viên' : 'khách hàng'} nào thỏa mãn điều kiện lọc.`
                 }
             />
 
@@ -910,13 +1374,23 @@ export const UserList: React.FC = () => {
             <AdminModal
                 isOpen={isAddModalOpen}
                 onClose={() => !isSubmitting && setIsAddModalOpen(false)}
-                title="Thêm tài khoản mới"
-                subtitle="Tạo tài khoản quản trị hoặc người dùng mới trực tiếp vào hệ thống"
+                title={isStaffTab ? 'Thêm nhân viên mới' : 'Thêm khách hàng mới'}
+                subtitle={
+                    isStaffTab
+                        ? 'Tạo tài khoản nhân viên mới phục vụ quản trị và vận hành hệ thống'
+                        : 'Tạo tài khoản khách hàng mới cho hệ thống'
+                }
                 icon={Plus}
                 size="lg"
                 tabs={userFormModalTabs}
                 onSubmit={handleAddUser}
-                submitText={isSubmitting ? 'Đang tạo...' : 'Tạo tài khoản'}
+                submitText={
+                    isSubmitting
+                        ? 'Đang tạo...'
+                        : isStaffTab
+                        ? 'Tạo tài khoản nhân viên'
+                        : 'Tạo tài khoản khách hàng'
+                }
             >
                 {(activeTab) => (
                     <div>
@@ -977,7 +1451,7 @@ export const UserList: React.FC = () => {
                                     placeholder="vd: 0912345678"
                                 />
                                 <AdminInput
-                                    label="Địa chỉ liên hệ"
+                                    label={isStaffTab ? 'Địa chỉ liên hệ' : 'Địa chỉ giao hàng mặc định'}
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                     placeholder="vd: 123 Nguyễn Trãi, Hà Nội"
@@ -988,37 +1462,52 @@ export const UserList: React.FC = () => {
                         {/* Tab 3: Phân quyền & Trạng thái */}
                         {activeTab === 'security' && (
                             <div className="space-y-4 animate-in fade-in duration-150">
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-2">
-                                        Chọn vai trò hệ thống
-                                    </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                        {ROLE_OPTIONS.map((r) => {
-                                            const isSelected = formData.role === r.role;
-                                            const IconComp = r.icon;
-                                            return (
-                                                <button
-                                                    key={r.role}
-                                                    type="button"
-                                                    onClick={() => setFormData({ ...formData, role: r.role })}
-                                                    className={`p-3 rounded-xl border text-left transition-all ${isSelected
-                                                        ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                                {isStaffTab ? (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                            Chọn vai trò nhân viên
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                            {STAFF_ROLE_OPTIONS.map((r) => {
+                                                const isSelected = formData.role === r.role;
+                                                const IconComp = r.icon;
+                                                return (
+                                                    <button
+                                                        key={r.role}
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, role: r.role })}
+                                                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                            isSelected
+                                                                ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
+                                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
                                                         }`}
-                                                >
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <IconComp className="w-4 h-4" />
-                                                        {isSelected && <Check className="w-4 h-4 text-blue-600" />}
-                                                    </div>
-                                                    <div className="text-xs font-bold">{r.title}</div>
-                                                    <div className="text-[10px] text-gray-500 font-normal mt-0.5">
-                                                        {r.desc}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
+                                                    >
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <IconComp className="w-4 h-4" />
+                                                            {isSelected && <Check className="w-4 h-4 text-blue-600" />}
+                                                        </div>
+                                                        <div className="text-xs font-bold">{r.title}</div>
+                                                        <div className="text-[10px] text-gray-500 font-normal mt-0.5">
+                                                            {r.desc}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 flex items-start gap-3">
+                                        <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
+                                            <User className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-bold text-blue-900">Vai trò: Khách hàng (CUSTOMER)</h4>
+                                            <p className="text-[11px] text-blue-700/80 mt-0.5">
+                                                Tài khoản sẽ được cấp quyền mua hàng trực tuyến, theo dõi đơn hàng và tra cứu bảo hành.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -1044,10 +1533,11 @@ export const UserList: React.FC = () => {
                                         ].map((s) => (
                                             <label
                                                 key={s.status}
-                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${formData.status === s.status
-                                                    ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
-                                                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-                                                    }`}
+                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                                    formData.status === s.status
+                                                        ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
+                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                                }`}
                                             >
                                                 <input
                                                     type="radio"
@@ -1110,7 +1600,7 @@ export const UserList: React.FC = () => {
                                     }}
                                     icon={Edit}
                                 >
-                                    Chỉnh sửa tài khoản
+                                    Chỉnh sửa
                                 </AdminButton>
                             </div>
                         </div>
@@ -1174,7 +1664,7 @@ export const UserList: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailUser.username, 'username', 'Tên đăng nhập')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors"
+                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép tên đăng nhập"
                                                 >
                                                     {copiedField === 'username' ? (
@@ -1197,7 +1687,7 @@ export const UserList: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailUser.id, 'id', 'Mã tài khoản')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors"
+                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép mã tài khoản"
                                                 >
                                                     {copiedField === 'id' ? (
@@ -1254,7 +1744,7 @@ export const UserList: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCopyText(detailUser.email, 'email', 'Địa chỉ Email')}
-                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors"
+                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors cursor-pointer"
                                                     >
                                                         {copiedField === 'email' ? (
                                                             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -1284,7 +1774,7 @@ export const UserList: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleCopyText(detailUser.phone, 'phone', 'Số điện thoại')}
-                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors"
+                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors cursor-pointer"
                                                     >
                                                         {copiedField === 'phone' ? (
                                                             <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -1301,7 +1791,7 @@ export const UserList: React.FC = () => {
                                     <div className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-2">
                                         <div className="flex items-center gap-2 text-xs font-bold text-gray-800">
                                             <MapPin className="w-4 h-4 text-rose-500" />
-                                            <span>Địa chỉ liên hệ</span>
+                                            <span>{isStaffTab ? 'Địa chỉ liên hệ' : 'Địa chỉ giao hàng'}</span>
                                         </div>
                                         <p className="text-xs text-gray-600 pl-6">
                                             {detailUser.address}
@@ -1324,10 +1814,11 @@ export const UserList: React.FC = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenToggleStatusModal(detailUser)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${detailUser.status === 'ACTIVE'
-                                                    ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                                    : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-                                                    }`}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                                                    detailUser.status === 'ACTIVE'
+                                                        ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
+                                                        : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                                }`}
                                             >
                                                 {detailUser.status === 'ACTIVE' ? (
                                                     <>
@@ -1343,8 +1834,6 @@ export const UserList: React.FC = () => {
                                             </button>
                                         </div>
                                     </div>
-
-
                                 </div>
                             )}
                         </div>
@@ -1427,7 +1916,7 @@ export const UserList: React.FC = () => {
                                     placeholder="vd: 0912345678"
                                 />
                                 <AdminInput
-                                    label="Địa chỉ liên hệ"
+                                    label={isStaffTab ? 'Địa chỉ liên hệ' : 'Địa chỉ giao hàng'}
                                     value={editFormData.address}
                                     onChange={(e) =>
                                         setEditFormData({ ...editFormData, address: e.target.value })
@@ -1455,10 +1944,11 @@ export const UserList: React.FC = () => {
                                                     onClick={() =>
                                                         setEditFormData({ ...editFormData, role: r.role })
                                                     }
-                                                    className={`p-3 rounded-xl border text-left transition-all ${isSelected
-                                                        ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
-                                                        }`}
+                                                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                        isSelected
+                                                            ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
+                                                            : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                                                    }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-1">
                                                         <IconComp className="w-4 h-4" />
@@ -1498,10 +1988,11 @@ export const UserList: React.FC = () => {
                                         ].map((s) => (
                                             <label
                                                 key={s.status}
-                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${editFormData.status === s.status
-                                                    ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
-                                                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-                                                    }`}
+                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                                    editFormData.status === s.status
+                                                        ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
+                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                                }`}
                                             >
                                                 <input
                                                     type="radio"
@@ -1595,7 +2086,7 @@ export const UserList: React.FC = () => {
                 </AdminModal>
             )}
 
-            {/* MODAL 5: POPUP XÁC NHẬN XÓA TÀI KHOẢN (Thay thế alert/window.confirm) */}
+            {/* MODAL 5: POPUP XÁC NHẬN XÓA TÀI KHOẢN */}
             <AdminConfirmModal
                 isOpen={Boolean(deleteTargetUser)}
                 onClose={() => !isDeleting && setDeleteTargetUser(null)}
@@ -1618,11 +2109,11 @@ export const UserList: React.FC = () => {
                 itemPreview={
                     deleteTargetUser
                         ? {
-                            title: deleteTargetUser.fullName,
-                            subtitle: `@${deleteTargetUser.username} • ${deleteTargetUser.email}`,
-                            badge: deleteTargetUser.role,
-                            avatar: deleteTargetUser.avatar,
-                        }
+                              title: deleteTargetUser.fullName,
+                              subtitle: `@${deleteTargetUser.username} • ${deleteTargetUser.email}`,
+                              badge: deleteTargetUser.role,
+                              avatar: deleteTargetUser.avatar,
+                          }
                         : undefined
                 }
             />
@@ -1671,11 +2162,11 @@ export const UserList: React.FC = () => {
                 itemPreview={
                     statusTargetUser
                         ? {
-                            title: statusTargetUser.fullName,
-                            subtitle: `@${statusTargetUser.username} • ${statusTargetUser.email}`,
-                            badge: statusTargetUser.role,
-                            avatar: statusTargetUser.avatar,
-                        }
+                              title: statusTargetUser.fullName,
+                              subtitle: `@${statusTargetUser.username} • ${statusTargetUser.email}`,
+                              badge: statusTargetUser.role,
+                              avatar: statusTargetUser.avatar,
+                          }
                         : undefined
                 }
             />

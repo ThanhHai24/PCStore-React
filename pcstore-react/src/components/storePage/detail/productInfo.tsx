@@ -14,7 +14,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     const [quantity, setQuantity] = useState<number>(1);
     const [selectedStorage] = useState<string>('');
 
-    const maxStock = product.stockQuantity ?? 10;
+    const maxStock = product.stockQuantity;
 
     // Live countdown timer state
     const [timeLeft, setTimeLeft] = useState({
@@ -190,9 +190,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                             <Plus className="w-3.5 h-3.5" />
                         </button>
                     </div>
-                    <span className="text-[11px] text-gray-500 font-normal">
-                        (Tồn kho: {product.stockQuantity !== undefined ? product.stockQuantity : 'Sẵn hàng'})
-                    </span>
                 </div>
 
                 {/* Action Buttons Row */}

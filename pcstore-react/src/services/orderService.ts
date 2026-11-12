@@ -21,12 +21,23 @@ async function handleResponse<T>(res: Response): Promise<T> {
   const data = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null);
 
   if (!res.ok) {
+    let extractedDetail: string | null = null;
+    if (typeof data === 'object' && data !== null) {
+      if (data.errors && typeof data.errors === 'object') {
+        const errorValues = Object.values(data.errors).filter(Boolean);
+        if (errorValues.length > 0) {
+          extractedDetail = errorValues.join(', ');
+        }
+      }
+      if (!extractedDetail) {
+        extractedDetail = data.detail || data.message || data.error || null;
+      }
+    } else if (typeof data === 'string' && data) {
+      extractedDetail = data;
+    }
+
     const errorMsg =
-      (typeof data === 'object' && data !== null
-        ? data.detail || data.message || data.error
-        : typeof data === 'string' && data
-        ? data
-        : null) ||
+      extractedDetail ||
       (res.status === 400
         ? 'Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại thông tin đơn hàng.'
         : res.status === 401

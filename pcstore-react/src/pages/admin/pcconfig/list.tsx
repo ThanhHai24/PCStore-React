@@ -58,6 +58,7 @@ import {
     cleanEmptySpecsForSaving,
 } from '../../../config/specTemplates';
 import { uploadImage, validateImageFile } from '../../../services/imgbbService';
+import { DragAndDropUpload } from '../../../components/admin/common/dragAndDropUpload';
 
 export interface ProductImageItem {
     id: string;
@@ -272,6 +273,16 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                                 (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                             }}
                         />
+                        {avatarUrl && avatarUrl !== DEFAULT_PRODUCT_IMAGE && (
+                            <button
+                                type="button"
+                                onClick={onClearAvatar}
+                                className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-gray-500 hover:text-rose-600 shadow-sm border border-gray-200 text-xs transition-colors cursor-pointer"
+                                title="Khôi phục mặc định"
+                            >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                         {selectedAvatarFile && (
                             <span className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
                                 Tệp mới
@@ -279,33 +290,16 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                         )}
                     </div>
 
-                    <div className="flex-1 w-full space-y-3.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <input
-                                ref={avatarInputRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleAvatarFileInput}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => avatarInputRef.current?.click()}
-                                className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
-                            >
-                                <Upload className="w-3.5 h-3.5" />
-                                Tải tệp từ máy
-                            </button>
-                            {avatarUrl && avatarUrl !== DEFAULT_PRODUCT_IMAGE && (
-                                <button
-                                    type="button"
-                                    onClick={onClearAvatar}
-                                    className="px-3 py-2 rounded-xl text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 font-medium text-xs transition-colors cursor-pointer"
-                                >
-                                    Khôi phục mặc định
-                                </button>
-                            )}
-                        </div>
+                    <div className="flex-1 w-full max-w-lg">
+                        <DragAndDropUpload
+                            multiple={false}
+                            accept="image/*"
+                            maxSizeMB={32}
+                            title="Kéo thả ảnh đại diện vào đây hoặc"
+                            browseText="chọn từ máy tính"
+                            subtitle="PNG, JPG, WEBP, GIF · Tối đa 32 MB"
+                            onFileSelect={onSelectAvatarFile}
+                        />
                     </div>
                 </div>
             </div>
@@ -327,31 +321,21 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                             </span>
                         </h4>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <input
-                            ref={galleryInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={handleGalleryFileInput}
-                        />
-                        {!isGalleryFull && (
-                            <button
-                                type="button"
-                                onClick={() => galleryInputRef.current?.click()}
-                                className="px-3.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-3xs cursor-pointer active:scale-95"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                                Tải ảnh từ máy
-                            </button>
-                        )}
-                    </div>
                 </div>
 
                 {!isGalleryFull ? (
-                    <div className="flex items-center gap-2">
+                    <div className="w-full max-w-lg">
+                        <DragAndDropUpload
+                            multiple={true}
+                            accept="image/*"
+                            maxFiles={10 - gallery.length}
+                            maxSizeMB={32}
+                            title="Kéo thả ảnh cấu hình vào đây hoặc"
+                            browseText="duyệt từ máy tính"
+                            subtitle={`PNG, JPG, WEBP, GIF · Tối đa ${10 - gallery.length} ảnh tiếp theo (32 MB / tệp)`}
+                            showFileList={false}
+                            onFilesSelect={onAddGalleryFiles}
+                        />
                     </div>
                 ) : (
                     <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">

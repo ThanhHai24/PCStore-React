@@ -14,6 +14,7 @@ export interface OrderItemRequest {
   quantity: number;
   unitPrice?: number;
   discountAmount?: number;
+  serialNumbers?: string[];
 }
 
 export interface OrderItemResponse {

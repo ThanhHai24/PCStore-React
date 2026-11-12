@@ -78,6 +78,7 @@ function App() {
               <Route path="account" element={<Account />} />
               <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="*" element={<NotFound />} />
+
             </Route>
 
             {/* Admin Routes */}
@@ -86,6 +87,9 @@ function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="admin" element={<AdminDashboard />} />
               <Route path="users" element={<UserList />} />
+              <Route path="user" element={<UserList />} />
+              <Route path="sales/customers" element={<UserList defaultTab="CUSTOMER" />} />
+              <Route path="customers" element={<UserList defaultTab="CUSTOMER" />} />
               <Route path="logs" element={<SystemLogList />} />
               <Route path="system-logs" element={<SystemLogList />} />
               <Route path="log" element={<SystemLogList />} />

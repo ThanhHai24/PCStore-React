@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    Bell,
     ChevronDown,
     LogOut,
     Menu,
@@ -9,6 +8,7 @@ import {
     User as UserIcon,
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { NotificationBell } from './notificationBell';
 
 interface HeaderProps {
     onToggleSidebar?: () => void;
@@ -17,34 +17,12 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const [showNotifications, setShowNotifications] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
-
-    const notifications = [
-        {
-            id: 1,
-            title: 'Đơn hàng #20240715-001 vừa được tạo',
-            time: '2 phút trước',
-            unread: true,
-        },
-        {
-            id: 2,
-            title: 'Hết hàng: Card màn hình NVIDIA RTX 4060',
-            time: '1 giờ trước',
-            unread: false,
-        },
-        {
-            id: 3,
-            title: 'Khuyến mãi mới: Giảm 10% cho CPU Intel Core i5',
-            time: '5 giờ trước',
-            unread: true,
-        },
-    ];
 
     return (
         <header className="sticky top-0 z-30 h-16 bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] text-white shadow-md px-4 lg:px-8 flex items-center justify-between">
@@ -61,56 +39,14 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
             {/* Right side: Storefront Link & Dropdowns */}
             <div className="flex items-center gap-2 sm:gap-3">
-
-
-                {/* Notification Dropdown */}
-                <div className="relative">
-                    <button
-                        onClick={() => {
-                            setShowNotifications(!showNotifications);
-                            setShowUserMenu(false);
-                        }}
-                        className="relative p-2 text-white bg-white/15 hover:bg-white/25 rounded-full border border-white/30 transition-colors"
-                    >
-                        <Bell className="w-4 h-4" />
-                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-amber-400 rounded-full ring-2 ring-blue-700"></span>
-                    </button>
-
-                    {showNotifications && (
-                        <div className="absolute right-0 mt-2 w-80 bg-white text-gray-800 border border-gray-100 rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                            <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
-                                <span className="font-bold text-xs text-gray-900">Thông báo</span>
-                                <span className="text-[11px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
-                                    2 mới
-                                </span>
-                            </div>
-                            <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
-                                {notifications.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${item.unread ? 'bg-blue-50/50' : ''
-                                            }`}
-                                    >
-                                        <p className="text-xs font-semibold text-gray-800">{item.title}</p>
-                                        <p className="text-[11px] text-gray-400 mt-0.5">{item.time}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="px-4 py-2 border-t border-gray-100 text-center">
-                                <button className="text-xs font-bold text-blue-600 hover:underline">
-                                    Xem tất cả thông báo
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* Notification Dropdown (Prompt 074) */}
+                <NotificationBell />
 
                 {/* User Profile Dropdown */}
                 <div className="relative">
                     <button
                         onClick={() => {
                             setShowUserMenu(!showUserMenu);
-                            setShowNotifications(false);
                         }}
                         className="flex items-center gap-2 p-1 bg-white/15 hover:bg-white/25 rounded-full border border-white/30 transition-colors"
                     >

@@ -41,6 +41,7 @@ import WarrantyHistoryList from './pages/admin/warranty/warrantyHistoryList';
 import ReviewCommentList from './pages/admin/review/list';
 import RevenueReportPage from './pages/admin/reports/sales/revenueReport';
 import OrderStatusReportPage from './pages/admin/reports/sales/orderStatusReport';
+import SystemLogList from './pages/admin/systemLog/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -85,6 +86,9 @@ function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="admin" element={<AdminDashboard />} />
               <Route path="users" element={<UserList />} />
+              <Route path="logs" element={<SystemLogList />} />
+              <Route path="system-logs" element={<SystemLogList />} />
+              <Route path="log" element={<SystemLogList />} />
               <Route path="category" element={<CategoryList />} />
               <Route path="categories" element={<CategoryList />} />
               <Route path="brand" element={<BrandList />} />

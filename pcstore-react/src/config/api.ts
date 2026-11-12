@@ -84,6 +84,8 @@ export const API_ENDPOINTS = {
     WARRANTY_REQUEST_PARTS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-requests/${id}/parts`,
     WARRANTY_PARTS: `${API_BASE_URL}/api/admin/warranty-parts`,
     WARRANTY_PART_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-parts/${id}/status`,
+    SYSTEM_LOGS: `${API_BASE_URL}/api/admin/logs`,
+    SYSTEM_LOG_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/logs/${id}`,
   },
   CATEGORIES: {
     LIST: `${API_BASE_URL}/api/categories`,

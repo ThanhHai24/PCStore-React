@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     User as UserIcon,
     Lock,
@@ -22,8 +22,13 @@ import {
     AlertTriangle,
     Star,
     ExternalLink,
+    Heart,
+    Trash2,
+    ShoppingCart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
+import { useWishlist } from '../../context/WishlistContext';
 import { uploadImage, validateImageFile } from '../../services/imgbbService';
 import { DragAndDropUpload } from '../../components/admin/common/dragAndDropUpload';
 import { orderService } from '../../services/orderService';
@@ -34,6 +39,8 @@ import type { ReviewItem } from '../../types/review';
 
 export const Account: React.FC = () => {
     const { user, logout, updateProfile, changePassword, loading } = useAuth();
+    const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
+    const { addToCart } = useCart();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -44,14 +51,14 @@ export const Account: React.FC = () => {
         }
     }, [user, loading, navigate]);
 
-    // Profile View tabs: 'info' | 'orders' | 'edit' | 'password'
-    const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'edit' | 'password'>('info');
+    // Profile View tabs: 'info' | 'orders' | 'wishlist' | 'edit' | 'password'
+    const [activeTab, setActiveTab] = useState<'info' | 'orders' | 'wishlist' | 'edit' | 'password'>('info');
 
-    // Auto-switch tab based on query param (?tab=orders)
+    // Auto-switch tab based on query param (?tab=orders | ?tab=wishlist)
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const tab = params.get('tab');
-        if (tab === 'orders' || tab === 'edit' || tab === 'password' || tab === 'info') {
+        if (tab === 'orders' || tab === 'edit' || tab === 'password' || tab === 'info' || tab === 'wishlist') {
             setActiveTab(tab);
         }
     }, [location.search]);
@@ -555,6 +562,32 @@ export const Account: React.FC = () => {
                             )}
                         </button>
 
+                        {/* Tab: Wishlist */}
+                        <button
+                            onClick={() => setActiveTab('wishlist')}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                                activeTab === 'wishlist'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <div className="flex items-center space-x-2">
+                                <Heart className={`w-4 h-4 ${activeTab === 'wishlist' ? 'fill-white text-white' : 'text-rose-500 fill-rose-500'}`} />
+                                <span>Sản phẩm yêu thích</span>
+                            </div>
+                            {wishlist.length > 0 && (
+                                <span
+                                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                                        activeTab === 'wishlist'
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-rose-100 text-rose-700'
+                                    }`}
+                                >
+                                    {wishlist.length}
+                                </span>
+                            )}
+                        </button>
+
                         {/* Tab 3: Edit */}
                         <button
                             onClick={() => setActiveTab('edit')}
@@ -829,6 +862,126 @@ export const Account: React.FC = () => {
                                                         </button>
                                                     )}
                                                 </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB: WISHLIST */}
+                    {activeTab === 'wishlist' && (
+                        <div className="space-y-5">
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 flex items-center space-x-2">
+                                        <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+                                        <span>Sản phẩm yêu thích</span>
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        Danh sách các sản phẩm bạn đã lưu để xem lại hoặc mua sau ({wishlist.length})
+                                    </p>
+                                </div>
+                                {wishlist.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={clearWishlist}
+                                        className="text-xs font-semibold text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                                    >
+                                        Xóa tất cả
+                                    </button>
+                                )}
+                            </div>
+
+                            {wishlist.length === 0 ? (
+                                <div className="py-12 text-center text-gray-400 space-y-3">
+                                    <div className="w-16 h-16 mx-auto rounded-full bg-rose-50 flex items-center justify-center text-rose-400">
+                                        <Heart className="w-8 h-8" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-700">Chưa có sản phẩm yêu thích nào</p>
+                                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                                        Hãy bấm vào biểu tượng "Yêu thích" ở trang chi tiết sản phẩm để lưu lại những sản phẩm bạn quan tâm nhé!
+                                    </p>
+                                    <div className="pt-2">
+                                        <Link
+                                            to="/"
+                                            className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow transition-colors"
+                                        >
+                                            <span>Khám phá sản phẩm ngay</span>
+                                        </Link>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {wishlist.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group relative flex flex-col justify-between border border-gray-100 hover:border-gray-300 rounded-2xl p-3.5 bg-white shadow-xs hover:shadow-md transition-all"
+                                        >
+                                            <div className="flex space-x-3">
+                                                <Link
+                                                    to={`/product/${item.id}`}
+                                                    className="w-20 h-20 shrink-0 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center p-1"
+                                                >
+                                                    <img
+                                                        src={item.images?.[0]}
+                                                        alt={item.title}
+                                                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                                    />
+                                                </Link>
+                                                <div className="flex-1 min-w-0">
+                                                    <Link
+                                                        to={`/product/${item.id}`}
+                                                        className="text-xs font-bold text-gray-900 hover:text-blue-600 line-clamp-2 leading-snug transition-colors"
+                                                        title={item.title}
+                                                    >
+                                                        {item.title}
+                                                    </Link>
+                                                    <div className="mt-1 flex items-baseline space-x-2">
+                                                        <span className="text-sm font-black text-red-600">
+                                                            {item.price}
+                                                        </span>
+                                                        {item.marketPrice && item.marketPrice !== item.price && (
+                                                            <span className="text-[11px] line-through text-gray-400">
+                                                                {item.marketPrice}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-1">
+                                                        <span
+                                                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                                item.inStock
+                                                                    ? 'bg-emerald-50 text-emerald-700'
+                                                                    : 'bg-red-50 text-red-700'
+                                                            }`}
+                                                        >
+                                                            {item.inStock ? 'Còn hàng' : 'Hết hàng'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFromWishlist(item.id)}
+                                                    className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors flex items-center space-x-1 text-xs cursor-pointer"
+                                                    title="Xóa khỏi danh sách yêu thích"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                    <span className="text-[11px] font-medium">Bỏ thích</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addToCart(item, 1)}
+                                                    disabled={!item.inStock}
+                                                    className="inline-flex items-center space-x-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white font-bold text-xs py-1.5 px-3 rounded-lg shadow-xs transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                                >
+                                                    <ShoppingCart className="w-3.5 h-3.5" />
+                                                    <span>Thêm vào giỏ</span>
+                                                </button>
                                             </div>
                                         </div>
                                     ))}

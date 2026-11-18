@@ -87,6 +87,45 @@ export const API_ENDPOINTS = {
     SYSTEM_LOGS: `${API_BASE_URL}/api/admin/logs`,
     SYSTEM_LOG_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/logs/${id}`,
   },
+  ANALYTICS: {
+    DASHBOARD: {
+      KPI: `${API_BASE_URL}/api/analytics/dashboard/kpi`,
+      TREND: `${API_BASE_URL}/api/analytics/dashboard/revenue-order-trend`,
+      BY_CATEGORY: `${API_BASE_URL}/api/analytics/dashboard/revenue-by-category`,
+      ORDER_STATUS: `${API_BASE_URL}/api/analytics/dashboard/order-status-distribution`,
+    },
+    REVENUE: {
+      TREND: `${API_BASE_URL}/api/analytics/revenue/trend`,
+      COMPARE: `${API_BASE_URL}/api/analytics/revenue/compare`,
+      BY_BRAND: `${API_BASE_URL}/api/analytics/revenue/by-brand`,
+      BY_PAYMENT_METHOD: `${API_BASE_URL}/api/analytics/revenue/by-payment-method`,
+    },
+    PRODUCTS: {
+      TOP_SELLING: `${API_BASE_URL}/api/analytics/products/top-selling`,
+      TOP_PROFIT: `${API_BASE_URL}/api/analytics/products/top-profit`,
+      PERFORMANCE_MATRIX: `${API_BASE_URL}/api/analytics/products/performance-matrix`,
+    },
+    INVENTORY: {
+      SUMMARY: `${API_BASE_URL}/api/analytics/inventory/summary`,
+      BY_CATEGORY: `${API_BASE_URL}/api/analytics/inventory/by-category`,
+      STATUS_DISTRIBUTION: `${API_BASE_URL}/api/analytics/inventory/status-distribution`,
+      AGING: `${API_BASE_URL}/api/analytics/inventory/aging`,
+      LOW_STOCK_ALERT: `${API_BASE_URL}/api/analytics/inventory/low-stock-alert`,
+      SLOW_MOVING: `${API_BASE_URL}/api/analytics/inventory/slow-moving`,
+    },
+    PURCHASING: {
+      TREND: `${API_BASE_URL}/api/analytics/purchasing/trend`,
+      BY_SUPPLIER: `${API_BASE_URL}/api/analytics/purchasing/by-supplier`,
+      QUALITY_CHECK: `${API_BASE_URL}/api/analytics/purchasing/quality-check`,
+      RECEIPT_STATUS: `${API_BASE_URL}/api/analytics/purchasing/receipt-status-distribution`,
+    },
+    TAX: {
+      SUMMARY: `${API_BASE_URL}/api/analytics/tax/summary`,
+      QUARTERLY: `${API_BASE_URL}/api/analytics/tax/quarterly-breakdown`,
+      INVOICES: `${API_BASE_URL}/api/analytics/tax/invoices`,
+      EXPORT_EXCEL: `${API_BASE_URL}/api/analytics/tax/export/excel`,
+    },
+  },
   CATEGORIES: {
     LIST: `${API_BASE_URL}/api/categories`,
     DETAIL: (id: string | number) => `${API_BASE_URL}/api/categories/${id}`,

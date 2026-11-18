@@ -147,7 +147,7 @@ export const mapBackendCategoryToItem = (c: CategoryResponse): CategoryItem => {
         }
     }
 
-    const isStatusActive = c.status === 1;
+    const isStatusActive = c.status === 'ACTIVE' || c.status === 1 || (c.status as any) === '1';
 
     return {
         id: String(c.id),
@@ -162,7 +162,7 @@ export const mapBackendCategoryToItem = (c: CategoryResponse): CategoryItem => {
         order: c.id,
         productsCount: 0,
         status: isStatusActive ? 'ACTIVE' : 'HIDDEN',
-        statusNumber: c.status,
+        statusNumber: isStatusActive ? 1 : 0,
         isFeatured: false,
         showOnMenu: true,
         createdAt: formattedDate,
@@ -259,9 +259,9 @@ export const CategoryList: React.FC = () => {
         try {
             let statusParam: number | string | undefined = undefined;
             if (filterValues.status === 'ACTIVE') {
-                statusParam = 1;
+                statusParam = 'ACTIVE';
             } else if (filterValues.status === 'HIDDEN') {
-                statusParam = 0;
+                statusParam = 'INACTIVE';
             }
 
             let parentIdParam: number | string | undefined = undefined;

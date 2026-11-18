@@ -18,10 +18,12 @@ import {
     ShieldCheck,
     Phone,
     PcCase,
-    Truck
+    Truck,
+    Heart
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
 import defaultPcImg from '../../../assets/images/products/pc.jpg';
 // import { getProducts } from '../../services/productService';
 // import type { ApiProduct } from '../../types/apiProduct';
@@ -296,6 +298,7 @@ const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): s
 export const Header: React.FC = () => {
     const navigate = useNavigate();
     const { totalItems, items, totalPrice } = useCart();
+    const { totalFavorites } = useWishlist();
     const { user } = useAuth();
     const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -813,6 +816,18 @@ export const Header: React.FC = () => {
 
                     {/* MOBILE QUICK CARTS & USER */}
                     <div className="flex lg:hidden items-center space-x-2 shrink-0">
+                        <Link
+                            to="/account?tab=wishlist"
+                            className="relative p-2 text-white hover:bg-white/10 rounded-lg"
+                            title="Sản phẩm yêu thích"
+                        >
+                            <Heart className="w-6 h-6" />
+                            {totalFavorites > 0 && (
+                                <span className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] font-black min-w-[16px] h-[16px] px-0.5 rounded-full flex items-center justify-center border-2 border-blue-600 shadow-md">
+                                    {totalFavorites > 99 ? '99+' : totalFavorites}
+                                </span>
+                            )}
+                        </Link>
                         <Link to="/cart" className="relative p-2 text-white hover:bg-white/10 rounded-lg">
                             <ShoppingCart className="w-6 h-6" />
                             {totalItems > 0 && (

@@ -15,6 +15,7 @@ import ForgotPassword from './pages/auth/forgotPassword';
 import NotFound from './pages/storePage/notFound/notFound';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 import AdminDashboard from './pages/admin/dashboard';
 import AdminLayout from './layouts/adminLayout';
 import UserList from './pages/admin/user/list';
@@ -41,6 +42,18 @@ import WarrantyHistoryList from './pages/admin/warranty/warrantyHistoryList';
 import ReviewCommentList from './pages/admin/review/list';
 import RevenueReportPage from './pages/admin/reports/sales/revenueReport';
 import OrderStatusReportPage from './pages/admin/reports/sales/orderStatusReport';
+import RevenueStructureReportPage from './pages/admin/reports/sales/revenueStructureReport';
+import GrossProfitReportPage from './pages/admin/reports/sales/grossProfitReport';
+import SalesTrendsReportPage from './pages/admin/reports/sales/salesTrendsReport';
+import TaxAndExportReportPage from './pages/admin/reports/sales/taxAndExportReport';
+import InventoryStockReportPage from './pages/admin/reports/inventory/stockReport';
+import InventoryMovementsReportPage from './pages/admin/reports/inventory/movementsReport';
+import InventoryValuationReportPage from './pages/admin/reports/inventory/valuationReport';
+import InventoryAlertsReportPage from './pages/admin/reports/inventory/alertsReport';
+import InventoryExportReportPage from './pages/admin/reports/inventory/exportReport';
+import PurchasingBehaviorReportPage from './pages/admin/analytics/customers/purchasingBehaviorReport';
+import SpendingMetricsReportPage from './pages/admin/analytics/customers/spendingMetricsReport';
+import ShoppingHabitsReportPage from './pages/admin/analytics/customers/shoppingHabitsReport';
 import SystemLogList from './pages/admin/systemLog/list';
 
 function ScrollToTop() {
@@ -57,8 +70,9 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <ScrollToTop />
+        <WishlistProvider>
+          <CartProvider>
+            <ScrollToTop />
           <Routes>
             {/* User Storefront Routes */}
             <Route path="/" element={<MainLayout />}>
@@ -158,11 +172,37 @@ function App() {
               <Route path="reports/revenue" element={<RevenueReportPage />} />
               <Route path="reports/sales/orders" element={<OrderStatusReportPage />} />
               <Route path="reports/orders" element={<OrderStatusReportPage />} />
+              <Route path="reports/sales/structure" element={<RevenueStructureReportPage />} />
+              <Route path="reports/structure" element={<RevenueStructureReportPage />} />
+              <Route path="reports/sales/gross-profit" element={<GrossProfitReportPage />} />
+              <Route path="reports/gross-profit" element={<GrossProfitReportPage />} />
+              <Route path="reports/sales/trends" element={<SalesTrendsReportPage />} />
+              <Route path="reports/trends" element={<SalesTrendsReportPage />} />
+              <Route path="reports/sales/export" element={<TaxAndExportReportPage />} />
+              <Route path="reports/export" element={<TaxAndExportReportPage />} />
+              <Route path="reports/tax" element={<TaxAndExportReportPage />} />
+
+              {/* Inventory Reports Routes */}
+              <Route path="reports/inventory/stock" element={<InventoryStockReportPage />} />
+              <Route path="reports/stock" element={<InventoryStockReportPage />} />
+              <Route path="reports/inventory/movements" element={<InventoryMovementsReportPage />} />
+              <Route path="reports/movements" element={<InventoryMovementsReportPage />} />
+              <Route path="reports/inventory/valuation" element={<InventoryValuationReportPage />} />
+              <Route path="reports/valuation" element={<InventoryValuationReportPage />} />
+              <Route path="reports/inventory/alerts" element={<InventoryAlertsReportPage />} />
+              <Route path="reports/alerts" element={<InventoryAlertsReportPage />} />
+              <Route path="reports/inventory/export" element={<InventoryExportReportPage />} />
+
+              {/* Customer Analytics Routes */}
+              <Route path="analytics/customers/purchasing-behavior" element={<PurchasingBehaviorReportPage />} />
+              <Route path="analytics/customers/spending-metrics" element={<SpendingMetricsReportPage />} />
+              <Route path="analytics/customers/shopping-habits" element={<ShoppingHabitsReportPage />} />
             </Route>
           </Routes>
         </CartProvider>
-      </AuthProvider>
-    </BrowserRouter>
+      </WishlistProvider>
+    </AuthProvider>
+  </BrowserRouter>
   );
 }
 

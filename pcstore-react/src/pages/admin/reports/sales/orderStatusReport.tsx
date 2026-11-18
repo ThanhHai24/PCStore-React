@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     ShoppingBag,
     CheckCircle2,
@@ -40,6 +40,10 @@ import {
 import { DataTable, type Column } from '../../../../components/admin/common/table';
 import { AdminModal, AdminButton } from '../../../../components/admin/common/modal';
 import { useToast } from '../../../../components/admin/common/toast';
+import { SelectDropdown } from '../../../../components/admin/common/selectDropdown';
+import { adminAnalyticsService } from '../../../../services/adminAnalyticsService';
+import { adminOrderService } from '../../../../services/adminOrderService';
+import type { OrderStatusDistributionDto } from '../../../../types/adminAnalytics';
 import {
     MOCK_ORDER_STATUS_RECORDS,
     ORDER_STATUS_META,
@@ -109,6 +113,93 @@ export default function OrderStatusReportPage() {
     const [pageSize, setPageSize] = useState<number>(10);
     const [selectedOrderDetail, setSelectedOrderDetail] = useState<OrderStatusRecord | null>(null);
 
+    // Live Backend Orders & Analytics States
+    const [backendStatusDistribution, setBackendStatusDistribution] = useState<OrderStatusDistributionDto[] | null>(null);
+    const [backendOrders, setBackendOrders] = useState<OrderStatusRecord[] | null>(null);
+    const [isApiLoading, setIsApiLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadBackendOrderData = async () => {
+            setIsApiLoading(true);
+            try {
+                const [distRes, ordersRes] = await Promise.allSettled([
+                    adminAnalyticsService.getOrderStatusDistribution(),
+                    adminOrderService.getAllOrders({
+                        fromDate,
+                        toDate,
+                        size: 200,
+                    }),
+                ]);
+
+                if (isMounted) {
+                    if (distRes.status === 'fulfilled' && distRes.value.length > 0) {
+                        setBackendStatusDistribution(distRes.value);
+                    }
+                    if (ordersRes.status === 'fulfilled' && ordersRes.value?.content && ordersRes.value.content.length > 0) {
+                        const mapped: OrderStatusRecord[] = ordersRes.value.content.map((o) => {
+                            let status: DetailedOrderStatus = 'PENDING';
+                            if (o.status === 'CONFIRMED') status = 'CONFIRMED';
+                            else if (o.status === 'PROCESSING') status = 'SHIPPING';
+                            else if (o.status === 'COMPLETED') status = 'DELIVERED';
+                            else if (o.status === 'CANCELLED') status = 'CANCELLED';
+                            else if (o.status === 'RETURNED') status = 'RETURNED';
+
+                            const d = o.createdDate ? new Date(o.createdDate) : new Date();
+                            const orderDate = d.toISOString().slice(0, 10);
+                            const orderTime = d.toTimeString().slice(0, 5);
+
+                            const channel: SalesChannelType = o.type === 'IN_STORE' ? 'SHOWROOM_POS' : 'WEBSITE_ONLINE';
+                            const channelLabel = o.type === 'IN_STORE' ? 'Mua trực tiếp tại Showroom' : 'Website PCStore Online';
+                            const paymentMethod: PaymentMethodType = 'VNPAY_QR';
+                            const paymentMethodLabel = 'VNPay QR Gateway';
+
+                            return {
+                                id: String(o.id),
+                                orderId: o.code || `ORD-${o.id}`,
+                                orderCode: o.code || `ORD-${o.id}`,
+                                orderDate,
+                                orderTime,
+                                customerName: o.customerName || 'Khách hàng',
+                                customerPhone: o.customerPhone || 'N/A',
+                                customerCity: 'Hà Nội',
+                                channel,
+                                channelLabel,
+                                paymentMethod,
+                                paymentMethodLabel,
+                                status,
+                                statusLabel: ORDER_STATUS_META[status]?.label || status,
+                                totalAmount: o.finalAmount || o.totalAmount || 0,
+                                itemsCount: o.items?.length || 1,
+                                primaryProductSummary: o.items?.[0]?.productName || 'Linh kiện PC',
+                                processingHours: 12,
+                                staffInCharge: 'Hệ thống',
+                                deliveryPartner: 'Giao Hàng Nhanh (GHN)',
+                                items: (o.items || []).map((it) => ({
+                                    sku: it.productCode || `SKU-${it.productId}`,
+                                    name: it.productName,
+                                    category: 'Linh kiện PC',
+                                    quantity: it.quantity,
+                                    unitPrice: it.unitPrice || 0,
+                                })),
+                            };
+                        });
+                        setBackendOrders(mapped);
+                    }
+                }
+            } catch {
+                // Fallback to mock data if BE is unreachable
+            } finally {
+                if (isMounted) setIsApiLoading(false);
+            }
+        };
+
+        loadBackendOrderData();
+        return () => {
+            isMounted = false;
+        };
+    }, [fromDate, toDate]);
+
     const handleApplyDatePreset = (preset: string) => {
         setActiveDatePreset(preset);
         setCurrentPage(1);
@@ -146,15 +237,17 @@ export default function OrderStatusReportPage() {
 
     // ==================== 3. FILTERED RECORDS ====================
     // Lọc theo ngày, kênh, phương thức thanh toán (dùng để đếm số lượng từng trạng thái trên thanh pill)
+    const activeSourceRecords = backendOrders && backendOrders.length > 0 ? backendOrders : MOCK_ORDER_STATUS_RECORDS;
+
     const baseFilteredRecords = useMemo(() => {
-        return MOCK_ORDER_STATUS_RECORDS.filter((rec) => {
+        return activeSourceRecords.filter((rec) => {
             if (fromDate && rec.orderDate < fromDate) return false;
             if (toDate && rec.orderDate > toDate) return false;
             if (selectedChannel !== 'ALL' && rec.channel !== selectedChannel) return false;
             if (selectedPayment !== 'ALL' && rec.paymentMethod !== selectedPayment) return false;
             return true;
         });
-    }, [fromDate, toDate, selectedChannel, selectedPayment]);
+    }, [activeSourceRecords, fromDate, toDate, selectedChannel, selectedPayment]);
 
     // Lọc thêm theo trạng thái đơn hàng đang chọn
     const filteredRecords = useMemo(() => {
@@ -1016,21 +1109,20 @@ export default function OrderStatusReportPage() {
                             <Package className="w-3.5 h-3.5 text-[#2563EB]" />
                             Trạng thái đơn hàng
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedStatus}
                             onChange={(e) => {
                                 setSelectedStatus(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả 8 trạng thái ({baseFilteredRecords.length})</option>
-                            {ORDER_STATUS_LIST.map((st) => (
-                                <option key={st.code} value={st.code}>
-                                    {st.label}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: `Tất cả 8 trạng thái (${baseFilteredRecords.length})`, value: 'ALL' },
+                                ...ORDER_STATUS_LIST.map((st) => ({ label: st.label, value: st.code })),
+                            ]}
+                            size="sm"
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
 
                     {/* Kênh bán hàng */}
@@ -1039,21 +1131,23 @@ export default function OrderStatusReportPage() {
                             <Store className="w-3.5 h-3.5 text-[#2563EB]" />
                             Kênh bán hàng
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedChannel}
                             onChange={(e) => {
                                 setSelectedChannel(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả kênh bán</option>
-                            {(Object.keys(SALES_CHANNEL_LABELS) as SalesChannelType[]).map((ch) => (
-                                <option key={ch} value={ch}>
-                                    {SALES_CHANNEL_LABELS[ch]}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: 'Tất cả kênh bán', value: 'ALL' },
+                                ...(Object.keys(SALES_CHANNEL_LABELS) as SalesChannelType[]).map((ch) => ({
+                                    label: SALES_CHANNEL_LABELS[ch],
+                                    value: ch,
+                                })),
+                            ]}
+                            size="sm"
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
 
                     {/* Phương thức thanh toán */}
@@ -1062,21 +1156,23 @@ export default function OrderStatusReportPage() {
                             <CreditCard className="w-3.5 h-3.5 text-[#2563EB]" />
                             Phương thức thanh toán
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedPayment}
                             onChange={(e) => {
                                 setSelectedPayment(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả phương thức</option>
-                            {(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethodType[]).map((pm) => (
-                                <option key={pm} value={pm}>
-                                    {PAYMENT_METHOD_LABELS[pm]}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: 'Tất cả phương thức', value: 'ALL' },
+                                ...(Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethodType[]).map((pm) => ({
+                                    label: PAYMENT_METHOD_LABELS[pm],
+                                    value: pm,
+                                })),
+                            ]}
+                            size="sm"
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
                 </div>
 

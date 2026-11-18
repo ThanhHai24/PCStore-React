@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     DollarSign,
     TrendingUp,
@@ -42,6 +42,16 @@ import {
 import { DataTable, type Column } from '../../../../components/admin/common/table';
 import { AdminModal, AdminButton } from '../../../../components/admin/common/modal';
 import { useToast } from '../../../../components/admin/common/toast';
+import { SelectDropdown } from '../../../../components/admin/common/selectDropdown';
+import { adminAnalyticsService } from '../../../../services/adminAnalyticsService';
+import type {
+    TimeSeriesPointDto,
+    PeriodComparisonDto,
+    BrandBreakdownDto,
+    CategoryBreakdownDto,
+    ProductMatrixDto,
+    DashboardKpiResponse,
+} from '../../../../types/adminAnalytics';
 import {
     MOCK_REVENUE_TRANSACTIONS,
     PC_CATEGORIES,
@@ -113,6 +123,52 @@ export default function RevenueReportPage() {
 
     // Drill-down modal state
     const [drilldownRow, setDrilldownRow] = useState<AggregatedRevenueRow | null>(null);
+
+    // Backend Analytics Live API States
+    const [backendKpi, setBackendKpi] = useState<DashboardKpiResponse | null>(null);
+    const [backendTrend, setBackendTrend] = useState<TimeSeriesPointDto[] | null>(null);
+    const [backendComparison, setBackendComparison] = useState<PeriodComparisonDto | null>(null);
+    const [backendBrandList, setBackendBrandList] = useState<BrandBreakdownDto[] | null>(null);
+    const [backendMatrix, setBackendMatrix] = useState<ProductMatrixDto[] | null>(null);
+    const [isApiLoading, setIsApiLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchBackendAnalytics = async () => {
+            setIsApiLoading(true);
+            try {
+                const filter = {
+                    startDate: fromDate,
+                    endDate: toDate,
+                    groupBy: periodGroup as any,
+                };
+                const [kpiRes, trendRes, compRes, brandRes, matrixRes] = await Promise.allSettled([
+                    adminAnalyticsService.getDashboardKpis(filter),
+                    adminAnalyticsService.getRevenueTrend(filter),
+                    adminAnalyticsService.compareRevenue({ ...filter, compareWith: 'PREVIOUS_PERIOD' }),
+                    adminAnalyticsService.getRevenueByBrand(filter),
+                    adminAnalyticsService.getProductPerformanceMatrix(filter),
+                ]);
+
+                if (isMounted) {
+                    if (kpiRes.status === 'fulfilled') setBackendKpi(kpiRes.value);
+                    if (trendRes.status === 'fulfilled' && trendRes.value.length > 0) setBackendTrend(trendRes.value);
+                    if (compRes.status === 'fulfilled') setBackendComparison(compRes.value);
+                    if (brandRes.status === 'fulfilled' && brandRes.value.length > 0) setBackendBrandList(brandRes.value);
+                    if (matrixRes.status === 'fulfilled' && matrixRes.value.length > 0) setBackendMatrix(matrixRes.value);
+                }
+            } catch {
+                // Keep fallback data active if BE is not answering
+            } finally {
+                if (isMounted) setIsApiLoading(false);
+            }
+        };
+
+        fetchBackendAnalytics();
+        return () => {
+            isMounted = false;
+        };
+    }, [fromDate, toDate, periodGroup]);
 
     // Danh sách sản phẩm trong dropdown được lọc thông minh theo Danh mục / Phân loại / Thương hiệu đang chọn
     const availableProductsForFilter = useMemo(() => {
@@ -203,6 +259,33 @@ export default function RevenueReportPage() {
 
     // ==================== 4. KPI METRICS CALCULATION ====================
     const kpiMetrics = useMemo(() => {
+        if (backendKpi && backendKpi.totalRevenue > 0) {
+            const netActualRevenue = backendKpi.totalRevenue;
+            const completedOrdersCount = Number(backendKpi.totalPaidInvoices);
+            const totalUnitsSold = Number(backendKpi.totalProductsSold);
+            const prevNetRevenue = backendComparison ? backendComparison.comparedRevenue : 0;
+            const growthDiff = backendComparison ? backendComparison.growthAmount : 0;
+            const growthPercent = backendComparison ? backendComparison.growthRatePercentage : 0;
+            const grossRevenue = netActualRevenue;
+            const cancelledReturnedAmount = 0;
+            const cancelledReturnedOrdersCount = 0;
+            const deductionRate = 0;
+
+            return {
+                grossRevenue,
+                cancelledReturnedAmount,
+                netActualRevenue,
+                completedOrdersCount,
+                cancelledReturnedOrdersCount,
+                totalOrdersCount: completedOrdersCount,
+                totalUnitsSold,
+                prevNetRevenue,
+                growthDiff,
+                growthPercent,
+                deductionRate,
+            };
+        }
+
         let grossRevenue = 0;
         let cancelledReturnedAmount = 0;
         let netActualRevenue = 0;
@@ -255,6 +338,19 @@ export default function RevenueReportPage() {
 
     // ==================== 5. MAIN TIME-SERIES CHART DATA ====================
     const timeSeriesChartData = useMemo(() => {
+        if (backendTrend && backendTrend.length > 0) {
+            return backendTrend.map((p) => ({
+                key: p.timeBucket,
+                periodLabel: p.label,
+                sortKey: p.timeBucket,
+                grossRevenue: p.revenue,
+                deductionRevenue: 0,
+                netRevenue: p.revenue,
+                completedOrders: p.orderCount,
+                unitsSold: p.orderCount,
+            }));
+        }
+
         const map = new Map<
             string,
             {
@@ -300,6 +396,43 @@ export default function RevenueReportPage() {
     // ==================== 6. MULTI-DIMENSIONAL DATATABLE AGGREGATION ====================
     const aggregatedTableRows = useMemo<AggregatedRevenueRow[]>(() => {
         const totalNetAll = kpiMetrics.netActualRevenue || 1;
+
+        if (activeDimensionTab === 'BRAND' && backendBrandList && backendBrandList.length > 0) {
+            return backendBrandList.map((b) => ({
+                id: String(b.brandId || b.brandName),
+                name: b.brandName,
+                subLabel: `Thương hiệu chính hãng`,
+                badgeText: 'Thương hiệu',
+                completedOrders: 0,
+                cancelledReturnOrders: 0,
+                unitsSold: 0,
+                grossRevenue: b.revenue,
+                deductionRevenue: 0,
+                netRevenue: b.revenue,
+                sharePercent: b.percentage,
+                cancelledReturnedRate: 0,
+                sortOrder: b.revenue,
+            }));
+        }
+
+        if (activeDimensionTab === 'PRODUCT' && backendMatrix && backendMatrix.length > 0) {
+            return backendMatrix.map((m) => ({
+                id: String(m.productId),
+                name: m.productName,
+                subLabel: `SKU: ${m.productCode}`,
+                badgeText: `${m.brandName} • ${m.categoryName}`,
+                completedOrders: 0,
+                cancelledReturnOrders: 0,
+                unitsSold: m.quantitySold,
+                grossRevenue: m.revenue,
+                deductionRevenue: 0,
+                netRevenue: m.revenue,
+                sharePercent: totalNetAll > 0 ? Number(((m.revenue / totalNetAll) * 100).toFixed(2)) : 0,
+                cancelledReturnedRate: 0,
+                sortOrder: m.revenue,
+            }));
+        }
+
         const map = new Map<string, AggregatedRevenueRow>();
 
         currentPeriodRecords.forEach((tx) => {
@@ -941,22 +1074,22 @@ export default function RevenueReportPage() {
                             <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
                             Danh mục
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedCategory}
                             onChange={(e) => {
                                 setSelectedCategory(e.target.value);
                                 setSelectedProduct('ALL');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả danh mục ({PC_CATEGORIES.length})</option>
-                            {PC_CATEGORIES.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                    {c.name}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: `Tất cả danh mục (${PC_CATEGORIES.length})`, value: 'ALL' },
+                                ...PC_CATEGORIES.map((c) => ({ label: c.name, value: c.id })),
+                            ]}
+                            size="sm"
+                            searchable
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
 
                     {/* Phân loại */}
@@ -965,22 +1098,22 @@ export default function RevenueReportPage() {
                             <Tag className="w-3.5 h-3.5 text-[#2563EB]" />
                             Phân loại
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedClassification}
                             onChange={(e) => {
                                 setSelectedClassification(e.target.value);
                                 setSelectedProduct('ALL');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả phân loại ({PC_CLASSIFICATIONS.length})</option>
-                            {PC_CLASSIFICATIONS.map((cls) => (
-                                <option key={cls.id} value={cls.id}>
-                                    {cls.name}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: `Tất cả phân loại (${PC_CLASSIFICATIONS.length})`, value: 'ALL' },
+                                ...PC_CLASSIFICATIONS.map((cls) => ({ label: cls.name, value: cls.id })),
+                            ]}
+                            size="sm"
+                            searchable
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
 
                     {/* Thương hiệu */}
@@ -989,22 +1122,22 @@ export default function RevenueReportPage() {
                             <Award className="w-3.5 h-3.5 text-[#2563EB]" />
                             Thương hiệu
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedBrand}
                             onChange={(e) => {
                                 setSelectedBrand(e.target.value);
                                 setSelectedProduct('ALL');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">Tất cả thương hiệu ({PC_BRANDS.length})</option>
-                            {PC_BRANDS.map((b) => (
-                                <option key={b.id} value={b.id}>
-                                    {b.name}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: `Tất cả thương hiệu (${PC_BRANDS.length})`, value: 'ALL' },
+                                ...PC_BRANDS.map((b) => ({ label: b.name, value: b.id })),
+                            ]}
+                            size="sm"
+                            searchable
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
 
                     {/* Sản phẩm */}
@@ -1013,23 +1146,24 @@ export default function RevenueReportPage() {
                             <Package className="w-3.5 h-3.5 text-[#2563EB]" />
                             Sản phẩm linh kiện
                         </label>
-                        <select
+                        <SelectDropdown
                             value={selectedProduct}
                             onChange={(e) => {
                                 setSelectedProduct(e.target.value);
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all cursor-pointer"
-                        >
-                            <option value="ALL">
-                                Tất cả sản phẩm ({availableProductsForFilter.length})
-                            </option>
-                            {availableProductsForFilter.map((prod) => (
-                                <option key={prod.id} value={prod.id}>
-                                    [{prod.sku}] {prod.name}
-                                </option>
-                            ))}
-                        </select>
+                            options={[
+                                { label: `Tất cả sản phẩm (${availableProductsForFilter.length})`, value: 'ALL' },
+                                ...availableProductsForFilter.map((prod) => ({
+                                    label: `[${prod.sku}] ${prod.name}`,
+                                    value: prod.id,
+                                })),
+                            ]}
+                            size="sm"
+                            searchable
+                            className="w-full"
+                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                        />
                     </div>
                 </div>
 

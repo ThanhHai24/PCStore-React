@@ -59,7 +59,17 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCartToast(null);
   };
 
-  const addToCart = (product: Product, quantity: number = 1, selectedVariant?: string) => {
+  const addToCart = (
+    product: Product,
+    quantity: number = 1,
+    selectedVariant?: string,
+    showToastOrOptions: boolean | { showToast?: boolean } = true
+  ) => {
+    const shouldShowToast =
+      typeof showToastOrOptions === 'boolean'
+        ? showToastOrOptions
+        : showToastOrOptions?.showToast ?? true;
+
     const numPrice =
       product.numericPrice ||
       (product.price ? Number(String(product.price).replace(/[^\d]/g, '')) : 0);
@@ -96,15 +106,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Show live toast notification
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
+    if (shouldShowToast) {
+      // Show live toast notification
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+      setCartToast({ product: safeProduct, quantity: addQuantity, selectedVariant });
+      toastTimerRef.current = setTimeout(() => {
+        setCartToast(null);
+        toastTimerRef.current = null;
+      }, 4000);
+    } else {
+      dismissToast();
     }
-    setCartToast({ product: safeProduct, quantity: addQuantity, selectedVariant });
-    toastTimerRef.current = setTimeout(() => {
-      setCartToast(null);
-      toastTimerRef.current = null;
-    }, 4000);
   };
 
   const removeFromCart = (productId: string | number, selectedVariant?: string) => {

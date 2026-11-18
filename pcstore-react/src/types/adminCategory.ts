@@ -1,11 +1,11 @@
-export type BackendCategoryStatus = 0 | 1;
+export type BackendCategoryStatus = 0 | 1 | 'ACTIVE' | 'INACTIVE';
 
 export interface CategoryResponse {
   id: number;
   name: string;
   slug: string;
   description?: string | null;
-  status: number; // 0 = INACTIVE, 1 = ACTIVE
+  status: BackendCategoryStatus | number | string; // BE trả về 'ACTIVE' | 'INACTIVE' hoặc 1 | 0
   parentId?: number | null;
   parentName?: string | null;
   createdDate?: string | null;
@@ -19,7 +19,7 @@ export interface CategoryTreeResponse {
   name: string;
   slug: string;
   description?: string | null;
-  status: number;
+  status: BackendCategoryStatus | number | string;
   parentId?: number | null;
   children?: CategoryTreeResponse[];
 }

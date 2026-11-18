@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Eye, MessageSquare, ShoppingBag, Cpu, Monitor, HardDrive, Plus, Minus, Scale, ShoppingCart } from 'lucide-react';
+import { Star, Eye, MessageSquare, ShoppingBag, Plus, Minus, Scale, ShoppingCart, Heart } from 'lucide-react';
 import type { Product } from '../../../types/product';
 import { useCart } from '../../../context/CartContext';
+import { useWishlist } from '../../../context/WishlistContext';
 
 interface ProductInfoProps {
     product: Product;
@@ -10,11 +11,14 @@ interface ProductInfoProps {
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     const navigate = useNavigate();
-    const { addToCart } = useCart();
+    const { addToCart, dismissToast } = useCart();
+    const { isFavorite, toggleFavorite } = useWishlist();
     const [quantity, setQuantity] = useState<number>(1);
     const [selectedStorage] = useState<string>('');
 
-    const maxStock = product.stockQuantity;
+    const favorited = isFavorite(product.id);
+
+    const maxStock = product.stockQuantity ?? 0;
 
     // Live countdown timer state
     const [timeLeft, setTimeLeft] = useState({
@@ -50,7 +54,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
     };
 
     const handleBuyNow = () => {
-        addToCart(product, quantity, selectedStorage || undefined);
+        dismissToast();
+        addToCart(product, quantity, selectedStorage || undefined, false);
         navigate('/cart');
     };
 
@@ -97,18 +102,12 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                 <div className="flex items-center gap-2">
                     <span className="text-gray-500">Bảo hành: </span>
                     <span className="text-red-600 font-semibold">{product.warrantyInfo}</span>
-                    <Link
-                        to="/warranty"
-                        className="text-[11px] text-blue-600 hover:underline font-medium bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100"
-                    >
-                        Tra cứu S/N
-                    </Link>
                 </div>
                 <div>
                     <span className="text-gray-500">Tình trạng: </span>
                     <span className={product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0) ? 'text-emerald-600 font-bold' : 'text-red-600 font-bold'}>
                         {product.inStock && (product.stockQuantity === undefined || product.stockQuantity > 0)
-                            ? `Còn hàng ${product.stockQuantity !== undefined ? `(Còn ${product.stockQuantity} sản phẩm)` : ''}`
+                            ? `Còn hàng`
                             : 'Hết hàng'}
                     </span>
                 </div>
@@ -204,9 +203,31 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
                     <button
                         onClick={handleAddToCart}
                         disabled={!product.inStock || product.stockQuantity === 0}
-                        className="bg-white flex items-center gap-2 border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed"
+                        className="bg-white flex items-center gap-2 border-2 border-red-600 hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 text-red-600 font-bold py-3 px-3 rounded-xl text-xs whitespace-nowrap transition-colors active:scale-95 disabled:cursor-not-allowed cursor-pointer"
                     >
                         Thêm vào giỏ <ShoppingCart className='w-4 h-4 text-red-600' />
+                    </button>
+
+                    {/* Nút Yêu thích sản phẩm */}
+                    <button
+                        type="button"
+                        onClick={() => toggleFavorite(product)}
+                        className={`flex items-center gap-1.5 py-3 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                            favorited
+                                ? 'bg-rose-50 text-rose-600 border-2 border-rose-500 shadow-sm'
+                                : 'bg-white hover:bg-rose-50 text-gray-700 hover:text-rose-600 border border-gray-300 hover:border-rose-300'
+                        }`}
+                        title={favorited ? 'Đã yêu thích (Bấm để bỏ yêu thích)' : 'Thêm vào danh sách yêu thích'}
+                        aria-label={favorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+                    >
+                        <Heart
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                                favorited
+                                    ? 'fill-rose-500 text-rose-500 scale-110'
+                                    : 'text-gray-500 group-hover:text-rose-600'
+                            }`}
+                        />
+                        <span>{favorited ? 'Đã thích' : 'Yêu thích'}</span>
                     </button>
 
                     <Link

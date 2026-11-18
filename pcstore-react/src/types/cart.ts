@@ -26,7 +26,12 @@ export interface CartToastInfo {
 
 export interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, quantity?: number, selectedVariant?: string) => void;
+  addToCart: (
+    product: Product,
+    quantity?: number,
+    selectedVariant?: string,
+    showToastOrOptions?: boolean | { showToast?: boolean }
+  ) => void;
   removeFromCart: (productId: string | number, selectedVariant?: string) => void;
   updateQuantity: (productId: string | number, quantity: number, selectedVariant?: string) => void;
   clearCart: () => void;

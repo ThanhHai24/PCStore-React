@@ -6,11 +6,17 @@ import type {
 
 const STORAGE_KEY = 'pcstore_system_logs_v1';
 
+// Dynamic relative timestamp generator for realistic demo data
+function createRelativeDate(hoursAgo: number, minutesAgo = 0): string {
+    const d = new Date(Date.now() - (hoursAgo * 3600 + minutesAgo * 60) * 1000);
+    return d.toISOString().replace(/\.\d{3}Z$/, '');
+}
+
 // Seed initial realistic mock logs
 const INITIAL_LOGS: SystemLogItem[] = [
     {
         id: 'LOG-2026-1048',
-        timestamp: '2026-11-12T13:58:24',
+        timestamp: createRelativeDate(0, 15),
         actor: {
             id: '1',
             username: 'admin',
@@ -55,12 +61,12 @@ const INITIAL_LOGS: SystemLogItem[] = [
         responsePayload: {
             success: true,
             message: 'Cập nhật sản phẩm thành công',
-            timestamp: '2026-11-12T13:58:24.120Z',
+            timestamp: '2026-11-19T01:15:24.120Z',
         },
     },
     {
         id: 'LOG-2026-1047',
-        timestamp: '2026-11-12T13:42:10',
+        timestamp: createRelativeDate(0, 48),
         actor: {
             id: '12',
             username: 'sales_dung',
@@ -103,7 +109,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1046',
-        timestamp: '2026-11-12T13:30:15',
+        timestamp: createRelativeDate(1, 30),
         actor: {
             id: '99',
             username: 'unknown',
@@ -134,7 +140,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1045',
-        timestamp: '2026-11-12T13:15:02',
+        timestamp: createRelativeDate(2, 45),
         actor: {
             id: '5',
             username: 'tech_nam',
@@ -173,7 +179,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1044',
-        timestamp: '2026-11-12T12:45:50',
+        timestamp: createRelativeDate(4, 15),
         actor: {
             id: 'system',
             username: 'system_daemon',
@@ -204,7 +210,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1043',
-        timestamp: '2026-11-12T12:10:00',
+        timestamp: createRelativeDate(6, 20),
         actor: {
             id: '8',
             username: 'warehouse_hai',
@@ -243,7 +249,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1042',
-        timestamp: '2026-11-12T11:30:45',
+        timestamp: createRelativeDate(8, 40),
         actor: {
             id: '1',
             username: 'admin',
@@ -276,7 +282,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1041',
-        timestamp: '2026-11-12T11:05:12',
+        timestamp: createRelativeDate(20, 15),
         actor: {
             id: '2',
             username: 'manager_huyen',
@@ -301,7 +307,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1040',
-        timestamp: '2026-11-12T10:15:30',
+        timestamp: createRelativeDate(26, 30),
         actor: {
             id: 'system',
             username: 'backup_service',
@@ -315,7 +321,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
         level: 'SUCCESS',
         description: 'Sao lưu thành công toàn bộ cơ sở dữ liệu PCStore_Production (dung lượng nén 1.42 GB, lưu trữ an toàn trên Cloud Storage S3).',
         targetEntity: 'Bản sao lưu CSDL',
-        targetId: 'BACKUP-20261112-1000',
+        targetId: 'BACKUP-20261118-0200',
         ipAddress: '10.0.0.2',
         userAgent: 'pg_dump/16.1',
         endpoint: '/internal/tasks/database-backup',
@@ -325,7 +331,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1039',
-        timestamp: '2026-11-12T09:40:18',
+        timestamp: createRelativeDate(32, 10),
         actor: {
             id: '1',
             username: 'admin',
@@ -350,7 +356,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1038',
-        timestamp: '2026-11-12T09:12:05',
+        timestamp: createRelativeDate(46, 25),
         actor: {
             id: '3',
             username: 'staff_kho2',
@@ -375,7 +381,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1037',
-        timestamp: '2026-11-12T08:35:19',
+        timestamp: createRelativeDate(56, 10),
         actor: {
             id: '2',
             username: 'manager_huyen',
@@ -400,7 +406,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1036',
-        timestamp: '2026-11-11T22:15:00',
+        timestamp: createRelativeDate(72, 45),
         actor: {
             id: 'system',
             username: 'security_monitor',
@@ -425,7 +431,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1035',
-        timestamp: '2026-11-11T19:50:41',
+        timestamp: createRelativeDate(96, 20),
         actor: {
             id: '1',
             username: 'admin',
@@ -464,7 +470,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1034',
-        timestamp: '2026-11-11T17:22:10',
+        timestamp: createRelativeDate(120, 15),
         actor: {
             id: '12',
             username: 'sales_dung',
@@ -497,7 +503,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1033',
-        timestamp: '2026-11-11T16:04:30',
+        timestamp: createRelativeDate(144, 30),
         actor: {
             id: 'system',
             username: 'sync_daemon',
@@ -521,7 +527,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1032',
-        timestamp: '2026-11-11T14:40:15',
+        timestamp: createRelativeDate(168, 50),
         actor: {
             id: '5',
             username: 'tech_nam',
@@ -546,7 +552,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1031',
-        timestamp: '2026-11-11T11:20:00',
+        timestamp: createRelativeDate(200, 10),
         actor: {
             id: '1',
             username: 'admin',
@@ -585,7 +591,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1030',
-        timestamp: '2026-11-11T09:15:44',
+        timestamp: createRelativeDate(250, 0),
         actor: {
             id: '12',
             username: 'sales_dung',
@@ -610,7 +616,7 @@ const INITIAL_LOGS: SystemLogItem[] = [
     },
     {
         id: 'LOG-2026-1029',
-        timestamp: '2026-11-10T16:55:10',
+        timestamp: createRelativeDate(310, 0),
         actor: {
             id: '8',
             username: 'warehouse_hai',
@@ -669,7 +675,7 @@ class SystemLogService {
 
     public async getLogs(params: SystemLogFilterParams = {}): Promise<SystemLogItem[]> {
         // Simulate async delay for smooth realistic UI
-        await new Promise((resolve) => setTimeout(resolve, 80));
+        await new Promise((resolve) => setTimeout(resolve, 60));
 
         let result = [...this.logs];
 
@@ -686,7 +692,8 @@ class SystemLogService {
                     item.ipAddress.toLowerCase().includes(q) ||
                     (item.targetId && item.targetId.toLowerCase().includes(q)) ||
                     (item.targetEntity && item.targetEntity.toLowerCase().includes(q)) ||
-                    (item.endpoint && item.endpoint.toLowerCase().includes(q))
+                    (item.endpoint && item.endpoint.toLowerCase().includes(q)) ||
+                    (item.userAgent && item.userAgent.toLowerCase().includes(q))
                 );
             });
         }
@@ -706,13 +713,41 @@ class SystemLogService {
             result = result.filter((item) => item.action === params.action);
         }
 
-        // 5. Filter by Date range
+        // 5. Filter by Status Code (exact or range like 2xx, 4xx, 5xx)
+        if (params.statusCode && params.statusCode !== 'ALL') {
+            if (params.statusCode === '2xx') {
+                result = result.filter((item) => item.statusCode && item.statusCode >= 200 && item.statusCode < 300);
+            } else if (params.statusCode === '3xx') {
+                result = result.filter((item) => item.statusCode && item.statusCode >= 300 && item.statusCode < 400);
+            } else if (params.statusCode === '4xx') {
+                result = result.filter((item) => item.statusCode && item.statusCode >= 400 && item.statusCode < 500);
+            } else if (params.statusCode === '5xx') {
+                result = result.filter((item) => item.statusCode && item.statusCode >= 500);
+            } else {
+                const num = parseInt(params.statusCode, 10);
+                if (!isNaN(num)) {
+                    result = result.filter((item) => item.statusCode === num);
+                }
+            }
+        }
+
+        // 6. Filter by Role
+        if (params.role && params.role !== 'ALL') {
+            result = result.filter((item) => item.actor.role === params.role);
+        }
+
+        // 7. Filter by HTTP Method
+        if (params.httpMethod && params.httpMethod !== 'ALL') {
+            result = result.filter((item) => item.httpMethod === params.httpMethod);
+        }
+
+        // 8. Filter by Date range preset
         if (params.dateRange && params.dateRange !== 'ALL') {
             const now = new Date();
             let threshold = new Date(0);
 
             if (params.dateRange === 'today') {
-                threshold = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                threshold = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
             } else if (params.dateRange === '3days') {
                 threshold = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
             } else if (params.dateRange === '7days') {
@@ -724,9 +759,10 @@ class SystemLogService {
             result = result.filter((item) => new Date(item.timestamp) >= threshold);
         }
 
-        // 6. Custom start / end date
+        // 9. Custom start / end date
         if (params.startDate) {
             const start = new Date(params.startDate);
+            start.setHours(0, 0, 0, 0);
             result = result.filter((item) => new Date(item.timestamp) >= start);
         }
         if (params.endDate) {
@@ -775,6 +811,29 @@ class SystemLogService {
             criticalCount,
             uniqueUsersCount: uniqueActors.size,
         };
+    }
+
+    public deleteLog(id: string): boolean {
+        const idx = this.logs.findIndex((l) => l.id === id);
+        if (idx !== -1) {
+            this.logs.splice(idx, 1);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    public deleteLogs(ids: (string | number)[]): number {
+        const idSet = new Set(ids.map(String));
+        const initialCount = this.logs.length;
+        this.logs = this.logs.filter((item) => !idSet.has(item.id));
+        this.save();
+        return initialCount - this.logs.length;
+    }
+
+    public clearAllLogs(): void {
+        this.logs = [];
+        this.save();
     }
 
     public purgeLogs(options: { olderThanDays?: number; level?: string } = {}): number {
@@ -832,6 +891,7 @@ class SystemLogService {
             'Trình Duyệt',
             'Mức Độ',
             'Mã HTTP',
+            'Thời Gian Xử Lý (ms)',
         ];
 
         const rows = logsToExport.map((log) => [
@@ -842,13 +902,14 @@ class SystemLogService {
             log.actor.role,
             log.module,
             log.action,
-            `"${(log.description || '').replace(/"/g, '""')}"`,
+            `"${(log.description || '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`,
             log.targetEntity || '',
             log.targetId || '',
             log.ipAddress,
             `"${(log.userAgent || '').replace(/"/g, '""')}"`,
             log.level,
             log.statusCode || '',
+            log.executionTimeMs ?? '',
         ]);
 
         const csvContent =
@@ -867,15 +928,17 @@ class SystemLogService {
     }
 
     public exportToJson(logsToExport: SystemLogItem[]): void {
-        const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-            JSON.stringify(logsToExport, null, 2)
-        )}`;
+        const blob = new Blob([JSON.stringify(logsToExport, null, 2)], {
+            type: 'application/json;charset=utf-8;',
+        });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = jsonString;
+        link.href = url;
         link.download = `nhat_ky_he_thong_${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 }
 

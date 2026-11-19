@@ -26,12 +26,32 @@ import {
     CreditCard,
     MessageSquare,
     ChevronRight,
+    ChevronLeft,
     Plus,
     BarChart3,
     Check,
     Code2,
     Sparkles,
+    Calendar,
+    Filter,
+    SlidersHorizontal,
+    Share2,
 } from 'lucide-react';
+import {
+    ResponsiveContainer,
+    AreaChart,
+    Area,
+    BarChart,
+    Bar,
+    PieChart,
+    Pie,
+    Cell,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Legend,
+    CartesianGrid,
+} from 'recharts';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import {
     AdminTable,
@@ -44,6 +64,7 @@ import {
     AdminSelect,
     type ModalTab,
 } from '../../../components/admin/common/modal';
+import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { systemLogService } from '../../../services/systemLogService';
 import type {
@@ -90,6 +111,22 @@ function getRelativeTimeString(isoString: string): string {
     }
 }
 
+// Color palette for charts
+const MODULE_COLORS: Record<string, string> = {
+    AUTH: '#8b5cf6',
+    USER: '#6366f1',
+    PRODUCT: '#0ea5e9',
+    CATEGORY: '#14b8a6',
+    BRAND: '#06b6d4',
+    ORDER: '#f59e0b',
+    WAREHOUSE: '#10b981',
+    PURCHASE_ORDER: '#84cc16',
+    WARRANTY: '#3b82f6',
+    PAYMENT: '#a855f7',
+    REVIEW: '#ec4899',
+    SYSTEM: '#64748b',
+};
+
 export default function SystemLogList() {
     const { addToast } = useToast();
 
@@ -113,7 +150,11 @@ export default function SystemLogList() {
         level: '',
         module: '',
         action: '',
+        statusCode: '',
+        role: '',
         dateRange: '',
+        startDate: '',
+        endDate: '',
     });
 
     // Pagination
@@ -142,6 +183,8 @@ export default function SystemLogList() {
         description: string;
         targetEntity: string;
         targetId: string;
+        statusCode: number;
+        httpMethod: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     }>({
         module: 'SYSTEM',
         level: 'INFO',
@@ -150,7 +193,14 @@ export default function SystemLogList() {
         description: 'Quản trị viên phát hành sự kiện nhật ký thử nghiệm từ trang quản trị.',
         targetEntity: 'Hệ thống',
         targetId: 'TEST-LOG-01',
+        statusCode: 200,
+        httpMethod: 'POST',
     });
+
+    // Delete confirmation modals
+    const [logToDelete, setLogToDelete] = useState<SystemLogItem | null>(null);
+    const [isDeleteSingleModalOpen, setIsDeleteSingleModalOpen] = useState<boolean>(false);
+    const [isBatchDeleteModalOpen, setIsBatchDeleteModalOpen] = useState<boolean>(false);
 
     // Analytics visual section toggle
     const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
@@ -166,12 +216,16 @@ export default function SystemLogList() {
             const rawLogs = await systemLogService.getLogs({
                 keyword: searchQuery,
                 level: filterValues.level || undefined,
-                module: filterValues.module,
-                action: filterValues.action,
-                dateRange: filterValues.dateRange,
+                module: filterValues.module || undefined,
+                action: filterValues.action || undefined,
+                statusCode: filterValues.statusCode || undefined,
+                role: filterValues.role || undefined,
+                dateRange: filterValues.dateRange || undefined,
+                startDate: filterValues.startDate || undefined,
+                endDate: filterValues.endDate || undefined,
             });
 
-            // Quick tab secondary client filter if needed
+            // Quick tab secondary client filter
             let filtered = rawLogs;
             if (quickTab === 'AUTH_USER') {
                 filtered = rawLogs.filter((l) => l.module === 'AUTH' || l.module === 'USER');
@@ -200,51 +254,10 @@ export default function SystemLogList() {
         }
     }, [searchQuery, filterValues, quickTab, addToast]);
 
+    // Initial load and on filters change
     useEffect(() => {
-        let isCancelled = false;
-        (async () => {
-            try {
-                const rawLogs = await systemLogService.getLogs({
-                    keyword: searchQuery,
-                    level: filterValues.level || undefined,
-                    module: filterValues.module,
-                    action: filterValues.action,
-                    dateRange: filterValues.dateRange,
-                });
-                if (isCancelled) return;
-                let filtered = rawLogs;
-                if (quickTab === 'AUTH_USER') {
-                    filtered = rawLogs.filter((l) => l.module === 'AUTH' || l.module === 'USER');
-                } else if (quickTab === 'CATALOG') {
-                    filtered = rawLogs.filter((l) => l.module === 'PRODUCT' || l.module === 'CATEGORY' || l.module === 'BRAND');
-                } else if (quickTab === 'ORDER_PAYMENT') {
-                    filtered = rawLogs.filter((l) => l.module === 'ORDER' || l.module === 'PAYMENT');
-                } else if (quickTab === 'WAREHOUSE') {
-                    filtered = rawLogs.filter((l) => l.module === 'WAREHOUSE' || l.module === 'PURCHASE_ORDER');
-                } else if (quickTab === 'WARRANTY') {
-                    filtered = rawLogs.filter((l) => l.module === 'WARRANTY');
-                } else if (quickTab === 'WARNING_ERROR') {
-                    filtered = rawLogs.filter((l) => l.level === 'WARNING' || l.level === 'ERROR' || l.level === 'CRITICAL');
-                }
-                setLogs(filtered);
-                setStats(systemLogService.getStats());
-            } catch {
-                if (!isCancelled) {
-                    addToast({
-                        type: 'error',
-                        title: 'Lỗi nạp dữ liệu',
-                        message: 'Không thể tải danh sách nhật ký hệ thống.',
-                    });
-                }
-            } finally {
-                if (!isCancelled) setLoading(false);
-            }
-        })();
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [searchQuery, filterValues, quickTab, addToast]);
+        loadLogs();
+    }, [loadLogs]);
 
     // Handle auto refresh timer
     useEffect(() => {
@@ -266,6 +279,39 @@ export default function SystemLogList() {
         };
     }, [autoRefreshSecs, loadLogs]);
 
+    // Pagination calculations
+    const totalItems = logs.length;
+    const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+    useEffect(() => {
+        if (currentPage > totalPages) {
+            setCurrentPage(Math.max(1, totalPages));
+        }
+    }, [currentPage, totalPages]);
+
+    const paginatedLogs = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return logs.slice(start, start + pageSize);
+    }, [logs, currentPage, pageSize]);
+
+    // Current detail index for sequential modal navigation
+    const currentDetailIndex = useMemo(() => {
+        if (!detailLog) return -1;
+        return logs.findIndex((l) => l.id === detailLog.id);
+    }, [detailLog, logs]);
+
+    const handlePrevLog = () => {
+        if (currentDetailIndex > 0) {
+            setDetailLog(logs[currentDetailIndex - 1]);
+        }
+    };
+
+    const handleNextLog = () => {
+        if (currentDetailIndex >= 0 && currentDetailIndex < logs.length - 1) {
+            setDetailLog(logs[currentDetailIndex + 1]);
+        }
+    };
+
     // Open detail modal
     const handleOpenDetail = (log: SystemLogItem) => {
         setDetailLog(log);
@@ -279,6 +325,43 @@ export default function SystemLogList() {
             type: 'info',
             title: 'Đã sao chép',
             message: `Đã sao chép ${label} vào bộ nhớ tạm.`,
+        });
+    };
+
+    // Single log delete
+    const handleRequestDeleteSingle = (log: SystemLogItem) => {
+        setLogToDelete(log);
+        setIsDeleteSingleModalOpen(true);
+    };
+
+    const handleConfirmDeleteSingle = () => {
+        if (!logToDelete) return;
+        systemLogService.deleteLog(logToDelete.id);
+        if (detailLog?.id === logToDelete.id) {
+            setIsDetailModalOpen(false);
+            setDetailLog(null);
+        }
+        setIsDeleteSingleModalOpen(false);
+        setLogToDelete(null);
+        loadLogs();
+        addToast({
+            type: 'success',
+            title: 'Đã xóa bản ghi',
+            message: `Đã xóa nhật ký "${logToDelete.id}" khỏi hệ thống.`,
+        });
+    };
+
+    // Batch delete
+    const handleConfirmBatchDelete = () => {
+        if (selectedLogIds.length === 0) return;
+        const count = systemLogService.deleteLogs(selectedLogIds);
+        setSelectedLogIds([]);
+        setIsBatchDeleteModalOpen(false);
+        loadLogs();
+        addToast({
+            type: 'success',
+            title: 'Xóa hàng loạt thành công',
+            message: `Đã xóa ${count} bản ghi nhật ký được chọn.`,
         });
     };
 
@@ -333,8 +416,8 @@ export default function SystemLogList() {
             ipAddress: '113.161.42.18',
             userAgent: 'Chrome 131.0 / Windows 11',
             endpoint: '/api/admin/system/test-log',
-            httpMethod: 'POST',
-            statusCode: testLogData.level === 'ERROR' ? 500 : 200,
+            httpMethod: testLogData.httpMethod,
+            statusCode: testLogData.statusCode,
             executionTimeMs: Math.floor(Math.random() * 80) + 20,
         });
 
@@ -417,17 +500,51 @@ export default function SystemLogList() {
                 { label: 'Đăng xuất (LOGOUT)', value: 'LOGOUT' },
                 { label: 'Thêm mới (CREATE)', value: 'CREATE' },
                 { label: 'Cập nhật (UPDATE)', value: 'UPDATE' },
-                { label: 'Xóa (DELETE)', value: 'DELETE' },
+                { label: 'Xóa bỏ (DELETE)', value: 'DELETE' },
                 { label: 'Đổi trạng thái (STATUS_CHANGE)', value: 'STATUS_CHANGE' },
                 { label: 'Phân quyền (PERMISSION_CHANGE)', value: 'PERMISSION_CHANGE' },
                 { label: 'Xuất dữ liệu (EXPORT)', value: 'EXPORT' },
-                { label: 'Sao lưu (BACKUP)', value: 'BACKUP' },
-                { label: 'Đồng bộ (SYNC)', value: 'SYNC' },
+                { label: 'Sao lưu CSDL (BACKUP)', value: 'BACKUP' },
+                { label: 'Giao dịch thanh toán (PAYMENT_PROCESS)', value: 'PAYMENT_PROCESS' },
+                { label: 'Đồng bộ hóa (SYNC)', value: 'SYNC' },
+            ],
+        },
+        {
+            name: 'statusCode',
+            label: 'Mã phản hồi HTTP',
+            type: 'select',
+            options: [
+                { label: 'Tất cả mã HTTP', value: '' },
+                { label: '2xx - Thành công (200, 201)', value: '2xx', dotColor: 'bg-emerald-500' },
+                { label: '4xx - Lỗi Client (400, 401, 403, 404)', value: '4xx', dotColor: 'bg-amber-500' },
+                { label: '5xx - Lỗi Server (500, 504)', value: '5xx', dotColor: 'bg-rose-500' },
+                { label: '200 OK', value: '200' },
+                { label: '201 Created', value: '201' },
+                { label: '401 Unauthorized', value: '401' },
+                { label: '403 Forbidden', value: '403' },
+                { label: '404 Not Found', value: '404' },
+                { label: '500 Server Error', value: '500' },
+                { label: '504 Gateway Timeout', value: '504' },
+            ],
+        },
+        {
+            name: 'role',
+            label: 'Vai trò tài khoản',
+            type: 'select',
+            options: [
+                { label: 'Tất cả vai trò', value: '' },
+                { label: 'Quản trị viên (ADMIN)', value: 'ADMIN' },
+                { label: 'Quản lý (MANAGER)', value: 'MANAGER' },
+                { label: 'Nhân viên bán hàng (STAFF_SALES)', value: 'STAFF_SALES' },
+                { label: 'Nhân viên kho (STAFF_WAREHOUSE)', value: 'STAFF_WAREHOUSE' },
+                { label: 'Kỹ thuật viên (STAFF_TECH)', value: 'STAFF_TECH' },
+                { label: 'Dịch vụ Hệ thống (SYSTEM)', value: 'SYSTEM' },
+                { label: 'Khách / Ẩn danh (GUEST)', value: 'GUEST' },
             ],
         },
         {
             name: 'dateRange',
-            label: 'Khoảng thời gian',
+            label: 'Khoảng thời gian nhanh',
             type: 'select',
             options: [
                 { label: 'Tất cả thời gian', value: '' },
@@ -436,6 +553,16 @@ export default function SystemLogList() {
                 { label: '7 ngày gần nhất', value: '7days' },
                 { label: '30 ngày gần nhất', value: '30days' },
             ],
+        },
+        {
+            name: 'startDate',
+            label: 'Từ ngày',
+            type: 'date',
+        },
+        {
+            name: 'endDate',
+            label: 'Đến ngày',
+            type: 'date',
         },
     ];
 
@@ -727,6 +854,13 @@ export default function SystemLogList() {
                             icon: Code2,
                             onClick: () => handleCopy(JSON.stringify(log, null, 2), 'Dữ liệu JSON log'),
                         },
+                        {
+                            key: 'delete-log',
+                            label: 'Xóa bản ghi này',
+                            icon: Trash2,
+                            variant: 'danger',
+                            onClick: () => handleRequestDeleteSingle(log),
+                        },
                     ]}
                 />
             ),
@@ -741,13 +875,50 @@ export default function SystemLogList() {
         ...(detailLog?.errorMessage ? [{ id: 'error', label: 'Thông tin lỗi & Trace', icon: AlertTriangle }] : []),
     ];
 
-    // Calculate module counts for quick breakdown
-    const moduleCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
+    // Analytics chart data calculations
+    const chartAnalytics = useMemo(() => {
+        // Module distribution
+        const moduleMap: Record<string, number> = {};
+        const levelMap: Record<string, number> = {
+            SUCCESS: 0,
+            INFO: 0,
+            WARNING: 0,
+            ERROR: 0,
+            CRITICAL: 0,
+        };
+
+        // Timeline distribution (group by hours or day slices)
+        const timelineMap: Record<string, { time: string; total: number; success: number; error: number }> = {};
+
         for (const item of logs) {
-            counts[item.module] = (counts[item.module] || 0) + 1;
+            moduleMap[item.module] = (moduleMap[item.module] || 0) + 1;
+            if (levelMap[item.level] !== undefined) {
+                levelMap[item.level]++;
+            }
+
+            // Timeline key
+            const d = new Date(item.timestamp);
+            const key = d.toLocaleDateString('vi-VN', { month: '2-digit', day: '2-digit' });
+            if (!timelineMap[key]) {
+                timelineMap[key] = { time: key, total: 0, success: 0, error: 0 };
+            }
+            timelineMap[key].total++;
+            if (item.level === 'SUCCESS' || item.level === 'INFO') {
+                timelineMap[key].success++;
+            } else if (item.level === 'ERROR' || item.level === 'CRITICAL' || item.level === 'WARNING') {
+                timelineMap[key].error++;
+            }
         }
-        return counts;
+
+        const pieData = Object.entries(moduleMap).map(([name, value]) => ({
+            name,
+            value,
+            color: MODULE_COLORS[name] || '#3b82f6',
+        }));
+
+        const timelineData = Object.values(timelineMap).slice(-7);
+
+        return { pieData, timelineData, levelMap };
     }, [logs]);
 
     return (
@@ -794,7 +965,7 @@ export default function SystemLogList() {
                         type="button"
                         onClick={() => loadLogs()}
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
                         title="Tải lại dữ liệu"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
@@ -805,7 +976,7 @@ export default function SystemLogList() {
                     <button
                         type="button"
                         onClick={() => setShowAnalytics(!showAnalytics)}
-                        className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-xs rounded-xl border shadow-sm transition-colors ${
+                        className={`flex items-center gap-1.5 px-3 py-2 font-semibold text-xs rounded-xl border shadow-sm transition-colors cursor-pointer ${
                             showAnalytics
                                 ? 'bg-blue-50 text-blue-700 border-blue-200'
                                 : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
@@ -813,7 +984,7 @@ export default function SystemLogList() {
                         title="Xem biểu đồ phân tích"
                     >
                         <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Thống kê</span>
+                        <span>Biểu đồ thống kê</span>
                     </button>
 
                     {/* Export Dropdown / Buttons */}
@@ -821,7 +992,7 @@ export default function SystemLogList() {
                         <button
                             type="button"
                             onClick={handleExportCsv}
-                            className="flex items-center gap-1 px-2.5 py-1 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg text-xs font-semibold transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                             title="Xuất file CSV"
                         >
                             <Download className="w-3 h-3" />
@@ -831,7 +1002,7 @@ export default function SystemLogList() {
                         <button
                             type="button"
                             onClick={handleExportJson}
-                            className="flex items-center gap-1 px-2.5 py-1 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg text-xs font-semibold transition-colors"
+                            className="flex items-center gap-1 px-2.5 py-1 text-gray-700 hover:text-blue-600 hover:bg-blue-50/60 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                             title="Xuất file JSON"
                         >
                             <Code2 className="w-3 h-3" />
@@ -843,7 +1014,7 @@ export default function SystemLogList() {
                     <button
                         type="button"
                         onClick={() => setIsPurgeModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 shadow-sm transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 shadow-sm transition-colors cursor-pointer"
                         title="Dọn dẹp nhật ký cũ"
                     >
                         <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -854,7 +1025,7 @@ export default function SystemLogList() {
                     <button
                         type="button"
                         onClick={() => setIsAddTestModalOpen(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all hover:shadow"
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all hover:shadow cursor-pointer"
                     >
                         <Plus className="w-4 h-4 text-white" />
                         <span>Ghi log thử nghiệm</span>
@@ -933,89 +1104,111 @@ export default function SystemLogList() {
                 </div>
             </div>
 
-            {/* Collapsible Visual Analytics Widget */}
+            {/* Collapsible Visual Analytics Widget with Recharts */}
             {showAnalytics && (
-                <div className="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm space-y-4 animate-in fade-in duration-200">
+                <div className="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm space-y-6 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                         <div className="flex items-center gap-2">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
-                            <h3 className="font-bold text-sm text-gray-900">Phân Tích Hoạt Động & Phân Bổ Sự Kiện</h3>
+                            <div>
+                                <h3 className="font-bold text-sm text-gray-900">Phân Tích Trực Quan Hoạt Động & Sự Kiện</h3>
+                                <p className="text-[11px] text-gray-400">Biểu đồ thể hiện phân bổ sự kiện theo phân hệ và xu hướng hoạt động</p>
+                            </div>
                         </div>
                         <button
                             type="button"
                             onClick={() => setShowAnalytics(false)}
-                            className="text-xs text-gray-400 hover:text-gray-600"
+                            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
                         >
-                            Đóng biểu đồ
+                            Đóng biểu đồ ✕
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Module Distribution Bar Cards */}
-                        <div className="space-y-3">
-                            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Phân bổ theo phân hệ nghiệp vụ
-                            </p>
-                            <div className="space-y-2">
-                                {Object.entries(moduleCounts).map(([mod, count]) => {
-                                    const percent = logs.length > 0 ? Math.round((count / logs.length) * 100) : 0;
-                                    return (
-                                        <div key={mod} className="space-y-1">
-                                            <div className="flex items-center justify-between text-xs">
-                                                <span className="font-semibold text-gray-700">{mod}</span>
-                                                <span className="text-gray-500 font-mono">{count} log ({percent}%)</span>
-                                            </div>
-                                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-blue-600 rounded-full transition-all duration-500"
-                                                    style={{ width: `${percent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* 1. Module Distribution Chart */}
+                        <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-3">
+                            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <Layers className="w-4 h-4 text-blue-600" />
+                                <span>Phân bổ nhật ký theo phân hệ nghiệp vụ</span>
+                            </h4>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={chartAnalytics.pieData}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={55}
+                                            outerRadius={85}
+                                            paddingAngle={3}
+                                        >
+                                            {chartAnalytics.pieData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            formatter={(value) => [`${value} sự kiện`, 'Số lượng']}
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px' }}
+                                        />
+                                        <Legend
+                                            verticalAlign="bottom"
+                                            height={36}
+                                            iconType="circle"
+                                            wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
 
-                        {/* Level Distribution */}
-                        <div className="space-y-3">
-                            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Tỷ lệ theo mức độ nghiêm trọng
-                            </p>
-                            <div className="grid grid-cols-2 gap-3 pt-1">
-                                <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
-                                    <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1">
-                                        <CheckCircle2 className="w-3.5 h-3.5" /> Thành công
-                                    </div>
-                                    <p className="text-lg font-bold text-emerald-700">{stats.successCount}</p>
-                                    <p className="text-[10px] text-emerald-600">Các thao tác ghi nhận chuẩn xác</p>
-                                </div>
-
-                                <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-100">
-                                    <div className="flex items-center gap-1.5 text-blue-700 font-bold text-xs mb-1">
-                                        <Zap className="w-3.5 h-3.5" /> Thông tin (Info)
-                                    </div>
-                                    <p className="text-lg font-bold text-blue-700">
-                                        {logs.filter((l) => l.level === 'INFO').length}
-                                    </p>
-                                    <p className="text-[10px] text-blue-600">Đăng nhập, xuất báo cáo...</p>
-                                </div>
-
-                                <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-100">
-                                    <div className="flex items-center gap-1.5 text-amber-700 font-bold text-xs mb-1">
-                                        <AlertTriangle className="w-3.5 h-3.5" /> Cảnh báo
-                                    </div>
-                                    <p className="text-lg font-bold text-amber-700">{stats.warningCount}</p>
-                                    <p className="text-[10px] text-amber-600">Nhập sai pass, hoàn hàng...</p>
-                                </div>
-
-                                <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100">
-                                    <div className="flex items-center gap-1.5 text-rose-700 font-bold text-xs mb-1">
-                                        <XCircle className="w-3.5 h-3.5" /> Lỗi & Nghiêm trọng
-                                    </div>
-                                    <p className="text-lg font-bold text-rose-700">{stats.errorCount + stats.criticalCount}</p>
-                                    <p className="text-[10px] text-rose-600">Gateway timeout, port scan...</p>
-                                </div>
+                        {/* 2. Timeline Activity Trend */}
+                        <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-3">
+                            <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <Activity className="w-4 h-4 text-emerald-600" />
+                                <span>Xu hướng sự kiện gần đây (Thành công vs Cảnh báo/Lỗi)</span>
+                            </h4>
+                            <div className="h-64 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartAnalytics.timelineData}>
+                                        <defs>
+                                            <linearGradient id="colorSuccess" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            </linearGradient>
+                                            <linearGradient id="colorError" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                                                <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                        <XAxis dataKey="time" tick={{ fontSize: 11 }} />
+                                        <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '11px' }}
+                                        />
+                                        <Legend wrapperStyle={{ fontSize: '11px' }} />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="success"
+                                            name="Thành công / Info"
+                                            stroke="#10b981"
+                                            strokeWidth={2}
+                                            fillOpacity={1}
+                                            fill="url(#colorSuccess)"
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="error"
+                                            name="Cảnh báo / Lỗi"
+                                            stroke="#f43f5e"
+                                            strokeWidth={2}
+                                            fillOpacity={1}
+                                            fill="url(#colorError)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
                     </div>
@@ -1042,7 +1235,7 @@ export default function SystemLogList() {
                                 setQuickTab(tab.id);
                                 setCurrentPage(1);
                             }}
-                            className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all ${
+                            className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all cursor-pointer ${
                                 isActive
                                     ? 'border-blue-600 text-blue-600 bg-blue-50/50 rounded-t-lg'
                                     : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
@@ -1076,7 +1269,7 @@ export default function SystemLogList() {
                 }}
                 onReset={() => {
                     setSearchQuery('');
-                    setFilterValues({ level: '', module: '', action: '', dateRange: '' });
+                    setFilterValues({ level: '', module: '', action: '', statusCode: '', role: '', dateRange: '', startDate: '', endDate: '' });
                     setQuickTab('ALL');
                     setCurrentPage(1);
                 }}
@@ -1093,14 +1286,21 @@ export default function SystemLogList() {
                         <button
                             type="button"
                             onClick={handleExportCsv}
-                            className="px-2.5 py-1 bg-white hover:bg-gray-50 text-blue-700 font-semibold border border-blue-200 rounded-lg shadow-sm"
+                            className="px-2.5 py-1 bg-white hover:bg-gray-50 text-blue-700 font-semibold border border-blue-200 rounded-lg shadow-sm cursor-pointer"
                         >
-                            Xuất CSV các dòng đã chọn
+                            Xuất CSV đã chọn
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsBatchDeleteModalOpen(true)}
+                            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg shadow-sm cursor-pointer"
+                        >
+                            Xóa các mục đã chọn
                         </button>
                         <button
                             type="button"
                             onClick={() => setSelectedLogIds([])}
-                            className="px-2 py-1 text-gray-500 hover:text-gray-800"
+                            className="px-2 py-1 text-gray-500 hover:text-gray-800 cursor-pointer"
                         >
                             Bỏ chọn
                         </button>
@@ -1108,18 +1308,18 @@ export default function SystemLogList() {
                 </div>
             )}
 
-            {/* Standard AdminTable */}
+            {/* Standard AdminTable with sliced pagination data */}
             <AdminTable
                 columns={tableColumns}
-                data={logs}
+                data={paginatedLogs}
                 rowKey="id"
                 loading={loading}
                 selectable
                 selectedKeys={selectedLogIds}
                 onSelectionChange={setSelectedLogIds}
                 currentPage={currentPage}
-                totalPages={Math.ceil(logs.length / pageSize) || 1}
-                totalItems={logs.length}
+                totalPages={totalPages}
+                totalItems={totalItems}
                 pageSize={pageSize}
                 pageSizeOptions={[10, 15, 25, 50]}
                 onPageChange={(p) => setCurrentPage(p)}
@@ -1151,6 +1351,56 @@ export default function SystemLogList() {
 
                     return (
                         <div className="space-y-4">
+                            {/* Modal Header Navigation Toolbar */}
+                            <div className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-xl border border-gray-100 text-xs">
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={handlePrevLog}
+                                        disabled={currentDetailIndex <= 0}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-semibold cursor-pointer"
+                                        title="Xem log liền trước"
+                                    >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                        <span>Log trước</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNextLog}
+                                        disabled={currentDetailIndex >= logs.length - 1}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed font-semibold cursor-pointer"
+                                        title="Xem log kế tiếp"
+                                    >
+                                        <span>Log sau</span>
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                    <span className="text-gray-400 text-[11px] ml-1">
+                                        Vị trí: <strong>{currentDetailIndex + 1}</strong> / {logs.length}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopy(JSON.stringify(detailLog, null, 2), 'JSON nhật ký')}
+                                        className="flex items-center gap-1 px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                        title="Sao chép toàn bộ dữ liệu log dạng JSON"
+                                    >
+                                        <Copy className="w-3.5 h-3.5" />
+                                        <span>Sao chép JSON</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRequestDeleteSingle(detailLog)}
+                                        className="flex items-center gap-1 px-2 py-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                        title="Xóa bản ghi này"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span>Xóa log</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* TAB 1: TỔNG QUAN HOẠT ĐỘNG */}
                             {activeTab === 'overview' && (
                                 <div className="space-y-5 animate-in fade-in duration-150">
@@ -1193,7 +1443,7 @@ export default function SystemLogList() {
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <img
-                                                    src={detailLog.actor.avatar}
+                                                    src={detailLog.actor.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(detailLog.actor.fullName)}&background=2563eb&color=fff`}
                                                     alt={detailLog.actor.fullName}
                                                     className="w-11 h-11 rounded-full border border-gray-200 object-cover"
                                                 />
@@ -1337,7 +1587,7 @@ export default function SystemLogList() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopy(JSON.stringify(detailLog.requestPayload, null, 2), 'Request Payload')}
-                                                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1"
+                                                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
                                                 >
                                                     <Copy className="w-3 h-3" /> Sao chép
                                                 </button>
@@ -1359,7 +1609,7 @@ export default function SystemLogList() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopy(JSON.stringify(detailLog.responsePayload, null, 2), 'Response Payload')}
-                                                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1"
+                                                    className="text-[11px] text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
                                                 >
                                                     <Copy className="w-3 h-3" /> Sao chép
                                                 </button>
@@ -1452,7 +1702,7 @@ export default function SystemLogList() {
                             <button
                                 type="button"
                                 onClick={handleResetDefaults}
-                                className="text-blue-600 font-bold hover:underline"
+                                className="text-blue-600 font-bold hover:underline cursor-pointer"
                             >
                                 Đặt lại mặc định
                             </button>
@@ -1487,6 +1737,7 @@ export default function SystemLogList() {
                                     { label: 'Đơn hàng (ORDER)', value: 'ORDER' },
                                     { label: 'Kho vận (WAREHOUSE)', value: 'WAREHOUSE' },
                                     { label: 'Bảo hành (WARRANTY)', value: 'WARRANTY' },
+                                    { label: 'Thanh toán (PAYMENT)', value: 'PAYMENT' },
                                 ]}
                             />
                             <AdminSelect
@@ -1500,6 +1751,35 @@ export default function SystemLogList() {
                                     { label: 'WARNING (Cảnh báo)', value: 'WARNING' },
                                     { label: 'ERROR (Lỗi)', value: 'ERROR' },
                                     { label: 'CRITICAL (Nghiêm trọng)', value: 'CRITICAL' },
+                                ]}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <AdminSelect
+                                label="Hành động"
+                                required
+                                value={testLogData.action}
+                                onChange={(e) => setTestLogData({ ...testLogData, action: e.target.value as SystemLogAction })}
+                                options={[
+                                    { label: 'CREATE (Thêm mới)', value: 'CREATE' },
+                                    { label: 'UPDATE (Cập nhật)', value: 'UPDATE' },
+                                    { label: 'DELETE (Xóa bỏ)', value: 'DELETE' },
+                                    { label: 'STATUS_CHANGE (Đổi trạng thái)', value: 'STATUS_CHANGE' },
+                                    { label: 'LOGIN (Đăng nhập)', value: 'LOGIN' },
+                                    { label: 'PAYMENT_PROCESS (Thanh toán)', value: 'PAYMENT_PROCESS' },
+                                ]}
+                            />
+                            <AdminSelect
+                                label="Phương thức HTTP"
+                                value={testLogData.httpMethod}
+                                onChange={(e) => setTestLogData({ ...testLogData, httpMethod: e.target.value as any })}
+                                options={[
+                                    { label: 'POST', value: 'POST' },
+                                    { label: 'PUT', value: 'PUT' },
+                                    { label: 'PATCH', value: 'PATCH' },
+                                    { label: 'DELETE', value: 'DELETE' },
+                                    { label: 'GET', value: 'GET' },
                                 ]}
                             />
                         </div>
@@ -1533,6 +1813,38 @@ export default function SystemLogList() {
                     </div>
                 )}
             </AdminModal>
+
+            {/* MODAL 4: XÁC NHẬN XÓA 1 DÒNG LOG (CONFIRM DELETE SINGLE) */}
+            <AdminConfirmModal
+                isOpen={isDeleteSingleModalOpen}
+                onClose={() => setIsDeleteSingleModalOpen(false)}
+                onConfirm={handleConfirmDeleteSingle}
+                title="Xác nhận xóa nhật ký"
+                message={
+                    <span>
+                        Bạn có chắc chắn muốn xóa bản ghi nhật ký <strong>{logToDelete?.id}</strong>? Thao tác này không thể hoàn tác.
+                    </span>
+                }
+                variant="danger"
+                confirmText="Xóa bản ghi"
+                cancelText="Hủy bỏ"
+            />
+
+            {/* MODAL 5: XÁC NHẬN XÓA NHIỀU DÒNG LOG (CONFIRM BATCH DELETE) */}
+            <AdminConfirmModal
+                isOpen={isBatchDeleteModalOpen}
+                onClose={() => setIsBatchDeleteModalOpen(false)}
+                onConfirm={handleConfirmBatchDelete}
+                title="Xác nhận xóa hàng loạt"
+                message={
+                    <span>
+                        Bạn có chắc chắn muốn xóa <strong>{selectedLogIds.length}</strong> bản ghi nhật ký đã chọn? Thao tác này sẽ xóa vĩnh viễn dữ liệu khỏi hệ thống kiểm toán.
+                    </span>
+                }
+                variant="danger"
+                confirmText={`Xóa ${selectedLogIds.length} bản ghi`}
+                cancelText="Hủy bỏ"
+            />
         </div>
     );
 }

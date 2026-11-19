@@ -34,8 +34,8 @@ export interface SystemLogActor {
     username: string;
     fullName: string;
     role: string;
-    avatar?: string;
-    email?: string;
+    avatar?: string | null;
+    email?: string | null;
 }
 
 export interface SystemLogChangeField {
@@ -78,6 +78,8 @@ export interface SystemLogFilterParams {
     startDate?: string;
     endDate?: string;
     statusCode?: string;
+    role?: string;
+    httpMethod?: string;
 }
 
 export interface SystemLogStats {

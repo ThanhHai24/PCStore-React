@@ -55,6 +55,8 @@ import PurchasingBehaviorReportPage from './pages/admin/analytics/customers/purc
 import SpendingMetricsReportPage from './pages/admin/analytics/customers/spendingMetricsReport';
 import ShoppingHabitsReportPage from './pages/admin/analytics/customers/shoppingHabitsReport';
 import SystemLogList from './pages/admin/systemLog/list';
+import InvoiceList from './pages/admin/invoice/list';
+import PaymentManagementList from './pages/admin/payment/list';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -107,6 +109,8 @@ function App() {
               <Route path="logs" element={<SystemLogList />} />
               <Route path="system-logs" element={<SystemLogList />} />
               <Route path="log" element={<SystemLogList />} />
+              <Route path="payment" element={<PaymentManagementList />} />
+              <Route path="payments" element={<PaymentManagementList />} />
               <Route path="category" element={<CategoryList />} />
               <Route path="categories" element={<CategoryList />} />
               <Route path="brand" element={<BrandList />} />
@@ -136,6 +140,9 @@ function App() {
               <Route path="sales/orders" element={<OrderList />} />
               <Route path="order" element={<OrderList />} />
               <Route path="orders" element={<OrderList />} />
+              <Route path="sales/invoices" element={<InvoiceList />} />
+              <Route path="invoices" element={<InvoiceList />} />
+              <Route path="invoice" element={<InvoiceList />} />
               <Route path="warehouse/inventory" element={<WarehouseInventoryList />} />
               <Route path="warehouse/products" element={<WarehouseInventoryList />} />
               <Route path="inventory" element={<WarehouseInventoryList />} />

@@ -8,6 +8,7 @@ import type {
 } from '../types/auth';
 import { authService, mapAuthResponseToUser, parseJwt } from '../services/authService';
 import { refreshAccessToken } from '../services/apiClient';
+import { systemLogService } from '../services/systemLogService';
 
 interface AuthContextType {
   user: User | null;
@@ -183,6 +184,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       setUser(loggedUser);
 
+      try {
+        systemLogService.addLog({
+          actor: {
+            id: String(loggedUser.id),
+            username: loggedUser.username,
+            fullName: loggedUser.fullName || loggedUser.username,
+            role: loggedUser.role,
+            avatar: loggedUser.avatar || undefined,
+            email: loggedUser.email || undefined,
+          },
+          action: 'LOGIN',
+          actionTitle: 'Đăng nhập trang quản trị thành công',
+          module: 'AUTH',
+          level: 'SUCCESS',
+          description: `Tài khoản @${loggedUser.username} (${loggedUser.fullName || 'Người dùng'}) đã đăng nhập vào hệ thống thành công qua Bearer Token.`,
+          targetEntity: 'Phiên làm việc',
+          targetId: `SESSION-${loggedUser.id}`,
+          ipAddress: '127.0.0.1 (Client)',
+          userAgent: navigator.userAgent || 'Chrome / Windows',
+          endpoint: '/api/auth/login',
+          httpMethod: 'POST',
+          statusCode: 200,
+        });
+      } catch {
+        // ignore
+      }
+
       return loggedUser;
     } finally {
       setLoading(false);
@@ -208,12 +236,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     const currentRefresh = refreshToken;
+    const currentUser = user;
     setUser(null);
     setToken(null);
     setRefreshToken(null);
     localStorage.removeItem(STORAGE_USER_KEY);
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_REFRESH_TOKEN_KEY);
+
+    if (currentUser) {
+      try {
+        systemLogService.addLog({
+          actor: {
+            id: String(currentUser.id),
+            username: currentUser.username,
+            fullName: currentUser.fullName || currentUser.username,
+            role: currentUser.role,
+            avatar: currentUser.avatar || undefined,
+            email: currentUser.email || undefined,
+          },
+          action: 'LOGOUT',
+          actionTitle: 'Đăng xuất khỏi hệ thống',
+          module: 'AUTH',
+          level: 'INFO',
+          description: `Tài khoản @${currentUser.username} đã kết thúc phiên làm việc và đăng xuất.`,
+          targetEntity: 'Phiên làm việc',
+          targetId: `SESSION-${currentUser.id}`,
+          ipAddress: '127.0.0.1 (Client)',
+          userAgent: navigator.userAgent || 'Chrome / Windows',
+          endpoint: '/api/auth/logout',
+          httpMethod: 'POST',
+          statusCode: 200,
+        });
+      } catch {
+        // ignore
+      }
+    }
 
     if (currentRefresh) {
       authService.logout(currentRefresh).catch(() => {});

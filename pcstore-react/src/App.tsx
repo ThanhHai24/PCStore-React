@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import MainLayout from './layouts/mainLayout';
 import Home from './pages/storePage/home/home';
+import StoreProductList from './pages/storePage/products/productList';
 import ProductDetail from './pages/storePage/detail/detail';
 import BuildPc from './pages/storePage/builder/builder';
 import Cart from './pages/storePage/cart/cart';
@@ -79,6 +80,9 @@ function App() {
             {/* User Storefront Routes */}
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Home />} />
+              <Route path="products" element={<StoreProductList />} />
+              <Route path="category/:slug" element={<StoreProductList />} />
+              <Route path="search" element={<StoreProductList />} />
               <Route path="product" element={<ProductDetail />} />
               <Route path="product/:id" element={<ProductDetail />} />
               <Route path="compare" element={<ProductCompare />} />

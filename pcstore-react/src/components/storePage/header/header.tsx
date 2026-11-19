@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Search,
     MapPin,
@@ -19,216 +19,33 @@ import {
     Phone,
     PcCase,
     Truck,
-    Heart
+    Heart,
+    Clock,
+    Loader2,
+    Trash2,
+    Layers
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
 import { useWishlist } from '../../../context/WishlistContext';
 import defaultPcImg from '../../../assets/images/products/pc.jpg';
-// import { getProducts } from '../../services/productService';
-// import type { ApiProduct } from '../../types/apiProduct';
-
-interface CategoryItem {
-    id: string;
-    name: string;
-    icon: React.ReactNode;
-    subcategories: {
-        title: string;
-        items: string[];
-    }[];
-}
-
-const CATEGORIES: CategoryItem[] = [
-    {
-        id: 'pc',
-        name: 'PC',
-        icon: <PcCase className="w-4 h-4 text-blue-500" />,
-        subcategories: [
-            {
-                title: 'PC Theo Nhu Cầu',
-                items: ['PC Gaming', 'PC Đồ Họa - Render', 'PC Văn Phòng', 'PC Giả Lập - NOX', 'PC Server - Workstation'],
-            },
-            {
-                title: 'PC Theo Giá',
-                items: ['PC Dưới 10 Triệu', 'PC 10 - 20 Triệu', 'PC 20 - 40 Triệu', 'PC Cao Cấp > 50 Triệu'],
-            },
-        ],
-    },
-    {
-        id: 'mini-pc',
-        name: 'Mini PC',
-        icon: <HardDrive className="w-4 h-4 text-blue-500" />,
-        subcategories: [
-            {
-                title: 'Dòng Mini PC',
-                items: ['Intel NUC Kit', 'ASUS NUC Series', 'Mac Mini M2/M3', 'Minisforum High Performance'],
-            },
-        ],
-    },
-    {
-        id: 'pc-ai',
-        name: 'PC AI',
-        icon: <Sparkles className="w-4 h-4 text-amber-500" />,
-        subcategories: [
-            {
-                title: 'Trạm Xử Lý AI Workstation',
-                items: ['PC AI Deep Learning Dual RTX 4090', 'PC AI Large Language Model (LLM)', 'Workstation NVIDIA RTX 6000 Ada'],
-            },
-        ],
-    },
-    {
-        id: 'linh-kien-may-tinh',
-        name: 'Linh kiện PC',
-        icon: <Cpu className="w-4 h-4 text-blue-500" />,
-        subcategories: [
-            {
-                title: 'CPU - Bộ Vi Xử Lý',
-                items: ['CPU Intel', 'CPU AMD'],
-            },
-            {
-                title: 'VGA - Card Màn Hình',
-                items: ['VGA NVIDIA', 'VGA AMD', 'NVIDIA RTX 5000 Series', 'RTX 5090', 'RTX 5070', 'RTX 5060', 'RTX 3050', 'Hãng VGA', 'RTX PRO'],
-            },
-            {
-                title: 'Mainboard - Bo Mạch Chủ',
-                items: ['Mainboard Asus', 'Mainboard Gigabyte', 'Mainboard MSI', 'Mainboard ASRock', 'Mainboard Supermicro', 'Mainboard BIOSTAR'],
-            },
-            {
-                title: 'RAM - Bộ Nhớ Trong',
-                items: ['RAM DDR5', 'RAM DDR4', 'RAM 32GB', 'RAM 16GB', 'RAM theo hãng'],
-            },
-            {
-                title: 'PSU - Nguồn Máy Tính',
-                items: ['Nguồn ASUS', 'Nguồn NZXT', 'Nguồn XIGMATEK', 'Nguồn Thermaltake', 'Nguồn Super Flower', 'Nguồn Gigabyte', 'Nguồn Corsair', 'Nguồn Cooler Master', 'Nguồn Antec', 'Nguồn MSI', 'Nguồn Segotep', 'Nguồn Deepcool', 'Nguồn OCPC'],
-            },
-            {
-                title: 'CASE - Vỏ Máy Tính',
-                items: ['Case Asus', 'Case Montech', 'Case NZXT', 'Case Vitra', 'Case MSI', 'Case GIGABYTE', 'Case Jonsbo', 'Case Corsair', 'Case Cooler Master', 'Case Thermaltake', 'Case Xigmatek', 'Case Antec', 'Case MIK'],
-            },
-            {
-                title: 'Tản Nhiệt PC - COOLING',
-                items: ['Keo Tản nhiệt', 'Fan tản nhiệt', 'Tản Nhiệt nước AIO', 'Tản nhiệt khí', 'Tản nước CUSTOM'],
-            },
-        ],
-    },
-    {
-        id: 'o-cung-hdd-ssd',
-        name: 'Thiết bị lưu trữ',
-        icon: <HardDrive className="w-4 h-4 text-blue-500" />,
-        subcategories: [
-            {
-                title: 'Ổ cứng SSD',
-                items: ['SSD M.2 PCIe NVMe', 'SSD Gen 5', 'SSD Gen 4', 'SSD 1TB', 'SSD 512GB', 'SSD SATA'],
-            },
-            {
-                title: 'Ổ cứng HDD',
-                items: ['HDD 1TB', 'HDD 2TB'],
-            },
-            {
-                title: 'Chọn theo hãng',
-                items: ['Western Digital', 'Seagate', 'Samsung', 'Kingston'],
-            },
-            {
-                title: 'Chọn theo dung lượng',
-                items: ['256GB', '512GB', '1TB', '2TB', '4TB'],
-            },
-        ],
-    },
-];
-
-const HORIZONTAL_CATEGORIES = [
-    {
-        id: 'pc',
-        name: 'PC',
-        icon: <PcCase className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
-        subcategories: [
-            {
-                title: 'PC Theo Nhu Cầu',
-                items: ['PC Gaming', 'PC Đồ Họa - Render', 'PC Văn Phòng', 'PC Giả Lập - NOX', 'PC Server - Workstation'],
-            },
-            {
-                title: 'PC Theo Giá',
-                items: ['PC Dưới 10 Triệu', 'PC 10 - 20 Triệu', 'PC 20 - 40 Triệu', 'PC Cao Cấp > 50 Triệu'],
-            },
-        ],
-    },
-    {
-        id: 'mini-pc',
-        name: 'Mini PC',
-        icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
-        subcategories: [
-            {
-                title: 'Dòng Mini PC',
-                items: ['Intel NUC Kit', 'ASUS NUC Series', 'Mac Mini M2/M3', 'Minisforum High Performance'],
-            },
-        ],
-    },
-    {
-        id: 'pc-ai',
-        name: 'PC AI',
-        icon: <Sparkles className="w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors" />,
-        subcategories: [
-            {
-                title: 'Trạm Xử Lý AI Workstation',
-                items: ['PC AI Deep Learning Dual RTX 4090', 'PC AI Large Language Model (LLM)', 'Workstation NVIDIA RTX 6000 Ada'],
-            },
-        ],
-    },
-    {
-        id: 'linh-kien-may-tinh',
-        name: 'Linh Kiện PC',
-        icon: <Cpu className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
-        subcategories: [
-            {
-                title: 'CPU - Bộ Vi Xử Lý',
-                items: ['CPU Intel', 'CPU AMD'],
-            },
-            {
-                title: 'VGA - Card Màn Hình',
-                items: ['VGA NVIDIA', 'VGA AMD', 'RTX 5090', 'RTX 5070', 'RTX 5060'],
-            },
-            {
-                title: 'Mainboard - Bo Mạch Chủ',
-                items: ['Mainboard Asus', 'Mainboard Gigabyte', 'Mainboard MSI', 'Mainboard ASRock'],
-            },
-            {
-                title: 'RAM - Bộ Nhớ Trong',
-                items: ['RAM DDR5', 'RAM DDR4', 'RAM 32GB', 'RAM 16GB'],
-            },
-            {
-                title: 'PSU - Nguồn Máy Tính',
-                items: ['Nguồn ASUS', 'Nguồn Corsair', 'Nguồn Cooler Master', 'Nguồn MSI'],
-            },
-            {
-                title: 'CASE - Vỏ Máy Tính',
-                items: ['Case Asus', 'Case NZXT', 'Case MSI', 'Case Corsair'],
-            },
-        ],
-    },
-    {
-        id: 'o-cung-hdd-ssd',
-        name: 'Thiết Bị Lưu Trữ',
-        icon: <HardDrive className="w-4 h-4 text-blue-200 group-hover:text-white transition-colors" />,
-        subcategories: [
-            {
-                title: 'Ổ cứng SSD',
-                items: ['SSD M.2 PCIe NVMe', 'SSD Gen 5', 'SSD Gen 4', 'SSD 1TB', 'SSD 512GB'],
-            },
-            {
-                title: 'Ổ cứng HDD',
-                items: ['HDD 1TB', 'HDD 2TB'],
-            },
-            {
-                title: 'Chọn theo hãng',
-                items: ['Western Digital', 'Seagate', 'Samsung', 'Kingston'],
-            },
-            {
-                title: 'Chọn theo dung lượng',
-                items: ['256GB', '512GB', '1TB', '2TB', '4TB'],
-            },
-        ],
-    },
-];
+import { getProducts, getDefaultImageForProduct } from '../../../services/productService';
+import { categoryService } from '../../../services/categoryService';
+import { brandService } from '../../../services/brandService';
+import type { ProductResponse } from '../../../types/adminProduct';
+import type { CategoryTreeResponse } from '../../../types/adminCategory';
+import type { BrandResponse } from '../../../types/adminBrand';
+import {
+    PRICE_RANGES,
+    type PriceRangeOption,
+    getRecentSearches,
+    addRecentSearch,
+    removeRecentSearch,
+    clearRecentSearches,
+    normalizeText,
+    collectDescendantCategoryIds,
+    productMatchesDbCategory,
+} from '../../../utils/productFilterHelper';
 
 const POPULAR_SEARCHES = [
     'RTX 4070 Super',
@@ -245,103 +62,272 @@ const SHOWROOMS = [
     { city: 'TP. Hồ Chí Minh', address: '249 Lý Thường Kiệt, Phường 15, Quận 11', phone: '0707.08.6666' },
 ];
 
-const getSubcategoryTitleLink = (title: string, parentCatSlug?: string): string => {
-    const t = title.toLowerCase();
-    if (t.includes('cpu')) return '/category/cpu-bo-vi-xu-ly';
-    if (t.includes('vga') || t.includes('card màn hình')) return '/category/vga-card-do-hoa';
-    if (t.includes('mainboard') || t.includes('bo mạch chủ')) return '/category/mainboard-bo-mach-chu';
-    if (t.includes('ram')) return '/category/ram-bo-nho-trong';
-    if (t.includes('psu') || t.includes('nguồn')) return '/category/psu-nguon-may-tinh';
-    if (t.includes('case') || t.includes('vỏ')) return '/category/case-vo-may-tinh';
-    if (t.includes('tản nhiệt')) return '/category/tan-nhiet-cpu';
-    if (t.includes('ssd') || t.includes('hdd') || t.includes('lưu trữ')) return '/category/o-cung-hdd-ssd';
-    if (t.includes('pc theo nhu cầu')) return '/category/pc';
-    if (t.includes('mini pc')) return '/category/mini-pc';
-    if (t.includes('ai workstation') || t.includes('pc ai')) return '/category/pc-ai';
+const isCategoryActive = (status: CategoryTreeResponse['status']): boolean =>
+    status !== 0 && String(status).toUpperCase() !== 'INACTIVE';
 
-    if (parentCatSlug) return `/category/${parentCatSlug}`;
-    return '/products';
+const filterActiveCategoryTree = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] =>
+    nodes
+        .filter((node) => isCategoryActive(node.status))
+        .map((node) => ({
+            ...node,
+            children: node.children ? filterActiveCategoryTree(node.children) : [],
+        }));
+
+const getCategoryLink = (cat: Pick<CategoryTreeResponse, 'id' | 'slug'>): string =>
+    cat.slug ? `/category/${cat.slug}` : `/products?categoryId=${cat.id}`;
+
+const getCategoryPriceLink = (
+    cat: Pick<CategoryTreeResponse, 'id' | 'slug'>,
+    range: PriceRangeOption
+): string => {
+    const params = new URLSearchParams();
+    if (!cat.slug) params.set('categoryId', String(cat.id));
+    if (range.min !== undefined) params.set('minPrice', String(range.min));
+    if (range.max !== undefined) params.set('maxPrice', String(range.max));
+    const basePath = cat.slug ? `/category/${cat.slug}` : '/products';
+    return `${basePath}?${params.toString()}`;
 };
 
-const getItemLink = (item: string, parentCatSlug?: string, subTitle?: string): string => {
-    const itemLower = item.toLowerCase();
+const getCategoryBrandLink = (
+    cat: Pick<CategoryTreeResponse, 'id' | 'slug'>,
+    brandId: number
+): string => {
+    const params = new URLSearchParams();
+    if (!cat.slug) params.set('categoryId', String(cat.id));
+    params.set('brandId', String(brandId));
+    const basePath = cat.slug ? `/category/${cat.slug}` : '/products';
+    return `${basePath}?${params.toString()}`;
+};
 
-    if (itemLower === 'pc gaming') return '/category/pc-gaming';
-    if (itemLower === 'pc đồ họa - render' || itemLower === 'pc đồ họa') return '/category/pc-do-hoa';
-    if (itemLower === 'pc văn phòng') return '/category/pc-van-phong';
-    if (itemLower === 'pc ai' || itemLower.includes('pc ai')) return '/category/pc-ai';
-    if (itemLower === 'mini pc' || itemLower.includes('mini pc')) return '/category/mini-pc';
+const getCategoryIcon = (cat: Pick<CategoryTreeResponse, 'name' | 'slug'>, variant: 'menu' | 'bar') => {
+    const text = normalizeText(`${cat.name} ${cat.slug}`);
+    const cls =
+        variant === 'bar'
+            ? 'w-4 h-4 text-blue-200 group-hover:text-white transition-colors'
+            : 'w-4 h-4 text-blue-500';
 
-    if (itemLower.includes('dưới 10 triệu')) return '/products?categoryId=pc&maxPrice=10000000';
-    if (itemLower.includes('10 - 20 triệu')) return '/products?categoryId=pc&minPrice=10000000&maxPrice=20000000';
-    if (itemLower.includes('20 - 40 triệu')) return '/products?categoryId=pc&minPrice=20000000&maxPrice=40000000';
-    if (itemLower.includes('cao cấp > 50 triệu') || itemLower.includes('trên 50 triệu')) return '/products?categoryId=pc&minPrice=50000000';
-
-    if (subTitle) {
-        const sTitle = subTitle.toLowerCase();
-        if (sTitle.includes('cpu')) return `/category/cpu-bo-vi-xu-ly?search=${encodeURIComponent(item.replace(/^cpu\s+/i, ''))}`;
-        if (sTitle.includes('vga')) return `/category/vga-card-do-hoa?search=${encodeURIComponent(item.replace(/^vga\s+/i, ''))}`;
-        if (sTitle.includes('mainboard')) return `/category/mainboard-bo-mach-chu?search=${encodeURIComponent(item.replace(/^mainboard\s+/i, ''))}`;
-        if (sTitle.includes('ram')) return `/category/ram-bo-nho-trong?search=${encodeURIComponent(item.replace(/^ram\s+/i, ''))}`;
-        if (sTitle.includes('psu') || sTitle.includes('nguồn')) return `/category/psu-nguon-may-tinh?search=${encodeURIComponent(item.replace(/^nguồn\s+/i, ''))}`;
-        if (sTitle.includes('case') || sTitle.includes('vỏ')) return `/category/case-vo-may-tinh?search=${encodeURIComponent(item.replace(/^case\s+/i, ''))}`;
-        if (sTitle.includes('tản nhiệt')) return `/category/tan-nhiet-cpu?search=${encodeURIComponent(item)}`;
-        if (sTitle.includes('ssd') || sTitle.includes('hdd')) return `/category/o-cung-hdd-ssd?search=${encodeURIComponent(item)}`;
+    if (text.includes('ai')) {
+        return (
+            <Sparkles
+                className={
+                    variant === 'bar'
+                        ? 'w-4 h-4 text-amber-300 group-hover:text-amber-200 transition-colors'
+                        : 'w-4 h-4 text-amber-500'
+                }
+            />
+        );
     }
-
-    if (parentCatSlug) {
-        return `/category/${parentCatSlug}?search=${encodeURIComponent(item)}`;
+    if (text.includes('ssd') || text.includes('hdd') || text.includes('o cung') || text.includes('luu tru') || text.includes('mini')) {
+        return <HardDrive className={cls} />;
     }
-    return `/products?search=${encodeURIComponent(item)}`;
+    if (text.includes('cpu') || text.includes('linh kien') || text.includes('vga') || text.includes('ram') || text.includes('main')) {
+        return <Cpu className={cls} />;
+    }
+    if (text.includes('pc') || text.includes('may tinh')) {
+        return <PcCase className={cls} />;
+    }
+    return <Layers className={cls} />;
 };
 
 export const Header: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { totalItems, items, totalPrice } = useCart();
     const { totalFavorites } = useWishlist();
     const { user } = useAuth();
     const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [activeCategory, setActiveCategory] = useState<CategoryItem | null>(null);
-    const [activeHorizontalCategory, setActiveHorizontalCategory] = useState<typeof HORIZONTAL_CATEGORIES[0] | null>(null);
+    const [dbCategories, setDbCategories] = useState<CategoryTreeResponse[]>([]);
+    const [dbBrands, setDbBrands] = useState<BrandResponse[]>([]);
+    const [catalogProducts, setCatalogProducts] = useState<ProductResponse[]>([]);
+    const [activeCategory, setActiveCategory] = useState<CategoryTreeResponse | null>(null);
+    const [activeHorizontalCategory, setActiveHorizontalCategory] = useState<CategoryTreeResponse | null>(null);
     const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
     const [isLocationOpen, setIsLocationOpen] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    // const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
-    // const [searchResults, setSearchResults] = useState<ApiProduct[]>([]);
-    // const [isSearchLoading, setIsSearchLoading] = useState(false);
+    const [searchResults, setSearchResults] = useState<ProductResponse[]>([]);
+    const [searchTotal, setSearchTotal] = useState(0);
+    const [loadedQuery, setLoadedQuery] = useState('');
+    const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
+
+    // Tải cây danh mục, thương hiệu và sản phẩm từ DB để tính Top 10 hãng theo từng danh mục
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadHeaderCatalog = async () => {
+            const [treeRes, brandsRes, firstProductsRes] = await Promise.allSettled([
+                categoryService.getCategoryTree(),
+                brandService.getBrands(),
+                getProducts({ page: 0, size: 100, sort: ['id,desc'] }),
+            ]);
+
+            if (cancelled) return;
+
+            // 1. Categories
+            let resolvedTree: CategoryTreeResponse[] = [];
+            if (treeRes.status === 'fulfilled' && Array.isArray(treeRes.value) && treeRes.value.length > 0) {
+                resolvedTree = filterActiveCategoryTree(treeRes.value);
+            } else {
+                try {
+                    const flatRes = await categoryService.getCategories();
+                    if (!cancelled && flatRes?.content) {
+                        const active = flatRes.content.filter((c) => isCategoryActive(c.status));
+                        const nodeMap = new Map<number, CategoryTreeResponse>();
+                        active.forEach((c) => {
+                            nodeMap.set(c.id, {
+                                id: c.id,
+                                name: c.name,
+                                slug: c.slug,
+                                description: c.description,
+                                status: c.status,
+                                parentId: c.parentId,
+                                children: [],
+                            });
+                        });
+                        const roots: CategoryTreeResponse[] = [];
+                        nodeMap.forEach((node) => {
+                            if (node.parentId != null && nodeMap.has(node.parentId)) {
+                                nodeMap.get(node.parentId)!.children!.push(node);
+                            } else {
+                                roots.push(node);
+                            }
+                        });
+                        resolvedTree = roots;
+                    }
+                } catch (err) {
+                    console.error('Lỗi tải danh mục cho Header:', err);
+                }
+            }
+            if (!cancelled) {
+                setDbCategories(resolvedTree);
+            }
+
+            // 2. Brands
+            if (brandsRes.status === 'fulfilled' && brandsRes.value?.content) {
+                const activeBrands = brandsRes.value.content.filter((b) => b.status !== 0 && !b.isDeleted);
+                if (!cancelled) setDbBrands(activeBrands);
+            }
+
+            // 3. Products (for top-10 brand counts per category)
+            if (firstProductsRes.status === 'fulfilled' && firstProductsRes.value?.content) {
+                let allProds = firstProductsRes.value.content;
+                const totalPages = Math.min(firstProductsRes.value.totalPages || 1, 5);
+                if (totalPages > 1) {
+                    const extraPromises = [];
+                    for (let p = 1; p < totalPages; p++) {
+                        extraPromises.push(getProducts({ page: p, size: 100, sort: ['id,desc'] }));
+                    }
+                    const extraResults = await Promise.allSettled(extraPromises);
+                    extraResults.forEach((r) => {
+                        if (r.status === 'fulfilled' && r.value?.content) {
+                            allProds = [...allProds, ...r.value.content];
+                        }
+                    });
+                }
+                const visibleProds = allProds.filter((p) => String(p.status).toUpperCase() !== 'INACTIVE');
+                if (!cancelled) setCatalogProducts(visibleProds);
+            }
+        };
+
+        loadHeaderCatalog();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    // Lấy tối đa 10 hãng có nhiều sản phẩm nhất trong 1 danh mục (bao gồm danh mục con)
+    const getTopBrandsForCategory = useCallback(
+        (cat: CategoryTreeResponse, limit = 10): { brand: BrandResponse; count: number }[] => {
+            if (dbBrands.length === 0 || catalogProducts.length === 0) return [];
+            const catIds = collectDescendantCategoryIds(cat.id, dbCategories, []);
+            const counts = new Map<number, number>();
+
+            for (const prod of catalogProducts) {
+                if (prod.brandId && productMatchesDbCategory(prod, catIds)) {
+                    counts.set(prod.brandId, (counts.get(prod.brandId) || 0) + 1);
+                }
+            }
+
+            return dbBrands
+                .map((brand) => ({ brand, count: counts.get(brand.id) || 0 }))
+                .filter((entry) => entry.count > 0)
+                .sort((a, b) => b.count - a.count || a.brand.name.localeCompare(b.brand.name, 'vi'))
+                .slice(0, limit);
+        },
+        [dbBrands, catalogProducts, dbCategories]
+    );
+
+    const isListingRoute =
+        location.pathname.startsWith('/products') ||
+        location.pathname.startsWith('/category') ||
+        location.pathname.startsWith('/search');
+    const routeSearchKey = isListingRoute ? `${location.pathname}${location.search}` : '';
+    const [prevRouteSearchKey, setPrevRouteSearchKey] = useState(routeSearchKey);
+
+    // Đồng bộ ô tìm kiếm với URL khi người dùng điều hướng sang trang danh sách / tìm kiếm
+    if (routeSearchKey !== prevRouteSearchKey) {
+        setPrevRouteSearchKey(routeSearchKey);
+        if (isListingRoute) {
+            const params = new URLSearchParams(location.search);
+            const urlSearch = params.get('search') || params.get('keyword') || params.get('q') || '';
+            setSearchQuery(urlSearch);
+        }
+    }
 
     const searchRef = useRef<HTMLDivElement>(null);
     const categoryRef = useRef<HTMLDivElement>(null);
-    // const userDropdownRef = useRef<HTMLDivElement>(null);
 
-    // useEffect(() => {
-    //     const query = searchQuery.trim();
-    //     if (!query) {
-    //         setSearchResults([]);
-    //         setIsSearchLoading(false);
-    //         return;
-    //     }
+    const trimmedSearchQuery = searchQuery.trim();
+    const isSearchLoading = Boolean(trimmedSearchQuery && loadedQuery !== trimmedSearchQuery);
+    const visibleSearchResults = trimmedSearchQuery && loadedQuery === trimmedSearchQuery ? searchResults : [];
+    const visibleSearchTotal = trimmedSearchQuery && loadedQuery === trimmedSearchQuery ? searchTotal : 0;
 
-    //     setIsSearchLoading(true);
-    //     const timer = setTimeout(() => {
-    //         getProducts({ search: query, limit: 6, status: 'ACTIVE' })
-    //             .then((res) => {
-    //                 setSearchResults(res.products || []);
-    //             })
-    //             .catch((err) => {
-    //                 console.error('Live search error:', err);
-    //                 setSearchResults([]);
-    //             })
-    //             .finally(() => {
-    //                 setIsSearchLoading(false);
-    //             });
-    //     }, 300);
+    // Live Search gợi ý sản phẩm theo từ khóa (debounce 300ms)
+    useEffect(() => {
+        if (!trimmedSearchQuery) {
+            return;
+        }
 
-    //     return () => clearTimeout(timer);
-    // }, [searchQuery]);
+        let cancelled = false;
+
+        const timer = setTimeout(() => {
+            getProducts({ keyword: trimmedSearchQuery, page: 0, size: 6, sort: ['id,desc'] })
+                .then((res) => {
+                    if (cancelled) return;
+                    const visible = (res.content || []).filter(
+                        (p) => String(p.status).toUpperCase() !== 'INACTIVE'
+                    );
+                    setSearchResults(visible);
+                    setSearchTotal(res.totalElements ?? visible.length);
+                    setLoadedQuery(trimmedSearchQuery);
+                })
+                .catch((err) => {
+                    if (cancelled) return;
+                    console.error('Live search error:', err);
+                    setSearchResults([]);
+                    setSearchTotal(0);
+                    setLoadedQuery(trimmedSearchQuery);
+                });
+        }, 300);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [trimmedSearchQuery]);
+
+    const handleExecuteSearch = (term: string) => {
+        const cleaned = term.trim();
+        setIsSearchOpen(false);
+        if (cleaned) {
+            setRecentSearches(addRecentSearch(cleaned));
+            navigate(`/products?search=${encodeURIComponent(cleaned)}`);
+        } else {
+            navigate('/products');
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -388,7 +374,93 @@ export const Header: React.FC = () => {
         };
     }, []);
 
-    // Reusable Mega Menu Panel Renderer
+    // Reusable columns renderer for both Mega Menu and Horizontal Category Dropdown
+    const renderCategoryDropdownColumns = (
+        category: CategoryTreeResponse,
+        onClose: () => void
+    ) => {
+        const hasChildren = Boolean(category.children && category.children.length > 0);
+        const categoryTopBrands = !hasChildren ? getTopBrandsForCategory(category, 10) : [];
+
+        return (
+            <div className="grid grid-cols-4 gap-6">
+                {hasChildren ? (
+                    category.children!.map((sub) => {
+                        const subTopBrands = getTopBrandsForCategory(sub, 10);
+                        return (
+                            <div key={sub.id} className="space-y-2">
+                                <Link
+                                    to={getCategoryLink(sub)}
+                                    onClick={onClose}
+                                    className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
+                                >
+                                    {sub.name}
+                                </Link>
+                                {subTopBrands.length > 0 && (
+                                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                                        {subTopBrands.map(({ brand, count }) => (
+                                            <li key={brand.id}>
+                                                <Link
+                                                    to={getCategoryBrandLink(sub, brand.id)}
+                                                    onClick={onClose}
+                                                    className="hover:text-blue-600 hover:underline transition-colors flex items-center justify-between gap-2 py-0.5"
+                                                >
+                                                    <span className="truncate">{brand.name}</span>
+                                                    <span className="text-[10px] text-gray-400 shrink-0">({count})</span>
+                                                </Link>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        );
+                    })
+                ) : categoryTopBrands.length > 0 ? (
+                    <div className="space-y-2">
+                        <div className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2">
+                            Chọn theo Hãng
+                        </div>
+                        <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                            {categoryTopBrands.map(({ brand, count }) => (
+                                <li key={brand.id}>
+                                    <Link
+                                        to={getCategoryBrandLink(category, brand.id)}
+                                        onClick={onClose}
+                                        className="hover:text-blue-600 hover:underline transition-colors flex items-center justify-between gap-2 py-0.5"
+                                    >
+                                        <span className="truncate">{brand.name}</span>
+                                        <span className="text-[10px] text-gray-400 shrink-0">({count})</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : null}
+
+                {/* Chọn theo khoảng giá */}
+                <div className="space-y-2">
+                    <div className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-amber-500 pl-2">
+                        Chọn theo khoảng giá
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
+                        {PRICE_RANGES.map((range) => (
+                            <li key={range.id}>
+                                <Link
+                                    to={getCategoryPriceLink(category, range)}
+                                    onClick={onClose}
+                                    className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
+                                >
+                                    {range.label}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        );
+    };
+
+    // Reusable Mega Menu Panel Renderer (strictly using DB categories & DB slugs)
     const renderMegaMenuDropdown = () => (
         <div
             onMouseLeave={() => {
@@ -398,77 +470,57 @@ export const Header: React.FC = () => {
             className="absolute left-0 top-full mt-1.5 w-[1100px] xl:w-[1250px] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 flex z-50 overflow-hidden animate-in fade-in duration-150"
         >
             {/* Left side: Category List */}
-            <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2 shrink-0">
-                {CATEGORIES.map((cat) => (
-                    <Link
-                        key={cat.id}
-                        to={`/category/${cat.id}`}
-                        onClick={() => {
-                            setIsMegaMenuOpen(false);
-                            setActiveCategory(null);
-                        }}
-                        onMouseEnter={() => setActiveCategory(cat)}
-                        className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold transition-colors text-left ${activeCategory?.id === cat.id
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                            }`}
-                    >
-                        <div className="flex items-center space-x-2.5">
-                            <span className={activeCategory?.id === cat.id ? 'text-white' : ''}>{cat.icon}</span>
-                            <span>{cat.name}</span>
-                        </div>
-                        <ChevronRight className={`w-3.5 h-3.5 ${activeCategory?.id === cat.id ? 'text-white' : 'text-gray-400'}`} />
-                    </Link>
-                ))}
+            <div className="w-1/5 bg-gray-50 border-r border-gray-200 py-2 shrink-0 max-h-[420px] overflow-y-auto">
+                {dbCategories.length === 0 ? (
+                    <div className="px-4 py-6 text-xs text-gray-400 text-center">
+                        Chưa có danh mục
+                    </div>
+                ) : (
+                    dbCategories.map((cat) => (
+                        <Link
+                            key={cat.id}
+                            to={getCategoryLink(cat)}
+                            onClick={() => {
+                                setIsMegaMenuOpen(false);
+                                setActiveCategory(null);
+                            }}
+                            onMouseEnter={() => setActiveCategory(cat)}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold transition-colors text-left ${activeCategory?.id === cat.id
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
+                                }`}
+                        >
+                            <div className="flex items-center space-x-2.5 min-w-0">
+                                <span className={activeCategory?.id === cat.id ? '[&_svg]:text-white shrink-0' : 'shrink-0'}>
+                                    {getCategoryIcon(cat, 'menu')}
+                                </span>
+                                <span className="truncate">{cat.name}</span>
+                            </div>
+                            <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${activeCategory?.id === cat.id ? 'text-white' : 'text-gray-400'}`} />
+                        </Link>
+                    ))
+                )}
             </div>
 
             {/* Right side: Subcategories Content */}
-            <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px] w-full">
+            <div className="w-4/5 p-5 bg-white overflow-y-auto max-h-[420px]">
                 {activeCategory ? (
                     <div>
                         <Link
-                            to={`/category/${activeCategory.id}`}
+                            to={getCategoryLink(activeCategory)}
                             onClick={() => {
                                 setIsMegaMenuOpen(false);
                                 setActiveCategory(null);
                             }}
                             className="flex items-center space-x-2 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
                         >
-                            <span className="text-blue-600">{activeCategory.icon}</span>
+                            <span>{getCategoryIcon(activeCategory, 'menu')}</span>
                             <span>{activeCategory.name}</span>
                         </Link>
-                        <div className="grid grid-cols-4 gap-6">
-                            {activeCategory.subcategories.map((sub, idx) => (
-                                <div key={idx} className="space-y-2">
-                                    <Link
-                                        to={getSubcategoryTitleLink(sub.title, activeCategory.id)}
-                                        onClick={() => {
-                                            setIsMegaMenuOpen(false);
-                                            setActiveCategory(null);
-                                        }}
-                                        className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
-                                    >
-                                        {sub.title}
-                                    </Link>
-                                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
-                                        {sub.items.map((item, itemIdx) => (
-                                            <li key={itemIdx}>
-                                                <Link
-                                                    to={getItemLink(item, activeCategory.id, sub.title)}
-                                                    onClick={() => {
-                                                        setIsMegaMenuOpen(false);
-                                                        setActiveCategory(null);
-                                                    }}
-                                                    className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
-                                                >
-                                                    {item}
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
+                        {renderCategoryDropdownColumns(activeCategory, () => {
+                            setIsMegaMenuOpen(false);
+                            setActiveCategory(null);
+                        })}
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 py-12">
@@ -513,12 +565,12 @@ export const Header: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             setIsMegaMenuOpen(!isMegaMenuOpen);
-                                            if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                            if (!activeCategory && dbCategories.length > 0) setActiveCategory(dbCategories[0]);
                                             setActiveHorizontalCategory(null);
                                         }}
                                         onMouseEnter={() => {
                                             setIsMegaMenuOpen(true);
-                                            if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                            if (!activeCategory && dbCategories.length > 0) setActiveCategory(dbCategories[0]);
                                             setActiveHorizontalCategory(null);
                                         }}
                                         className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider border border-white/40"
@@ -595,26 +647,35 @@ export const Header: React.FC = () => {
                         <form
                             onSubmit={(e) => {
                                 e.preventDefault();
-                                if (searchQuery.trim()) {
-                                    navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-                                    setIsSearchOpen(false);
-                                }
+                                handleExecuteSearch(searchQuery);
                             }}
                             className="relative flex items-center"
                         >
                             <input
                                 type="text"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => setIsSearchOpen(true)}
-                                placeholder="Bạn cần tìm gì?"
-                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-10 py-2 sm:py-2 rounded-2xl shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    if (!isSearchOpen) setIsSearchOpen(true);
+                                }}
+                                onFocus={() => {
+                                    setRecentSearches(getRecentSearches());
+                                    setIsSearchOpen(true);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                        setIsSearchOpen(false);
+                                    }
+                                }}
+                                placeholder="Bạn cần tìm gì? (VD: RTX 4070, Core i5, PC Gaming...)"
+                                className="w-full bg-white text-gray-900 placeholder-gray-400 text-xs sm:text-sm pl-4 pr-16 py-2 sm:py-2 rounded-2xl shadow-inner border border-transparent focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
                             />
                             {searchQuery ? (
                                 <button
                                     type="button"
                                     onClick={() => setSearchQuery('')}
-                                    className="absolute right-9 text-gray-400 hover:text-gray-600 p-1"
+                                    aria-label="Xóa từ khóa"
+                                    className="absolute right-9 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -622,51 +683,213 @@ export const Header: React.FC = () => {
                             <button
                                 type="submit"
                                 aria-label="Tìm kiếm"
-                                className="absolute right-2 text-gray-500 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                                className="absolute right-2 text-gray-500 hover:text-blue-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
                             >
                                 <Search className="w-4 h-4 sm:w-5 sm:h-5" />
                             </button>
                         </form>
                         {isSearchOpen && (
-                            <div className="absolute left-0 right-0 mt-1.5 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 text-xs animate-in fade-in slide-in-from-top-1 duration-150 max-h-[480px] overflow-y-auto">
+                            <div className="absolute left-0 right-0 mt-1.5 bg-white text-gray-800 rounded-2xl shadow-2xl border border-gray-100 p-4 z-50 text-xs animate-in fade-in slide-in-from-top-1 duration-150 max-h-[500px] overflow-y-auto">
+                                {searchQuery.trim() ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                            <span className="font-bold text-gray-900 flex items-center gap-1.5">
+                                                <Search className="w-3.5 h-3.5 text-blue-600" />
+                                                Sản phẩm gợi ý cho "{searchQuery.trim()}"
+                                            </span>
+                                            {!isSearchLoading && visibleSearchTotal > 0 && (
+                                                <span className="text-[11px] text-gray-500 font-medium">
+                                                    {visibleSearchTotal} kết quả
+                                                </span>
+                                            )}
+                                        </div>
 
-                                <div>
-                                    <div className="flex items-center space-x-1.5 font-bold text-gray-900 mb-2">
-                                        <Flame className="w-4 h-4 text-red-500" />
-                                        <span>Tìm kiếm phổ biến</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {POPULAR_SEARCHES.map((item, idx) => (
+                                        {isSearchLoading ? (
+                                            <div className="py-8 flex flex-col items-center justify-center gap-2 text-gray-500">
+                                                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                                <span>Đang tìm kiếm sản phẩm...</span>
+                                            </div>
+                                        ) : visibleSearchResults.length > 0 ? (
+                                            <div className="divide-y divide-gray-100">
+                                                {visibleSearchResults.map((item) => {
+                                                    const firstUrl = item.imageUrl?.split(';')[0]?.trim();
+                                                    const thumb =
+                                                        firstUrl && !firstUrl.includes('example.com')
+                                                            ? firstUrl
+                                                            : getDefaultImageForProduct(item);
+                                                    const priceNum = item.price != null ? Number(item.price) : 0;
+                                                    const priceStr =
+                                                        priceNum > 0
+                                                            ? `${priceNum.toLocaleString('vi-VN')}đ`
+                                                            : 'Liên hệ';
+                                                    const marketStr =
+                                                        priceNum > 0
+                                                            ? `${Math.round(priceNum * 1.15).toLocaleString('vi-VN')}đ`
+                                                            : undefined;
+                                                    const inStock = String(item.status).toUpperCase() !== 'OUT_OF_STOCK';
+
+                                                    return (
+                                                        <Link
+                                                            key={item.id}
+                                                            to={`/product/${item.id}`}
+                                                            onClick={() => {
+                                                                setRecentSearches(addRecentSearch(searchQuery.trim()));
+                                                                setIsSearchOpen(false);
+                                                            }}
+                                                            className="flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-xl hover:bg-blue-50/70 transition-colors group"
+                                                        >
+                                                            <div className="w-12 h-12 rounded-lg border border-gray-100 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                                                <img
+                                                                    src={thumb}
+                                                                    alt={item.name}
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.onerror = null;
+                                                                        e.currentTarget.src = defaultPcImg;
+                                                                    }}
+                                                                    className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform"
+                                                                />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-gray-800 group-hover:text-blue-700 line-clamp-1">
+                                                                    {item.name}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                                    <span className="font-extrabold text-[#d02c2c] text-xs">
+                                                                        {priceStr}
+                                                                    </span>
+                                                                    {marketStr && (
+                                                                        <span className="text-[11px] text-gray-400 line-through">
+                                                                            {marketStr}
+                                                                        </span>
+                                                                    )}
+                                                                    <span
+                                                                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${inStock
+                                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                                            : 'bg-gray-100 text-gray-500'
+                                                                            }`}
+                                                                    >
+                                                                        {inStock ? 'Còn hàng' : 'Hết hàng'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-600 shrink-0" />
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="py-6 text-center space-y-2 text-gray-500">
+                                                <p className="font-medium text-gray-700">
+                                                    Không tìm thấy sản phẩm khớp với "{searchQuery.trim()}"
+                                                </p>
+                                                <p className="text-[11px]">
+                                                    Nhấn Enter để tìm kiếm mở rộng hoặc thử từ khóa khác.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="border-t border-gray-100 pt-2.5 flex items-center justify-between text-[11px]">
+                                            <span className="text-gray-500">Nhấn Enter để lọc chi tiết</span>
                                             <button
-                                                key={idx}
                                                 type="button"
-                                                onClick={() => {
-                                                    setSearchQuery(item);
-                                                    setIsSearchOpen(false);
-                                                    navigate(`/products?search=${encodeURIComponent(item)}`);
-                                                }}
-                                                className="px-2.5 py-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-xs font-medium transition-colors border border-gray-200/60"
+                                                onClick={() => handleExecuteSearch(searchQuery)}
+                                                className="text-blue-600 font-bold hover:underline cursor-pointer"
                                             >
-                                                {item}
+                                                Xem tất cả {visibleSearchTotal > 0 ? `${visibleSearchTotal} ` : ''}kết quả →
                                             </button>
-                                        ))}
+                                        </div>
                                     </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {recentSearches.length > 0 && (
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center space-x-1.5 font-bold text-gray-900">
+                                                        <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                                        <span>Tìm kiếm gần đây</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            clearRecentSearches();
+                                                            setRecentSearches([]);
+                                                        }}
+                                                        className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" />
+                                                        Xóa tất cả
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {recentSearches.map((term, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className="inline-flex items-center rounded-full bg-blue-50/70 border border-blue-100 text-blue-700 text-xs font-medium overflow-hidden"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSearchQuery(term);
+                                                                    handleExecuteSearch(term);
+                                                                }}
+                                                                className="pl-2.5 pr-1.5 py-1 hover:bg-blue-100/70 transition-colors cursor-pointer"
+                                                            >
+                                                                {term}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                aria-label={`Xóa ${term}`}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setRecentSearches(removeRecentSearch(term));
+                                                                }}
+                                                                className="pr-2 pl-0.5 py-1 text-blue-400 hover:text-red-600 transition-colors cursor-pointer"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
-                                    <div className="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
-                                        <span className="flex items-center gap-1">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
-                                            Cam kết chính hãng 100%
-                                        </span>
-                                        <Link
-                                            to="/products"
-                                            onClick={() => setIsSearchOpen(false)}
-                                            className="text-blue-600 font-semibold cursor-pointer hover:underline"
-                                        >
-                                            Xem tất cả sản phẩm →
-                                        </Link>
+                                        <div>
+                                            <div className="flex items-center space-x-1.5 font-bold text-gray-900 mb-2">
+                                                <Flame className="w-4 h-4 text-red-500" />
+                                                <span>Tìm kiếm phổ biến</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {POPULAR_SEARCHES.map((item, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSearchQuery(item);
+                                                            handleExecuteSearch(item);
+                                                        }}
+                                                        className="px-2.5 py-1 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-xs font-medium transition-colors border border-gray-200/60 cursor-pointer"
+                                                    >
+                                                        {item}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
+                                                <span className="flex items-center gap-1">
+                                                    <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                                                    Cam kết chính hãng 100%
+                                                </span>
+                                                <Link
+                                                    to="/products"
+                                                    onClick={() => setIsSearchOpen(false)}
+                                                    className="text-blue-600 font-semibold cursor-pointer hover:underline"
+                                                >
+                                                    Xem tất cả sản phẩm →
+                                                </Link>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-
+                                )}
                             </div>
                         )}
                     </div>
@@ -916,33 +1139,38 @@ export const Header: React.FC = () => {
                                 Danh Mục Sản Phẩm
                             </div>
                             <div className="space-y-1">
-                                {CATEGORIES.map((cat) => (
-                                    <div key={cat.id} className="border-b border-gray-100 pb-1">
-                                        <Link
-                                            to={`/category/${cat.id}`}
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                            className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50 transition-colors"
-                                        >
-                                            <div className="flex items-center space-x-2">
-                                                {cat.icon}
-                                                <span>{cat.name}</span>
-                                            </div>
-                                            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                                        </Link>
-                                        <div className="pl-6 space-y-1 pb-1">
-                                            {cat.subcategories.flatMap(s => s.items.map(item => ({ item, subTitle: s.title }))).slice(0, 5).map((entry, idx) => (
-                                                <Link
-                                                    key={idx}
-                                                    to={getItemLink(entry.item, cat.id, entry.subTitle)}
-                                                    onClick={() => setIsMobileMenuOpen(false)}
-                                                    className="block text-[11px] text-gray-600 hover:text-blue-600 py-0.5 transition-colors"
-                                                >
-                                                    • {entry.item}
-                                                </Link>
-                                            ))}
+                                {dbCategories.map((cat) => {
+                                    const topBrands = getTopBrandsForCategory(cat, 10);
+                                    return (
+                                        <div key={cat.id} className="border-b border-gray-100 pb-1">
+                                            <Link
+                                                to={getCategoryLink(cat)}
+                                                onClick={() => setIsMobileMenuOpen(false)}
+                                                className="flex items-center justify-between p-2 rounded-md font-bold text-xs text-gray-800 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <div className="flex items-center space-x-2">
+                                                    {getCategoryIcon(cat, 'menu')}
+                                                    <span>{cat.name}</span>
+                                                </div>
+                                                <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                                            </Link>
+                                            {topBrands.length > 0 && (
+                                                <div className="pl-6 flex flex-wrap gap-1.5 pb-1.5">
+                                                    {topBrands.map(({ brand }) => (
+                                                        <Link
+                                                            key={brand.id}
+                                                            to={getCategoryBrandLink(cat, brand.id)}
+                                                            onClick={() => setIsMobileMenuOpen(false)}
+                                                            className="px-2 py-0.5 rounded-full bg-gray-100 text-[11px] text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                                        >
+                                                            {brand.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -963,12 +1191,12 @@ export const Header: React.FC = () => {
                             <button
                                 onClick={() => {
                                     setIsMegaMenuOpen(!isMegaMenuOpen);
-                                    if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                    if (!activeCategory && dbCategories.length > 0) setActiveCategory(dbCategories[0]);
                                     setActiveHorizontalCategory(null);
                                 }}
                                 onMouseEnter={() => {
                                     setIsMegaMenuOpen(true);
-                                    if (!activeCategory) setActiveCategory(CATEGORIES[0]);
+                                    if (!activeCategory && dbCategories.length > 0) setActiveCategory(dbCategories[0]);
                                     setActiveHorizontalCategory(null);
                                 }}
                                 className="bg-white text-[#1752e5] hover:bg-gray-100 font-bold text-xs px-3.5 py-2 rounded-md shadow flex items-center space-x-2 transition-all cursor-pointer uppercase tracking-wider"
@@ -981,21 +1209,21 @@ export const Header: React.FC = () => {
                             {isMegaMenuOpen && renderMegaMenuDropdown()}
                         </div>
 
-                        {/* HORIZONTAL CATEGORIES LINKS */}
-                        <nav className="flex-1 w-full flex items-center justify-between py-2 text-xs font-semibold ml-4 overflow-x-auto no-scrollbar gap-1">
-                            {HORIZONTAL_CATEGORIES.map((cat) => (
+                        {/* HORIZONTAL CATEGORIES LINKS (DB Categories) */}
+                        <nav className="flex-1 w-full flex items-center justify-start py-2 text-xs font-semibold ml-4 overflow-x-auto no-scrollbar gap-2">
+                            {dbCategories.slice(0, 7).map((cat) => (
                                 <div key={cat.id} className="relative">
                                     <Link
-                                        to={`/category/${cat.id}`}
+                                        to={getCategoryLink(cat)}
                                         onClick={() => setActiveHorizontalCategory(null)}
                                         onMouseEnter={() => {
                                             setIsMegaMenuOpen(false);
                                             setActiveHorizontalCategory(cat);
                                         }}
-                                        className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-white whitespace-nowrap transition-colors ${activeHorizontalCategory?.id === cat.id ? 'bg-white/20' : 'hover:bg-white/15'
+                                        className={`group flex items-center space-x-2 px-3 py-1.5 rounded-md text-white whitespace-nowrap transition-colors ${activeHorizontalCategory?.id === cat.id ? 'bg-white/20' : 'hover:bg-white/15'
                                             }`}
                                     >
-                                        {cat.icon}
+                                        {getCategoryIcon(cat, 'bar')}
                                         <span>{cat.name}</span>
                                         <ChevronDown className={`w-3 h-3 text-blue-200 transition-transform duration-200 ${activeHorizontalCategory?.id === cat.id ? 'rotate-180 text-white' : ''
                                             }`} />
@@ -1009,41 +1237,18 @@ export const Header: React.FC = () => {
                             <div className="absolute left-0 top-full pt-1.5 w-full z-50 animate-in fade-in duration-150">
                                 <div className="bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 p-6">
                                     <Link
-                                        to={`/category/${activeHorizontalCategory.id}`}
+                                        to={getCategoryLink(activeHorizontalCategory)}
                                         onClick={() => setActiveHorizontalCategory(null)}
                                         className="flex items-center space-x-2.5 pb-3 mb-4 border-b border-gray-100 font-bold text-sm text-blue-700 hover:underline"
                                     >
-                                        <span className="text-blue-600">{activeHorizontalCategory.icon}</span>
+                                        <span>{getCategoryIcon(activeHorizontalCategory, 'menu')}</span>
                                         <span className="text-base">{activeHorizontalCategory.name}</span>
                                     </Link>
 
-                                    <div className="grid grid-cols-4 gap-6 max-h-[400px] overflow-y-auto pr-2">
-                                        {activeHorizontalCategory.subcategories.map((sub, idx) => (
-                                            <div key={idx} className="space-y-2">
-                                                <Link
-                                                    to={getSubcategoryTitleLink(sub.title, activeHorizontalCategory.id)}
-                                                    onClick={() => setActiveHorizontalCategory(null)}
-                                                    className="font-bold text-xs text-gray-900 uppercase tracking-wide border-l-2 border-blue-600 pl-2 block hover:text-blue-600 transition-colors"
-                                                >
-                                                    {sub.title}
-                                                </Link>
-                                                {sub.items && sub.items.length > 0 && (
-                                                    <ul className="space-y-1.5 text-xs text-gray-600 pl-2">
-                                                        {sub.items.map((item, itemIdx) => (
-                                                            <li key={itemIdx}>
-                                                                <Link
-                                                                    to={getItemLink(item, activeHorizontalCategory.id, sub.title)}
-                                                                    onClick={() => setActiveHorizontalCategory(null)}
-                                                                    className="hover:text-blue-600 hover:underline transition-colors block py-0.5"
-                                                                >
-                                                                    {item}
-                                                                </Link>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </div>
-                                        ))}
+                                    <div className="max-h-[400px] overflow-y-auto pr-2">
+                                        {renderCategoryDropdownColumns(activeHorizontalCategory, () =>
+                                            setActiveHorizontalCategory(null)
+                                        )}
                                     </div>
                                 </div>
                             </div>

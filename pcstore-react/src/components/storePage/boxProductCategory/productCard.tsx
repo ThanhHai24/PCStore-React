@@ -123,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
                     {/* Price & Discount */}
                     <div className="mt-2">
-                        <div className="flex items-center gap-1.5 min-h-[20px]">
+                        {/* <div className="flex items-center gap-1.5 min-h-[20px]">
                             {marketPrice && marketPrice !== price && (
                                 <span className="text-xs text-gray-400 line-through font-normal">
                                     {marketPrice}
@@ -134,14 +134,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                                     {discountPercent}
                                 </span>
                             )}
-                        </div>
+                        </div> */}
                         <div className="text-[#d02c2c] text-lg font-bold tracking-tight mt-0.5">
                             {price}
                         </div>
                     </div>
 
                     {/* Promotion detail */}
-                    <div className="mt-1.5 text-[12px] text-gray-600 leading-snug line-clamp-2 min-h-[34px]">
+                    {/* <div className="mt-1.5 text-[12px] text-gray-600 leading-snug line-clamp-2 min-h-[34px]">
                         {typeof promotion === "string" ? (
                             promotion
                         ) : promotion ? (
@@ -171,7 +171,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                                 <span>{promotion.suffix}</span>
                             </>
                         ) : null}
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Stock Status & Quick Add Button */}
@@ -186,11 +186,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         onClick={handleQuickAddToCart}
                         disabled={!inStock}
                         title={inStock ? "Thêm vào giỏ hàng" : "Hết hàng"}
-                        className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${
-                            inStock
-                                ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white shadow-sm active:scale-90 cursor-pointer'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}
+                        className={`p-1.5 rounded-lg flex items-center justify-center transition-all ${inStock
+                            ? 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white shadow-sm active:scale-90 cursor-pointer'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                         aria-label="Thêm vào giỏ hàng"
                     >
                         <ShoppingCart className="w-3.5 h-3.5" />

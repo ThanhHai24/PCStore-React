@@ -64,7 +64,10 @@ export const Home: React.FC = () => {
     const [vgaProducts, setVgaProducts] = useState<ProductCardProps[]>([]);
     const [ramProducts, setRamProducts] = useState<ProductCardProps[]>([]);
     const [cpuProducts, setCpuProducts] = useState<ProductCardProps[]>([]);
-    const [linhKienProducts, setLinhKienProducts] = useState<ProductCardProps[]>([]);
+    const [manHinhProducts, setManHinhProducts] = useState<ProductCardProps[]>([]);
+    const [phuKienProducts, setPhuKienProducts] = useState<ProductCardProps[]>([]);
+    const [manHinhLink, setManHinhLink] = useState<string>('/category/man-hinh');
+    const [phuKienLink, setPhuKienLink] = useState<string>('/category/phu-kien');
     const [allProductsCount, setAllProductsCount] = useState<number>(0);
 
     const fetchHomeData = useCallback(async () => {
@@ -78,12 +81,30 @@ export const Home: React.FC = () => {
                 getProducts({ size: 100, sort: ['id,desc'] }),
             ]);
 
-            // Xây dựng map ID danh mục -> tên danh mục
+            // Xây dựng map ID danh mục -> tên danh mục & lấy slug thật từ DB cho Màn hình / Phụ kiện
             const categoryMap = new Map<number, string>();
             if (categoriesRes.status === 'fulfilled' && categoriesRes.value?.content) {
                 categoriesRes.value.content.forEach((cat) => {
                     categoryMap.set(cat.id, cat.name);
                 });
+
+                const dbManHinh = categoriesRes.value.content.find((cat) => {
+                    const nameLower = (cat.name || '').toLowerCase();
+                    const slugLower = (cat.slug || '').toLowerCase();
+                    return nameLower.includes('màn hình') || slugLower.includes('man-hinh') || slugLower.includes('monitor');
+                });
+                if (dbManHinh?.slug) {
+                    setManHinhLink(`/category/${dbManHinh.slug}`);
+                }
+
+                const dbPhuKien = categoriesRes.value.content.find((cat) => {
+                    const nameLower = (cat.name || '').toLowerCase();
+                    const slugLower = (cat.slug || '').toLowerCase();
+                    return nameLower.includes('phụ kiện') || slugLower.includes('phu-kien');
+                });
+                if (dbPhuKien?.slug) {
+                    setPhuKienLink(`/category/${dbPhuKien.slug}`);
+                }
             }
 
             if (productsRes.status === 'rejected') {
@@ -109,7 +130,8 @@ export const Home: React.FC = () => {
             const vgaList: ProductCardProps[] = [];
             const ramList: ProductCardProps[] = [];
             const cpuList: ProductCardProps[] = [];
-            const linhKienList: ProductCardProps[] = [];
+            const manHinhList: ProductCardProps[] = [];
+            const phuKienList: ProductCardProps[] = [];
 
             rawProducts.forEach((prod) => {
                 const prodName = (prod.name || '').toLowerCase();
@@ -124,6 +146,17 @@ export const Home: React.FC = () => {
                 // Laptop
                 if (prodType === 'LAPTOP' || text.includes('laptop') || primaryCat.includes('laptop')) {
                     laptopList.push(card);
+                    return;
+                }
+
+                // Màn hình máy tính
+                if (
+                    primaryCat.includes('màn hình') ||
+                    allCats.includes('màn hình') ||
+                    text.includes('màn hình') ||
+                    text.includes('monitor')
+                ) {
+                    manHinhList.push(card);
                     return;
                 }
 
@@ -184,8 +217,8 @@ export const Home: React.FC = () => {
                     return;
                 }
 
-                // Linh kiện khác (Mainboard, SSD, Màn hình, Case, Nguồn, Phụ kiện...)
-                linhKienList.push(card);
+                // Phụ kiện máy tính (Bàn phím, Chuột, Tai nghe, Loa, Webcam, Phụ kiện khác...)
+                phuKienList.push(card);
             });
 
             setPcGamingProducts(gamingList);
@@ -196,7 +229,8 @@ export const Home: React.FC = () => {
             setVgaProducts(vgaList);
             setRamProducts(ramList);
             setCpuProducts(cpuList);
-            setLinhKienProducts(linhKienList);
+            setManHinhProducts(manHinhList);
+            setPhuKienProducts(phuKienList);
         } catch (err) {
             console.error('Lỗi khi tải dữ liệu sản phẩm trang chủ:', err);
             setError(err instanceof Error ? err.message : 'Đã có lỗi xảy ra khi kết nối máy chủ');
@@ -346,7 +380,6 @@ export const Home: React.FC = () => {
                             tabs={[
                                 { name: "PC Gaming", link: "/category/pc-gaming" },
                                 { name: "Bộ Nâng Cấp PC", link: "/category/bo-nang-cap-pc" },
-                                { name: "Build PC", link: "/build-pc" },
                             ]}
                             tabContent={pcGamingProducts}
                             viewAllLink="/category/pc-gaming"
@@ -356,7 +389,7 @@ export const Home: React.FC = () => {
                     {/* Box Product Category - LAPTOP & MÁY TÍNH XÁCH TAY */}
                     {laptopProducts.length > 0 && (
                         <BoxProductCategory
-                            title="LAPTOP & MÁY TÍNH XÁCH TAY"
+                            title="LAPTOP"
                             tabs={[
                                 { name: "Laptop ASUS", link: "/category/laptop?search=ASUS" },
                                 { name: "Laptop Dell", link: "/category/laptop?search=Dell" },
@@ -377,7 +410,6 @@ export const Home: React.FC = () => {
                                 { name: "Server - Máy Ảo Hóa", link: "/category/pc-do-hoa?search=Server" },
                                 { name: "Máy Tính Đồng Bộ", link: "/category/pc-do-hoa?search=Đồng%20bộ" },
                                 { name: "Máy Tính Đồ Họa", link: "/category/pc-do-hoa" },
-                                { name: "Build PC Custom", link: "/build-pc" },
                             ]}
                             tabContent={pcDoHoaProducts}
                             viewAllLink="/category/pc-do-hoa"
@@ -389,7 +421,7 @@ export const Home: React.FC = () => {
                         <BoxProductCategory
                             title="PC VĂN PHÒNG"
                             tabs={[
-                                { name: "PC Văn Phòng Giá Rẻ", link: "/category/pc-van-phong" },
+                                { name: "PC Văn Phòng", link: "/category/pc-van-phong" },
                             ]}
                             tabContent={pcVanPhongProducts}
                             viewAllLink="/category/pc-van-phong"
@@ -452,19 +484,34 @@ export const Home: React.FC = () => {
                         />
                     )}
 
-                    {/* Box Product Category - LINH KIỆN & PHỤ KIỆN */}
-                    {linhKienProducts.length > 0 && (
+                    {/* Box Product Category - MÀN HÌNH MÁY TÍNH */}
+                    {manHinhProducts.length > 0 && (
                         <BoxProductCategory
-                            title="LINH KIỆN & PHỤ KIỆN MÁY TÍNH"
+                            title="MÀN HÌNH MÁY TÍNH"
                             tabs={[
-                                { name: "Mainboard", link: "/category/mainboard-bo-mach-chu" },
-                                { name: "Ổ Cứng SSD", link: "/category/o-cung-hdd-ssd" },
-                                { name: "Màn Hình", link: "/category/man-hinh" },
-                                { name: "Nguồn Máy Tính", link: "/category/psu-nguon-may-tinh" },
-                                { name: "Vỏ Case", link: "/category/case-vo-may-tinh" },
+                                { name: "Màn Hình Gaming", link: `${manHinhLink}?search=Gaming` },
+                                { name: "Màn Hình 24 Inch", link: `${manHinhLink}?search=24` },
+                                { name: "Màn Hình 27 Inch", link: `${manHinhLink}?search=27` },
+                                { name: "Màn Hình 144Hz+", link: `${manHinhLink}?search=Hz` },
                             ]}
-                            tabContent={linhKienProducts}
-                            viewAllLink="/category/linh-kien"
+                            tabContent={manHinhProducts}
+                            viewAllLink={manHinhLink}
+                        />
+                    )}
+
+                    {/* Box Product Category - PHỤ KIỆN */}
+                    {phuKienProducts.length > 0 && (
+                        <BoxProductCategory
+                            title="PHỤ KIỆN MÁY TÍNH"
+                            tabs={[
+                                { name: "Bàn Phím", link: `${phuKienLink}?search=Bàn%20phím` },
+                                { name: "Chuột Máy Tính", link: `${phuKienLink}?search=Chuột` },
+                                { name: "Tai Nghe", link: `${phuKienLink}?search=Tai%20nghe` },
+                                { name: "Loa & Mic", link: `${phuKienLink}?search=Loa` },
+                                { name: "Phụ Kiện Khác", link: phuKienLink },
+                            ]}
+                            tabContent={phuKienProducts}
+                            viewAllLink={phuKienLink}
                         />
                     )}
                 </>

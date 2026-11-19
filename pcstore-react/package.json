@@ -16,6 +16,7 @@
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
+    "suneditor": "^3.4.3",
     "swiper": "^14.3.0",
     "tailwindcss": "^4.3.3"
   },

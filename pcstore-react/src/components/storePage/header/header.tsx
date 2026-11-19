@@ -1007,7 +1007,7 @@ export const Header: React.FC = () => {
                                                     onClick={() => setIsMiniCartOpen(false)}
                                                     className="block w-full bg-red-600 hover:bg-red-700 text-white font-extrabold py-2 px-3 rounded-xl text-center text-xs uppercase shadow transition-colors"
                                                 >
-                                                    Vào giỏ hàng & Thanh toán
+                                                    Thanh toán ngay
                                                 </Link>
                                             </>
                                         )}

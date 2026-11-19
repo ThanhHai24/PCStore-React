@@ -35,10 +35,10 @@ import {
     AdminSelect,
     AdminButton,
     AdminLabel,
-    AdminTextarea,
     AdminModalFooter,
     type ModalTab,
 } from '../../../components/admin/common/modal';
+import { SunEditorField } from '../../../components/admin/common/SunEditorField';
 import { useToast } from '../../../components/admin/common/toast';
 import { DragAndDropUpload } from '../../../components/admin/common/dragAndDropUpload';
 import { uploadImage, validateImageFile } from '../../../services/imgbbService';
@@ -1482,12 +1482,11 @@ export default function ProductList() {
                                 </AdminSelect>
                             </div>
 
-                            <AdminTextarea
+                            <SunEditorField
                                 label="Mô tả chi tiết sản phẩm"
-                                rows={4}
                                 placeholder="Nhập thông tin giới thiệu, ưu điểm công nghệ, chế độ bảo hành..."
                                 value={addForm.description}
-                                onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
+                                onChange={(html) => setAddForm((prev) => ({ ...prev, description: html }))}
                             />
                         </div>
                     )}
@@ -1658,11 +1657,11 @@ export default function ProductList() {
                                     </AdminSelect>
                                 </div>
 
-                                <AdminTextarea
+                                <SunEditorField
                                     label="Mô tả chi tiết sản phẩm"
-                                    rows={4}
+                                    placeholder="Nhập thông tin giới thiệu, ưu điểm công nghệ, chế độ bảo hành..."
                                     value={editForm.description}
-                                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                    onChange={(html) => setEditForm((prev) => (prev ? { ...prev, description: html } : null))}
                                 />
                             </div>
                         )}
@@ -1853,9 +1852,22 @@ export default function ProductList() {
                                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                                         Mô tả chi tiết sản phẩm
                                     </h4>
-                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
-                                        {selectedProduct.description}
-                                    </p>
+                                    {selectedProduct.description && selectedProduct.description.trim() ? (
+                                        /<[a-z][\s\S]*>/i.test(selectedProduct.description) ? (
+                                            <div
+                                                className="sun-editor-editable text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100"
+                                                dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+                                            />
+                                        ) : (
+                                            <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100 whitespace-pre-wrap">
+                                                {selectedProduct.description}
+                                            </p>
+                                        )
+                                    ) : (
+                                        <p className="text-sm text-gray-400 italic bg-gray-50/70 p-4 rounded-xl border border-gray-100">
+                                            Chưa có mô tả chi tiết cho sản phẩm này.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}

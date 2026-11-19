@@ -40,13 +40,14 @@ import {
 import { useToast } from '../../../components/admin/common/toast';
 import { adminWarrantyService } from '../../../services/adminWarrantyService';
 import { adminProductService } from '../../../services/adminProductService';
+import { adminUserService } from '../../../services/adminUserService';
 import type {
     WarrantyRequestItem,
     WarrantyRequestStatus,
     TechnicalHandlingUpdateInput,
 } from '../../../types/adminWarranty';
 
-const TECHNICIAN_LIST = [
+const DEFAULT_TECHNICIANS = [
     { id: 12, name: 'Trịnh Quốc Bảo (Kỹ thuật trưởng)', phone: '0981122334' },
     { id: 14, name: 'Đặng Tuấn Anh (Kỹ thuật viên phần cứng)', phone: '0977223344' },
     { id: 15, name: 'Lê Hoàng Long (Kỹ thuật viên VGA & Main)', phone: '0966334455' },
@@ -86,20 +87,47 @@ export default function TechnicalHandlingList() {
     const [status, setStatus] = useState<string>('IN_PROGRESS');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    // Spare parts quick add state
+    // Technicians & Spare parts state
+    const [technicians, setTechnicians] = useState<Array<{ id: number; name: string; phone?: string }>>(DEFAULT_TECHNICIANS);
     const [sparePartProductId, setSparePartProductId] = useState<string>('');
-    const [sparePartName, setSparePartName] = useState<string>('');
     const [sparePartQty, setSparePartQty] = useState<number>(1);
-    const [sparePartCost, setSparePartCost] = useState<number>(200000);
-    const [sparePartSerial, setSparePartSerial] = useState<string>('');
-    const [catalogProducts, setCatalogProducts] = useState<Array<{ id: number; name: string }>>([]);
+    const [sparePartCost, setSparePartCost] = useState<number>(0);
+    const [isAddingPart, setIsAddingPart] = useState<boolean>(false);
+    const [catalogProducts, setCatalogProducts] = useState<Array<{ id: number; name: string; code?: string; price?: number }>>([]);
 
-    // Load catalog products for spare parts
+    // Load catalog products & real technicians
     useEffect(() => {
         adminProductService.getAllProducts({ size: 100 })
             .then((res: any) => {
                 if (res?.content) {
-                    setCatalogProducts(res.content.map((p: any) => ({ id: p.id, name: p.name })));
+                    setCatalogProducts(
+                        res.content.map((p: any) => ({
+                            id: p.id,
+                            name: p.name,
+                            code: p.code,
+                            price: Number(p.price) || 0,
+                        }))
+                    );
+                }
+            })
+            .catch(() => { });
+
+        adminUserService.getAllUsers({ size: 100 })
+            .then((res: any) => {
+                if (res?.content && Array.isArray(res.content)) {
+                    const staff = res.content
+                        .filter((u: any) => {
+                            const role = String(u.role || '').toUpperCase();
+                            return role !== 'CUSTOMER' && role !== 'USER';
+                        })
+                        .map((u: any) => ({
+                            id: Number(u.id),
+                            name: u.fullName || u.username || `Nhân viên #${u.id}`,
+                            phone: u.phone || undefined,
+                        }));
+                    if (staff.length > 0) {
+                        setTechnicians(staff);
+                    }
                 }
             })
             .catch(() => { });
@@ -147,11 +175,14 @@ export default function TechnicalHandlingList() {
     // Open Handling Modal
     const handleOpenHandling = (r: WarrantyRequestItem) => {
         setSelectedRequest(r);
-        setTechId(r.technicianId ? String(r.technicianId) : '12');
+        setTechId(r.technicianId ? String(r.technicianId) : (technicians[0] ? String(technicians[0].id) : ''));
         setFaultType(r.faultType || 'MANUFACTURER');
         setInspectionNotes(r.inspectionNotes || '');
         setSolution(r.solution || '');
         setStatus(String(r.status));
+        setSparePartProductId('');
+        setSparePartQty(1);
+        setSparePartCost(0);
         setIsHandlingOpen(true);
     };
 
@@ -160,10 +191,10 @@ export default function TechnicalHandlingList() {
         if (!selectedRequest) return;
         setIsSubmitting(true);
         try {
-            const tech = TECHNICIAN_LIST.find((t) => String(t.id) === techId);
+            const tech = technicians.find((t) => String(t.id) === techId);
             const input: TechnicalHandlingUpdateInput = {
                 requestId: selectedRequest.id,
-                technicianId: tech ? tech.id : undefined,
+                technicianId: tech ? tech.id : (techId ? Number(techId) : undefined),
                 technicianName: tech ? tech.name : undefined,
                 faultType: faultType as any,
                 inspectionNotes: inspectionNotes.trim(),
@@ -193,27 +224,34 @@ export default function TechnicalHandlingList() {
     // Add Spare Part to Request
     const handleAddPart = async () => {
         if (!selectedRequest) return;
-        if (!sparePartName.trim()) {
-            addToast({ type: 'warning', title: 'Cảnh báo', message: 'Vui lòng nhập tên linh kiện thay thế' });
+        const parsedProductId = Number(sparePartProductId);
+        if (!sparePartProductId || isNaN(parsedProductId) || parsedProductId <= 0) {
+            addToast({ type: 'warning', title: 'Cảnh báo', message: 'Vui lòng chọn linh kiện thay thế từ danh mục sản phẩm' });
+            return;
+        }
+        if (!sparePartQty || sparePartQty < 1) {
+            addToast({ type: 'warning', title: 'Cảnh báo', message: 'Số lượng linh kiện phải lớn hơn hoặc bằng 1' });
             return;
         }
 
+        setIsAddingPart(true);
         try {
             const updated = await adminWarrantyService.addPartToRequest(selectedRequest.id, {
-                productId: sparePartProductId ? Number(sparePartProductId) : 999,
-                productName: sparePartName.trim(),
-                quantity: sparePartQty,
-                unitCost: sparePartCost,
-                serials: sparePartSerial.trim() ? [sparePartSerial.trim()] : [],
+                productId: parsedProductId,
+                quantity: Number(sparePartQty),
+                unitCost: Math.max(0, Number(sparePartCost) || 0),
             });
 
             setSelectedRequest({ ...updated });
-            setSparePartName('');
-            setSparePartSerial('');
+            setSparePartProductId('');
+            setSparePartQty(1);
+            setSparePartCost(0);
             addToast({ type: 'success', title: 'Đã thêm linh kiện', message: 'Linh kiện đã được xuất cho ca này' });
             fetchRequests();
         } catch (error: any) {
             addToast({ type: 'error', title: 'Lỗi', message: error.message || 'Không thể thêm linh kiện' });
+        } finally {
+            setIsAddingPart(false);
         }
     };
 
@@ -624,7 +662,10 @@ export default function TechnicalHandlingList() {
                             <AdminSelect
                                 value={techId}
                                 onChange={(e) => setTechId(e.target.value)}
-                                options={TECHNICIAN_LIST.map((t) => ({ label: t.name, value: String(t.id) }))}
+                                options={[
+                                    { label: '-- Chọn kỹ thuật viên --', value: '' },
+                                    ...technicians.map((t) => ({ label: t.name, value: String(t.id) })),
+                                ]}
                             />
                         </div>
 
@@ -669,6 +710,7 @@ export default function TechnicalHandlingList() {
                             value={status}
                             onChange={(e) => setStatus(e.target.value)}
                             options={[
+                                { label: 'Chờ tiếp nhận / phân công (PENDING)', value: 'PENDING' },
                                 { label: 'Đang kiểm tra & xử lý (IN_PROGRESS)', value: 'IN_PROGRESS' },
                                 { label: 'Đã xử lý xong hoàn tất (COMPLETED)', value: 'COMPLETED' },
                                 { label: 'Từ chối bảo hành (REJECTED)', value: 'REJECTED' },
@@ -685,29 +727,55 @@ export default function TechnicalHandlingList() {
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                            <div className="sm:col-span-6">
+                                <AdminLabel>Chọn linh kiện từ kho</AdminLabel>
+                                <AdminSelect
+                                    value={sparePartProductId}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSparePartProductId(val);
+                                        const matched = catalogProducts.find((p) => String(p.id) === val);
+                                        if (matched && matched.price !== undefined) {
+                                            setSparePartCost(matched.price);
+                                        }
+                                    }}
+                                    options={[
+                                        { label: '-- Chọn sản phẩm / linh kiện --', value: '' },
+                                        ...catalogProducts.map((p) => ({
+                                            label: `${p.code ? `[${p.code}] ` : ''}${p.name}`,
+                                            value: String(p.id),
+                                        })),
+                                    ]}
+                                />
+                            </div>
                             <div className="sm:col-span-2">
+                                <AdminLabel>SL</AdminLabel>
                                 <AdminInput
-                                    placeholder="Tên linh kiện thay thế..."
-                                    value={sparePartName}
-                                    onChange={(e) => setSparePartName(e.target.value)}
+                                    type="number"
+                                    min={1}
+                                    value={sparePartQty}
+                                    onChange={(e) => setSparePartQty(Math.max(1, Number(e.target.value) || 1))}
                                 />
                             </div>
-                            <div>
+                            <div className="sm:col-span-2">
+                                <AdminLabel>Đơn giá (₫)</AdminLabel>
                                 <AdminInput
-                                    placeholder="Số Serial linh kiện..."
-                                    value={sparePartSerial}
-                                    onChange={(e) => setSparePartSerial(e.target.value)}
+                                    type="number"
+                                    min={0}
+                                    value={sparePartCost}
+                                    onChange={(e) => setSparePartCost(Math.max(0, Number(e.target.value) || 0))}
                                 />
                             </div>
-                            <div>
+                            <div className="sm:col-span-2">
                                 <AdminButton
                                     variant="secondary"
                                     icon={<Plus className="w-3.5 h-3.5" />}
                                     onClick={handleAddPart}
+                                    isLoading={isAddingPart}
                                     className="w-full"
                                 >
-                                    Thêm linh kiện
+                                    Thêm
                                 </AdminButton>
                             </div>
                         </div>

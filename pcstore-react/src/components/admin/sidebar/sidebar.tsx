@@ -10,7 +10,6 @@ import {
     Building2,
     ShieldCheck,
     Globe,
-    ChevronDown,
     ChevronRight,
     UserCheck,
     User,
@@ -205,32 +204,25 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle }) => {
     const location = useLocation();
-    const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+    const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
 
     // Auto expand parent menu if child path is active
     useEffect(() => {
-        const newOpenState: Record<string, boolean> = { ...openSubmenus };
-        navItems.forEach((item) => {
-            if (item.children) {
-                const hasActiveChild = item.children.some(
-                    (sub) => location.pathname === sub.path || (sub.exact ? location.pathname === sub.path : location.pathname.startsWith(sub.path))
-                );
-                if (hasActiveChild) {
-                    newOpenState[item.id] = true;
-                }
-            }
-        });
-        setOpenSubmenus(newOpenState);
+        const activeParent = navItems.find((item) =>
+            item.children?.some(
+                (sub) => location.pathname === sub.path || (sub.exact ? location.pathname === sub.path : location.pathname.startsWith(sub.path))
+            )
+        );
+        setOpenSubmenuId(activeParent ? activeParent.id : null);
     }, [location.pathname]);
 
     const toggleSubmenu = (id: string) => {
         if (collapsed && onToggle) {
             onToggle();
+            setOpenSubmenuId(id);
+            return;
         }
-        setOpenSubmenus((prev) => ({
-            ...prev,
-            [id]: !prev[id],
-        }));
+        setOpenSubmenuId((prev) => (prev === id ? null : id));
     };
 
     return (
@@ -257,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
             </div>
 
             {/* Navigation list */}
-            <div className="flex-1 py-4 px-3 flex flex-col justify-between overflow-y-auto">
+            <div className="flex-1 py-4 px-3 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <div className="space-y-1">
                     {navItems.map((item) => {
                         // 1-Level Item (Single Link)
@@ -281,17 +273,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                         }
 
                         // 2-Level Parent Item (Submenu Accordion)
-                        const isOpen = !!openSubmenus[item.id];
+                        const isOpen = openSubmenuId === item.id;
                         const isChildActive = item.children?.some(
                             (sub) => location.pathname === sub.path || (sub.exact ? location.pathname === sub.path : location.pathname.startsWith(sub.path))
                         );
 
                         return (
-                            <div key={item.id} className="space-y-1">
+                            <div key={item.id}>
                                 <button
                                     type="button"
                                     onClick={() => toggleSubmenu(item.id)}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${isChildActive
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${isChildActive
                                         ? 'bg-blue-50/70 text-blue-600 font-bold'
                                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                         }`}
@@ -302,33 +294,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                                     </div>
                                     {!collapsed && (
                                         <div className="text-gray-400">
-                                            {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                            <ChevronRight
+                                                className={`w-3.5 h-3.5 transition-transform duration-200 ease-in-out ${isOpen ? 'rotate-90' : ''}`}
+                                            />
                                         </div>
                                     )}
                                 </button>
 
                                 {/* Submenu list */}
-                                {isOpen && !collapsed && (
-                                    <div className="pl-2 space-y-1 border-l-2 border-gray-100 ml-5 my-1">
-                                        {item.children?.map((sub) => {
-                                            const SubIcon = sub.icon;
-                                            return (
-                                                <NavLink
-                                                    key={sub.path}
-                                                    to={sub.path}
-                                                    end={sub.exact}
-                                                    className={({ isActive }) =>
-                                                        `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all ${isActive
-                                                            ? 'bg-blue-600 text-white font-semibold shadow-sm'
-                                                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                                                        }`
-                                                    }
-                                                >
-                                                    {SubIcon && <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />}
-                                                    <span className="truncate">{sub.label}</span>
-                                                </NavLink>
-                                            );
-                                        })}
+                                {!collapsed && (
+                                    <div
+                                        className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <div className="pl-2 space-y-1 border-l-2 border-gray-100 ml-5 my-1">
+                                                {item.children?.map((sub) => {
+                                                    const SubIcon = sub.icon;
+                                                    return (
+                                                        <NavLink
+                                                            key={sub.path}
+                                                            to={sub.path}
+                                                            end={sub.exact}
+                                                            className={({ isActive }) =>
+                                                                `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all duration-200 ${isActive
+                                                                    ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                                                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                                                }`
+                                                            }
+                                                        >
+                                                            {SubIcon && <SubIcon className="w-3.5 h-3.5 flex-shrink-0" />}
+                                                            <span className="truncate">{sub.label}</span>
+                                                        </NavLink>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

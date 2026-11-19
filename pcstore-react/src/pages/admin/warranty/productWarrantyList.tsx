@@ -41,6 +41,7 @@ import {
     AdminTextarea,
     type ModalTab,
 } from '../../../components/admin/common/modal';
+import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminWarrantyService } from '../../../services/adminWarrantyService';
 import type {
@@ -84,6 +85,10 @@ export default function ProductWarrantyList() {
     const [intakeAccessories, setIntakeAccessories] = useState<string>('Thân máy, vỏ hộp');
     const [intakeCondition, setIntakeCondition] = useState<string>('Máy nguyên vẹn, tem ốc chưa rách');
     const [isSubmittingIntake, setIsSubmittingIntake] = useState<boolean>(false);
+
+    // Void Warranty Confirm Modal
+    const [isVoidOpen, setIsVoidOpen] = useState<boolean>(false);
+    const [isVoiding, setIsVoiding] = useState<boolean>(false);
 
     // Copy to clipboard helper
     const handleCopy = (text: string) => {
@@ -235,6 +240,34 @@ export default function ProductWarrantyList() {
             });
         } finally {
             setIsSubmittingIntake(false);
+        }
+    };
+
+    const handleOpenVoid = (w: ProductWarrantyItem) => {
+        setSelectedWarranty(w);
+        setIsVoidOpen(true);
+    };
+
+    const handleConfirmVoid = async () => {
+        if (!selectedWarranty) return;
+        setIsVoiding(true);
+        try {
+            await adminWarrantyService.voidWarranty(selectedWarranty.id);
+            addToast({
+                type: 'success',
+                title: 'Đã hủy hiệu lực bảo hành',
+                message: `Gói bảo hành của serial ${selectedWarranty.serialNumber} đã bị vô hiệu hóa`,
+            });
+            setIsVoidOpen(false);
+            fetchWarranties();
+        } catch (error: any) {
+            addToast({
+                type: 'error',
+                title: 'Hủy hiệu lực thất bại',
+                message: error.message || 'Không thể hủy hiệu lực bảo hành',
+            });
+        } finally {
+            setIsVoiding(false);
         }
     };
 
@@ -462,6 +495,18 @@ export default function ProductWarrantyList() {
                                     )}`
                                 ),
                         },
+                        ...(item.active
+                            ? [
+                                  {
+                                      key: 'void',
+                                      label: 'Hủy hiệu lực bảo hành',
+                                      description: 'Vô hiệu hóa thẻ bảo hành của Serial này',
+                                      icon: XCircle,
+                                      variant: 'danger' as const,
+                                      onClick: () => handleOpenVoid(item),
+                                  },
+                              ]
+                            : []),
                     ]}
                 />
             ),
@@ -910,6 +955,19 @@ export default function ProductWarrantyList() {
                     </div>
                 </div>
             </AdminModal>
+
+            {/* Modal Confirm Void Warranty */}
+            <AdminConfirmModal
+                isOpen={isVoidOpen}
+                onClose={() => setIsVoidOpen(false)}
+                onConfirm={handleConfirmVoid}
+                title="Xác nhận hủy hiệu lực bảo hành"
+                message={`Bạn có chắc chắn muốn hủy hiệu lực (vô hiệu hóa) bảo hành cho thiết bị Serial "${selectedWarranty?.serialNumber}"?`}
+                confirmText="Hủy hiệu lực"
+                cancelText="Đóng"
+                variant="danger"
+                isLoading={isVoiding}
+            />
         </div>
     );
 }

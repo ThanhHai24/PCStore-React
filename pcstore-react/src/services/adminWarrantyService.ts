@@ -17,13 +17,51 @@ import type {
 } from '../types/adminWarranty';
 
 /**
+ * Chuẩn hóa trạng thái chính sách bảo hành sang Backend Enum ('ACTIVE' | 'INACTIVE')
+ */
+function normalizePolicyStatus(status?: number | string | null): 'ACTIVE' | 'INACTIVE' | undefined {
+  if (status === undefined || status === null || status === '' || status === 'ALL') {
+    return undefined;
+  }
+  const str = String(status).trim().toUpperCase();
+  if (str === '1' || str === 'ACTIVE') return 'ACTIVE';
+  if (str === '0' || str === 'INACTIVE') return 'INACTIVE';
+  return undefined;
+}
+
+/**
+ * Chuẩn hóa đối tượng áp dụng chính sách bảo hành sang Backend Enum ('CATEGORY' | 'PRODUCT' | 'BRAND' | null)
+ */
+function normalizePolicyTargetType(
+  targetType?: number | string | null
+): 'CATEGORY' | 'PRODUCT' | 'BRAND' | null | undefined {
+  if (
+    targetType === undefined ||
+    targetType === null ||
+    targetType === '' ||
+    targetType === 'ALL' ||
+    targetType === 'GENERAL' ||
+    targetType === 'null'
+  ) {
+    return null;
+  }
+  const str = String(targetType).trim().toUpperCase();
+  if (str === '0' || str === 'CATEGORY') return 'CATEGORY';
+  if (str === '1' || str === 'PRODUCT') return 'PRODUCT';
+  if (str === '2' || str === 'BRAND') return 'BRAND';
+  return null;
+}
+
+/**
  * Trích xuất thông điệp lỗi chi tiết từ phản hồi backend
  */
 async function handleApiError(res: Response, defaultMessage: string): Promise<never> {
   let message = defaultMessage;
   try {
     const errorData = await res.json();
-    if (errorData?.message) {
+    if (errorData?.detail) {
+      message = errorData.detail;
+    } else if (errorData?.message) {
       message = errorData.message;
     } else if (typeof errorData === 'string') {
       message = errorData;
@@ -48,12 +86,17 @@ export const adminWarrantyService = {
   async getAllPolicies(params: WarrantyPolicyFilterParams = {}): Promise<PageResponse<WarrantyPolicyResponse>> {
     const query = new URLSearchParams();
     if (params.keyword?.trim()) query.set('keyword', params.keyword.trim());
-    if (params.status !== undefined && params.status !== '' && params.status !== 'ALL') {
-      query.set('status', String(params.status));
+
+    const normalizedStatus = normalizePolicyStatus(params.status);
+    if (normalizedStatus) {
+      query.set('status', normalizedStatus);
     }
-    if (params.targetType !== undefined && params.targetType !== '' && params.targetType !== 'ALL') {
-      query.set('targetType', String(params.targetType));
+
+    const normalizedTargetType = normalizePolicyTargetType(params.targetType);
+    if (normalizedTargetType) {
+      query.set('targetType', normalizedTargetType);
     }
+
     if (params.targetId) query.set('targetId', String(params.targetId));
     if (params.page !== undefined) query.set('page', String(params.page));
     if (params.size !== undefined) query.set('size', String(params.size));
@@ -85,10 +128,20 @@ export const adminWarrantyService = {
   },
 
   async createPolicy(req: WarrantyPolicyCreateRequest): Promise<WarrantyPolicyResponse> {
+    const normalizedTargetType = normalizePolicyTargetType(req.targetType);
+    const payload = {
+      name: req.name.trim(),
+      durationDays: Number(req.durationDays),
+      description: req.description?.trim() || undefined,
+      targetType: normalizedTargetType ?? null,
+      targetId: normalizedTargetType ? req.targetId ?? null : null,
+      status: normalizePolicyStatus(req.status) ?? 'ACTIVE',
+    };
+
     const res = await fetchWithAuth(API_ENDPOINTS.ADMIN.WARRANTY_POLICIES, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       return handleApiError(res, 'Không thể tạo chính sách bảo hành');
@@ -97,10 +150,20 @@ export const adminWarrantyService = {
   },
 
   async updatePolicy(id: number, req: WarrantyPolicyUpdateRequest): Promise<WarrantyPolicyResponse> {
+    const normalizedTargetType = normalizePolicyTargetType(req.targetType);
+    const payload = {
+      name: req.name.trim(),
+      durationDays: Number(req.durationDays),
+      description: req.description?.trim() || undefined,
+      targetType: normalizedTargetType ?? null,
+      targetId: normalizedTargetType ? req.targetId ?? null : null,
+      status: normalizePolicyStatus(req.status) ?? 'ACTIVE',
+    };
+
     const res = await fetchWithAuth(API_ENDPOINTS.ADMIN.WARRANTY_POLICY_DETAIL(id), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       return handleApiError(res, `Không thể cập nhật chính sách bảo hành #${id}`);
@@ -109,8 +172,7 @@ export const adminWarrantyService = {
   },
 
   async updatePolicyStatus(id: number, status: number | string): Promise<WarrantyPolicyResponse> {
-    // Map status code sang backend enum nếu cần (0 -> INACTIVE, 1 -> ACTIVE)
-    const statusVal = status === 1 || status === 'ACTIVE' || status === '1' ? 'ACTIVE' : 'INACTIVE';
+    const statusVal = normalizePolicyStatus(status) ?? 'INACTIVE';
     const res = await fetchWithAuth(API_ENDPOINTS.ADMIN.WARRANTY_POLICY_STATUS(id), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -290,7 +352,9 @@ export const adminWarrantyService = {
 
   // ==================== 4. SPARE PARTS ====================
 
-  async getAllSpareParts(params: { keyword?: string; status?: string; page?: number; size?: number } = {}): Promise<SparePartItem[]> {
+  async getSparePartsPage(
+    params: { keyword?: string; status?: string; page?: number; size?: number } = {}
+  ): Promise<PageResponse<SparePartItem>> {
     const query = new URLSearchParams();
     if (params.keyword?.trim()) query.set('keyword', params.keyword.trim());
     if (params.status && params.status !== 'ALL') query.set('status', params.status);
@@ -303,9 +367,22 @@ export const adminWarrantyService = {
     }
 
     const data = await res.json();
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data.content)) return data.content;
-    return [];
+    const content = Array.isArray(data) ? data : Array.isArray(data.content) ? data.content : [];
+    return {
+      content,
+      totalElements: data.totalElements ?? content.length,
+      totalPages: data.totalPages ?? 1,
+      size: data.pageSize ?? data.size ?? (params.size || 10),
+      number: data.pageNumber ?? data.number ?? (params.page || 0),
+      first: data.first ?? true,
+      last: data.last ?? true,
+      empty: data.empty ?? content.length === 0,
+    };
+  },
+
+  async getAllSpareParts(params: { keyword?: string; status?: string; page?: number; size?: number } = {}): Promise<SparePartItem[]> {
+    const pageRes = await this.getSparePartsPage(params);
+    return pageRes.content;
   },
 
   async updatePartStatus(

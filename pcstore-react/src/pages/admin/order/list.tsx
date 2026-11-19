@@ -1332,7 +1332,6 @@ export default function OrderList() {
                 header: 'Thao tác',
                 align: 'right',
                 render: (order) => {
-                    const canDelete = order.status !== 'COMPLETED';
                     const canCancel =
                         order.status === 'PENDING' ||
                         order.status === 'CONFIRMED' ||
@@ -1343,46 +1342,54 @@ export default function OrderList() {
                             className="flex items-center justify-end gap-1"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {order.status === 'PENDING' && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleOpenAppraisalModal(order)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-xs transition-all cursor-pointer mr-1"
-                                    title="Thẩm định tồn kho khả dụng & Phân nhánh đơn"
-                                >
-                                    <ShieldCheck className="w-3.5 h-3.5" />
-                                    <span>Xác nhận đơn</span>
-                                </button>
-                            )}
-
-                            {order.status === 'CONFIRMED' && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/admin/warehouse/packaging')}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all cursor-pointer mr-1"
-                                    title="Quản lý đóng gói kho"
-                                >
-                                    <Box className="w-3.5 h-3.5" />
-                                    <span>Đóng gói</span>
-                                </button>
-                            )}
-
-                            {order.status === 'PROCESSING' && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/admin/warehouse/handover')}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all cursor-pointer mr-1"
-                                    title="Bàn giao ĐVVC"
-                                >
-                                    <Truck className="w-3.5 h-3.5" />
-                                    <span>Bàn giao ĐVVC</span>
-                                </button>
-                            )}
-
                             <AdminActionDropdown
-                                onView={() => handleOpenDetail(order)}
-                                viewLabel="Xem chi tiết đơn hàng"
+                                maxInline={3}
                                 actions={[
+                                    {
+                                        key: 'confirm-order',
+                                        label: 'Xác nhận đơn',
+                                        icon: ShieldCheck,
+                                        variant: 'success',
+                                        highlight: true,
+                                        hidden: order.status !== 'PENDING',
+                                        onClick: () => handleOpenAppraisalModal(order),
+                                    },
+                                    {
+                                        key: 'packaging-order',
+                                        label: 'Đóng gói',
+                                        icon: Box,
+                                        variant: 'primary',
+                                        highlight: true,
+                                        hidden: order.status !== 'CONFIRMED',
+                                        onClick: () => navigate('/admin/warehouse/packaging'),
+                                    },
+                                    {
+                                        key: 'handover-order',
+                                        label: 'Bàn giao ĐVVC',
+                                        icon: Truck,
+                                        variant: 'primary',
+                                        highlight: true,
+                                        hidden: order.status !== 'PROCESSING',
+                                        onClick: () => navigate('/admin/warehouse/handover'),
+                                    },
+                                    {
+                                        key: 'cancel-order',
+                                        label: 'Hủy đơn hàng',
+                                        icon: Ban,
+                                        variant: 'danger',
+                                        hidden: !canCancel,
+                                        onClick: (e) =>
+                                            handlePromptStatusChange(order, 'CANCELLED', e),
+                                    },
+                                    {
+                                        key: 'view-order',
+                                        label: 'Xem chi tiết đơn hàng',
+                                        icon: Eye,
+                                        variant: 'primary',
+                                        onClick: () => handleOpenDetail(order),
+                                    },
+                                ]}
+                                moreActions={[
                                     {
                                         key: 'status-update',
                                         label: 'Cập nhật trạng thái đơn',
@@ -1392,8 +1399,6 @@ export default function OrderList() {
                                         onClick: (e) =>
                                             handlePromptStatusChange(order, order.status, e),
                                     },
-                                ]}
-                                moreActions={[
                                     {
                                         key: 'print-order',
                                         label: 'In hóa đơn / phiếu giao hàng',
@@ -1402,21 +1407,7 @@ export default function OrderList() {
                                         variant: 'primary',
                                         onClick: (e) => handlePrintOrder(order, e),
                                     },
-                                    {
-                                        key: 'cancel-order',
-                                        label: 'Hủy đơn hàng này',
-                                        description: 'Hủy đơn và hoàn trả tồn kho',
-                                        icon: Ban,
-                                        variant: 'danger',
-                                        hidden: !canCancel,
-                                        dividerBefore: true,
-                                        onClick: (e) =>
-                                            handlePromptStatusChange(order, 'CANCELLED', e),
-                                    },
                                 ]}
-                                onDelete={canDelete ? (e) => handlePromptDelete(order, e) : undefined}
-                                deleteLabel="Xóa đơn hàng"
-                                deleteDescription="Xóa đơn hàng khỏi hệ thống"
                             />
                         </div>
                     );
@@ -1607,26 +1598,23 @@ export default function OrderList() {
                     activeTab={activeDetailTab}
                     onTabChange={(id) => setActiveDetailTab(id as any)}
                     footer={
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => handlePrintOrder(selectedOrder)}
-                                    icon={<Printer className="w-4 h-4 text-indigo-600" />}
-                                >
-                                    In hóa đơn
-                                </AdminButton>
-                                <AdminButton
-                                    type="button"
-                                    variant="primary"
-                                    onClick={() => handlePromptStatusChange(selectedOrder)}
-                                    icon={<RefreshCw className="w-4 h-4" />}
-                                >
-                                    Đổi trạng thái
-                                </AdminButton>
-                            </div>
-
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
+                                type="button"
+                                variant="secondary"
+                                onClick={() => handlePrintOrder(selectedOrder)}
+                                icon={<Printer className="w-4 h-4 text-indigo-600" />}
+                            >
+                                In hóa đơn
+                            </AdminButton>
+                            <AdminButton
+                                type="button"
+                                variant="primary"
+                                onClick={() => handlePromptStatusChange(selectedOrder)}
+                                icon={<RefreshCw className="w-4 h-4" />}
+                            >
+                                Đổi trạng thái
+                            </AdminButton>
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -2493,41 +2481,39 @@ export default function OrderList() {
                     icon={ShoppingCart}
                     size="xl"
                     footer={
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setIsAppraisalModalOpen(false)}
+                            >
+                                Đóng
+                            </AdminButton>
+
+                            {appraisalResult?.isAvailable ? (
                                 <AdminButton
                                     type="button"
-                                    variant="secondary"
-                                    onClick={() => setIsAppraisalModalOpen(false)}
+                                    variant="primary"
+                                    onClick={handleConfirmAndSendToWarehouse}
+                                    isLoading={isSubmittingAppraisal}
+                                    disabled={isSubmittingAppraisal}
+                                    icon={<CheckCircle2 className="w-4 h-4" />}
+                                    className="!bg-blue-600 hover:!bg-blue-700"
                                 >
-                                    Đóng
+                                    Xác nhận đơn & Chuyển kho đóng gói
                                 </AdminButton>
-
-                                {appraisalResult?.isAvailable ? (
-                                    <AdminButton
-                                        type="button"
-                                        variant="primary"
-                                        onClick={handleConfirmAndSendToWarehouse}
-                                        isLoading={isSubmittingAppraisal}
-                                        disabled={isSubmittingAppraisal}
-                                        icon={<CheckCircle2 className="w-4 h-4" />}
-                                        className="!bg-blue-600 hover:!bg-blue-700"
-                                    >
-                                        Xác nhận đơn & Chuyển kho đóng gói
-                                    </AdminButton>
-                                ) : (
-                                    <AdminButton
-                                        type="button"
-                                        variant="danger"
-                                        onClick={handleCancelOrderOutOfStock}
-                                        isLoading={isSubmittingAppraisal}
-                                        disabled={isSubmittingAppraisal}
-                                        icon={<Ban className="w-4 h-4" />}
-                                    >
-                                        Khách đồng ý hủy đơn & Hoàn tất
-                                    </AdminButton>
-                                )}
-                            </div>
+                            ) : (
+                                <AdminButton
+                                    type="button"
+                                    variant="danger"
+                                    onClick={handleCancelOrderOutOfStock}
+                                    isLoading={isSubmittingAppraisal}
+                                    disabled={isSubmittingAppraisal}
+                                    icon={<Ban className="w-4 h-4" />}
+                                >
+                                    Khách đồng ý hủy đơn & Hoàn tất
+                                </AdminButton>
+                            )}
                         </div>
                     }
                 >

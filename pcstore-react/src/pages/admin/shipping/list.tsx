@@ -33,7 +33,7 @@ import {
     Square,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import { AdminTable, AdminActionDropdown, type Column } from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminModalHeader,
@@ -295,11 +295,10 @@ export default function DeliveryList() {
                         {rec.assignedSerials.map((s) => (
                             <span
                                 key={s.serialNumber}
-                                className={`font-mono text-[10px] px-1.5 py-0.5 rounded border ${
-                                    s.status === 'SOLD'
+                                className={`font-mono text-[10px] px-1.5 py-0.5 rounded border ${s.status === 'SOLD'
                                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
                                         : 'bg-slate-100 text-slate-800 border-slate-200'
-                                }`}
+                                    }`}
                                 title={`Trạng thái: ${s.status === 'SOLD' ? 'ĐÃ BÁN (SOLD)' : s.status}`}
                             >
                                 {s.serialNumber}
@@ -331,46 +330,54 @@ export default function DeliveryList() {
         },
         {
             key: 'actions',
-            header: 'Thao tác hoàn tất',
-            render: (rec) => (
-                <div className="flex items-center gap-1.5">
-                    {rec.fulfillmentStatus !== 'COMPLETED' ? (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenConfirmDelivery(rec)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-all shadow-xs cursor-pointer"
-                            title="Xác nhận khách hàng đã nhận hàng thành công và đóng quy trình"
-                        >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Xác nhận nhận hàng</span>
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPrintRecord(rec);
-                                setIsPrintModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all cursor-pointer shadow-2xs"
-                        >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Biên bản</span>
-                        </button>
-                    )}
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setTrackingRecord(rec);
-                            setIsTrackingModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1 p-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all cursor-pointer shadow-2xs"
-                        title="Xem lộ trình vận chuyển"
-                    >
-                        <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
-                    </button>
-                </div>
-            ),
+            header: 'Thao tác',
+            align: 'right',
+            render: (rec) => {
+                const isCompleted = rec.fulfillmentStatus === 'COMPLETED';
+                return (
+                    <AdminActionDropdown
+                        maxInline={3}
+                        actions={[
+                            {
+                                key: 'confirm-delivery',
+                                label: 'Xác nhận nhận hàng',
+                                icon: CheckCircle2,
+                                variant: 'success',
+                                highlight: true,
+                                hidden: isCompleted,
+                                onClick: () => handleOpenConfirmDelivery(rec),
+                            },
+                            {
+                                key: 'view-tracking',
+                                label: 'Xem lộ trình vận chuyển',
+                                icon: ExternalLink,
+                                variant: 'primary',
+                                onClick: () => {
+                                    setTrackingRecord(rec);
+                                    setIsTrackingModalOpen(true);
+                                },
+                            },
+                        ]}
+                        moreActions={
+                            isCompleted
+                                ? [
+                                      {
+                                          key: 'print-delivery',
+                                          label: 'In biên bản giao nhận',
+                                          description: 'Xuất bản in biên bản hoàn tất giao hàng',
+                                          icon: Printer,
+                                          variant: 'primary',
+                                          onClick: () => {
+                                              setPrintRecord(rec);
+                                              setIsPrintModalOpen(true);
+                                          },
+                                      },
+                                  ]
+                                : []
+                        }
+                    />
+                );
+            },
         },
     ];
 
@@ -417,11 +424,10 @@ export default function DeliveryList() {
                     <button
                         type="button"
                         onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border transition-all cursor-pointer ${
-                            showWorkflowGuide
+                        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border transition-all cursor-pointer ${showWorkflowGuide
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                        }`}
+                            }`}
                     >
                         <Sparkles className="w-4 h-4" />
                         <span>Sơ đồ nghiệp vụ 4 giai đoạn</span>
@@ -447,56 +453,6 @@ export default function DeliveryList() {
                 </div>
             </div>
 
-            {/* ======================================================== */}
-            {/* WORKFLOW GUIDE BANNER (GIAI ĐOẠN 4)                      */}
-            {/* ======================================================== */}
-            {showWorkflowGuide && (
-                <div className="bg-gradient-to-br from-slate-900 to-emerald-950 text-white p-6 rounded-2xl shadow-md border border-slate-800 space-y-4">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                        <div className="flex items-center gap-2.5">
-                            <Sparkles className="w-5 h-5 text-amber-400" />
-                            <h2 className="text-base font-bold text-white tracking-wide">
-                                GIAI ĐOẠN 4: VẬN CHUYỂN VÀ HOÀN TẤT GIAO NHẬN (ĐVVC NGOÀI & KHÁCH HÀNG)
-                            </h2>
-                        </div>
-                        <span className="text-xs text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-full font-mono border border-emerald-400/30">
-                            Bước kết thúc quy trình bán hàng
-                        </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
-                            <span className="font-mono font-bold text-blue-300 bg-blue-400/20 px-2 py-0.5 rounded text-[11px]">
-                                BƯỚC 1 (ĐVVC NGOÀI)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Tiếp nhận đơn hàng</h3>
-                            <p className="text-slate-300 leading-relaxed">
-                                Đơn vị vận chuyển ngoài hệ thống nhận kiện hàng cùng chứng từ giao hàng từ nhân viên kho để tiến hành lộ trình phát hàng.
-                            </p>
-                        </div>
-
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1.5">
-                            <span className="font-mono font-bold text-amber-300 bg-amber-400/20 px-2 py-0.5 rounded text-[11px]">
-                                BƯỚC 2 (ĐVVC NGOÀI)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Bàn giao đơn hàng cho khách hàng</h3>
-                            <p className="text-slate-300 leading-relaxed">
-                                Nhân viên giao hàng vận chuyển kiện hàng đến địa chỉ đăng ký và tiến hành bàn giao thực tế cho khách hàng.
-                            </p>
-                        </div>
-
-                        <div className="bg-emerald-500/20 border-2 border-emerald-400 rounded-xl p-3.5 space-y-1.5 relative">
-                            <span className="font-mono font-bold text-emerald-300 bg-emerald-400/30 px-2 py-0.5 rounded text-[11px]">
-                                BƯỚC 3 (KHÁCH HÀNG)
-                            </span>
-                            <h3 className="font-bold text-white text-sm">Tiếp nhận & Xác nhận hoàn tất</h3>
-                            <p className="text-emerald-100 leading-relaxed font-medium">
-                                Khách hàng nhận hàng, kiểm tra ngoại quan kiện hàng nguyên vẹn, xác nhận nhận hàng thành công và kết thúc quy trình bán hàng. Serial chuyển sang ĐÃ BÁN (SOLD).
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ======================================================== */}
             {/* STAT CARDS                                               */}

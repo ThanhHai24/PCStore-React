@@ -14,6 +14,8 @@ export interface AdminActionItem {
     variant?: ActionItemVariant;
     disabled?: boolean;
     hidden?: boolean;
+    /** Nổi bật nhẹ icon thao tác xử lý chính (có nền nhạt & viền theo variant) */
+    highlight?: boolean;
     /** Bắt buộc đưa vào menu 3 chấm dù chưa đủ số icon bên ngoài */
     inMenuOnly?: boolean;
     /** Hiển thị đường kẻ phân cách phía trên mục này trong dropdown */
@@ -57,6 +59,14 @@ const INLINE_VARIANT_CLASSES: Record<ActionItemVariant, string> = {
     success: 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50',
     danger: 'text-gray-500 hover:text-rose-600 hover:bg-rose-50',
     default: 'text-gray-500 hover:text-slate-800 hover:bg-slate-100',
+};
+
+const INLINE_HIGHLIGHT_VARIANT_CLASSES: Record<ActionItemVariant, string> = {
+    primary: 'text-blue-600 bg-blue-50 border border-blue-200/80 hover:bg-blue-100 hover:text-blue-700 shadow-2xs',
+    warning: 'text-amber-600 bg-amber-50 border border-amber-200/80 hover:bg-amber-100 hover:text-amber-700 shadow-2xs',
+    success: 'text-emerald-600 bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 hover:text-emerald-700 shadow-2xs',
+    danger: 'text-rose-600 bg-rose-50 border border-rose-200/80 hover:bg-rose-100 hover:text-rose-700 shadow-2xs',
+    default: 'text-slate-700 bg-slate-100 border border-slate-200 hover:bg-slate-200/80 shadow-2xs',
 };
 
 const MENU_ITEM_VARIANT_CLASSES: Record<
@@ -293,7 +303,9 @@ export const AdminActionDropdown: React.FC<AdminActionDropdownProps> = ({
             {/* 1. Các icon thao tác hiển thị trực tiếp (tối đa 2 icon: thường là Xem & Chỉnh sửa) */}
             {inlineActions.map((action, index) => {
                 const variant = action.variant || (index === 0 ? 'primary' : 'warning');
-                const variantClass = INLINE_VARIANT_CLASSES[variant];
+                const variantClass = action.highlight
+                    ? INLINE_HIGHLIGHT_VARIANT_CLASSES[variant]
+                    : INLINE_VARIANT_CLASSES[variant];
 
                 return (
                     <button

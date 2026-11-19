@@ -124,7 +124,7 @@ export default function InventoryExportReportPage() {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <span className="text-xs font-semibold text-gray-500">Tổng Serial Lưu Kho</span>
+          <span className="text-xs font-semibold text-gray-500">Tổng Sản phẩm Lưu Kho</span>
           <p className="text-2xl font-black text-gray-900 mt-1">
             {summary ? formatNumber(summary.totalSerialsInStore) : '0'}
           </p>

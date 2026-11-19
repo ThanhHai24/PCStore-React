@@ -231,9 +231,9 @@ export default function WarrantyPolicyList() {
             // Determine effective status filter
             let effectiveStatus: string | undefined = filters.status;
             if (quickStatusTab === 'ACTIVE') {
-                effectiveStatus = '1';
+                effectiveStatus = 'ACTIVE';
             } else if (quickStatusTab === 'INACTIVE') {
-                effectiveStatus = '0';
+                effectiveStatus = 'INACTIVE';
             }
 
             const res = await adminWarrantyService.getAllPolicies({
@@ -379,18 +379,24 @@ export default function WarrantyPolicyList() {
         if (!validateForm()) return;
         setIsSubmitting(true);
         try {
-            const targetTypeVal = formData.targetType === 'ALL' ? null : Number(formData.targetType);
-            const targetIdVal = formData.targetType === 'ALL' || !formData.targetId ? null : Number(formData.targetId);
-            const targetNameVal = getTargetDisplayName(targetTypeVal, targetIdVal);
+            const targetTypeMap: Record<string, 'CATEGORY' | 'PRODUCT' | 'BRAND'> = {
+                '0': 'CATEGORY',
+                '1': 'PRODUCT',
+                '2': 'BRAND',
+                CATEGORY: 'CATEGORY',
+                PRODUCT: 'PRODUCT',
+                BRAND: 'BRAND',
+            };
+            const targetTypeVal = formData.targetType === 'ALL' ? null : (targetTypeMap[formData.targetType] ?? null);
+            const targetIdVal = !targetTypeVal || !formData.targetId ? null : Number(formData.targetId);
 
-            const req: any = {
+            const req: WarrantyPolicyCreateRequest = {
                 name: formData.name.trim(),
                 durationDays: Number(formData.durationDays),
                 description: formData.description.trim() || undefined,
-                targetType: targetTypeVal as any,
+                targetType: targetTypeVal,
                 targetId: targetIdVal,
-                targetName: targetNameVal,
-                status: formData.status as any,
+                status: formData.status === 1 ? 'ACTIVE' : 'INACTIVE',
             };
 
             await adminWarrantyService.createPolicy(req);
@@ -417,18 +423,24 @@ export default function WarrantyPolicyList() {
         if (!selectedPolicy || !validateForm()) return;
         setIsSubmitting(true);
         try {
-            const targetTypeVal = formData.targetType === 'ALL' ? null : Number(formData.targetType);
-            const targetIdVal = formData.targetType === 'ALL' || !formData.targetId ? null : Number(formData.targetId);
-            const targetNameVal = getTargetDisplayName(targetTypeVal, targetIdVal);
+            const targetTypeMap: Record<string, 'CATEGORY' | 'PRODUCT' | 'BRAND'> = {
+                '0': 'CATEGORY',
+                '1': 'PRODUCT',
+                '2': 'BRAND',
+                CATEGORY: 'CATEGORY',
+                PRODUCT: 'PRODUCT',
+                BRAND: 'BRAND',
+            };
+            const targetTypeVal = formData.targetType === 'ALL' ? null : (targetTypeMap[formData.targetType] ?? null);
+            const targetIdVal = !targetTypeVal || !formData.targetId ? null : Number(formData.targetId);
 
-            const req: any = {
+            const req: WarrantyPolicyUpdateRequest = {
                 name: formData.name.trim(),
                 durationDays: Number(formData.durationDays),
                 description: formData.description.trim() || undefined,
-                targetType: targetTypeVal as any,
+                targetType: targetTypeVal,
                 targetId: targetIdVal,
-                targetName: targetNameVal,
-                status: formData.status as any,
+                status: formData.status === 1 ? 'ACTIVE' : 'INACTIVE',
             };
 
             await adminWarrantyService.updatePolicy(selectedPolicy.numericId, req);
@@ -675,10 +687,9 @@ export default function WarrantyPolicyList() {
             placeholder: 'Tất cả đối tượng',
             options: [
                 { label: 'Tất cả đối tượng', value: '' },
-                { label: 'Toàn bộ hệ thống (Chung)', value: 'null' },
-                { label: 'Theo danh mục sản phẩm', value: '0' },
-                { label: 'Theo sản phẩm cụ thể', value: '1' },
-                { label: 'Theo thương hiệu', value: '2' },
+                { label: 'Theo danh mục sản phẩm', value: 'CATEGORY' },
+                { label: 'Theo sản phẩm cụ thể', value: 'PRODUCT' },
+                { label: 'Theo thương hiệu', value: 'BRAND' },
             ],
         },
         {
@@ -688,8 +699,8 @@ export default function WarrantyPolicyList() {
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: 'Đang áp dụng', value: '1' },
-                { label: 'Ngừng áp dụng', value: '0' },
+                { label: 'Đang áp dụng', value: 'ACTIVE' },
+                { label: 'Ngừng áp dụng', value: 'INACTIVE' },
             ],
         },
     ];

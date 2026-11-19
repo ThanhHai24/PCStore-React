@@ -151,6 +151,10 @@ export const API_ENDPOINTS = {
     COMMENT_REPLIES: (productId: string | number, id: string | number) =>
       `${API_BASE_URL}/api/products/${productId}/comments/${id}/replies`,
   },
+  WARRANTIES: {
+    BY_ORDER: (orderId: string | number) => `${API_BASE_URL}/api/warranties?orderId=${orderId}`,
+    REQUESTS: `${API_BASE_URL}/api/warranty-requests`,
+  },
 } as const;
 
 export const PROVINCE_API_BASE_URL = 'https://provinces.open-api.vn/api/v2';

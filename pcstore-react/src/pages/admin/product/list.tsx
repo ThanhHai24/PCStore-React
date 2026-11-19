@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Package,
     Plus,
@@ -21,7 +22,11 @@ import {
     Loader2,
     Layers,
     Laptop,
-    AlertCircle
+    AlertCircle,
+    ChevronDown,
+    Search,
+    X,
+    Star
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
 import {
@@ -72,6 +77,7 @@ export interface AdminProductItem {
     categoryIds?: number[];
     primaryCategoryId?: number | null;
     category: string;
+    categoryNames: string[];
     productType: ProductType;
     price: number;
     image: string;
@@ -329,6 +335,417 @@ function ProductMediaTab({
     );
 }
 
+// =============================================================================
+// CATEGORY MULTI-SELECT COMPONENT (Chọn nhiều danh mục + chỉ định danh mục chính)
+// =============================================================================
+interface CategoryMultiSelectProps {
+    label?: React.ReactNode;
+    categories: CategoryResponse[];
+    selectedIds: number[];
+    primaryCategoryId: number | null;
+    onChange: (nextCategoryIds: number[], nextPrimaryCategoryId: number | null) => void;
+    placeholder?: string;
+    helperText?: string;
+    disabled?: boolean;
+}
+
+function CategoryMultiSelect({
+    label,
+    categories,
+    selectedIds,
+    primaryCategoryId,
+    onChange,
+    placeholder = '-- Chọn một hoặc nhiều danh mục --',
+    helperText,
+    disabled = false,
+}: CategoryMultiSelectProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [position, setPosition] = useState<{
+        top?: number;
+        bottom?: number;
+        left: number;
+        width: number;
+        maxHeight: number;
+    } | null>(null);
+
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const normalizedSelectedIds = useMemo(
+        () => Array.from(new Set(selectedIds.map(Number).filter((id) => !Number.isNaN(id) && id > 0))),
+        [selectedIds]
+    );
+
+    const effectivePrimaryId = useMemo(() => {
+        if (primaryCategoryId && normalizedSelectedIds.includes(Number(primaryCategoryId))) {
+            return Number(primaryCategoryId);
+        }
+        return normalizedSelectedIds[0] ?? null;
+    }, [primaryCategoryId, normalizedSelectedIds]);
+
+    const filteredCategories = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return categories;
+        return categories.filter((c) => c.name.toLowerCase().includes(q));
+    }, [categories, searchQuery]);
+
+    const updatePosition = useCallback(() => {
+        const triggerEl = triggerRef.current;
+        if (!triggerEl) return;
+
+        const rect = triggerEl.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedHeight = 280;
+        const placement = spaceBelow < estimatedHeight && spaceAbove > spaceBelow ? 'top' : 'bottom';
+        const width = Math.max(rect.width, 240);
+        const left = Math.min(Math.max(8, rect.left), Math.max(8, viewportWidth - width - 8));
+
+        if (placement === 'bottom') {
+            setPosition({
+                top: rect.bottom + 6,
+                left,
+                width,
+                maxHeight: Math.min(280, Math.max(150, spaceBelow - 16)),
+            });
+        } else {
+            setPosition({
+                bottom: viewportHeight - rect.top + 6,
+                left,
+                width,
+                maxHeight: Math.min(280, Math.max(150, spaceAbove - 16)),
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSearchQuery('');
+            updatePosition();
+            requestAnimationFrame(() => {
+                searchInputRef.current?.focus();
+            });
+        } else {
+            setPosition(null);
+        }
+    }, [isOpen, updatePosition]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleScrollOrResize = () => updatePosition();
+        window.addEventListener('resize', handleScrollOrResize);
+        window.addEventListener('scroll', handleScrollOrResize, true);
+        return () => {
+            window.removeEventListener('resize', handleScrollOrResize);
+            window.removeEventListener('scroll', handleScrollOrResize, true);
+        };
+    }, [isOpen, updatePosition]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleMouseDown = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (
+                triggerRef.current &&
+                !triggerRef.current.contains(target) &&
+                menuRef.current &&
+                !menuRef.current.contains(target)
+            ) {
+                setIsOpen(false);
+            }
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => {
+            document.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [isOpen]);
+
+    const handleToggleCategory = (catId: number) => {
+        if (normalizedSelectedIds.includes(catId)) {
+            const nextIds = normalizedSelectedIds.filter((id) => id !== catId);
+            const nextPrimary = effectivePrimaryId === catId ? (nextIds[0] ?? null) : effectivePrimaryId;
+            onChange(nextIds, nextPrimary);
+        } else {
+            const nextIds = [...normalizedSelectedIds, catId];
+            const nextPrimary = effectivePrimaryId ?? catId;
+            onChange(nextIds, nextPrimary);
+        }
+    };
+
+    const handleSetPrimary = (catId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const nextIds = normalizedSelectedIds.includes(catId)
+            ? normalizedSelectedIds
+            : [...normalizedSelectedIds, catId];
+        onChange(nextIds, catId);
+    };
+
+    const handleRemoveChip = (catId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const nextIds = normalizedSelectedIds.filter((id) => id !== catId);
+        const nextPrimary = effectivePrimaryId === catId ? (nextIds[0] ?? null) : effectivePrimaryId;
+        onChange(nextIds, nextPrimary);
+    };
+
+    const handleClearAll = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onChange([], null);
+    };
+
+    return (
+        <div>
+            {label && (
+                <AdminLabel
+                    action={
+                        normalizedSelectedIds.length > 0 ? (
+                            <span className="text-xs font-medium text-blue-600">
+                                Đã chọn {normalizedSelectedIds.length} danh mục
+                            </span>
+                        ) : undefined
+                    }
+                >
+                    {label}
+                </AdminLabel>
+            )}
+
+            <div
+                ref={triggerRef}
+                role="button"
+                tabIndex={disabled ? -1 : 0}
+                aria-expanded={isOpen}
+                onClick={() => !disabled && setIsOpen((prev) => !prev)}
+                onKeyDown={(e) => {
+                    if (disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setIsOpen((prev) => !prev);
+                    }
+                }}
+                className={`min-h-[40px] w-full px-3 py-1.5 rounded-md border bg-white flex items-center justify-between gap-2 transition-all cursor-pointer select-none ${
+                    disabled
+                        ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : isOpen
+                          ? 'border-blue-600 ring-2 ring-blue-500/15'
+                          : 'border-gray-200 hover:border-gray-300'
+                }`}
+            >
+                <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0 py-0.5">
+                    {normalizedSelectedIds.length === 0 ? (
+                        <span className="text-sm text-gray-400">{placeholder}</span>
+                    ) : (
+                        normalizedSelectedIds.map((catId) => {
+                            const cat = categories.find((c) => c.id === catId);
+                            const catName = cat?.name || `Danh mục #${catId}`;
+                            const isPrimary = catId === effectivePrimaryId;
+
+                            return (
+                                <span
+                                    key={catId}
+                                    className={`inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md text-xs font-medium border transition-colors ${
+                                        isPrimary
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-slate-100 text-slate-700 border-slate-200'
+                                    }`}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={(e) => handleSetPrimary(catId, e)}
+                                        title={isPrimary ? 'Danh mục chính' : 'Đặt làm danh mục chính'}
+                                        className={`p-0.5 rounded transition-colors cursor-pointer ${
+                                            isPrimary
+                                                ? 'text-amber-500'
+                                                : 'text-slate-400 hover:text-amber-500'
+                                        }`}
+                                    >
+                                        <Star className={`w-3 h-3 ${isPrimary ? 'fill-amber-400' : ''}`} />
+                                    </button>
+                                    <span className="max-w-[180px] truncate">{catName}</span>
+                                    {!disabled && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => handleRemoveChip(catId, e)}
+                                            title="Bỏ chọn danh mục này"
+                                            className="p-0.5 rounded hover:bg-black/10 text-current transition-colors cursor-pointer"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </span>
+                            );
+                        })
+                    )}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                    {normalizedSelectedIds.length > 0 && !disabled && (
+                        <button
+                            type="button"
+                            onClick={handleClearAll}
+                            title="Bỏ chọn tất cả"
+                            className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                    <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+                            isOpen ? 'rotate-180 text-blue-600' : ''
+                        }`}
+                    />
+                </div>
+            </div>
+
+            {helperText && <p className="text-xs text-gray-400 mt-1">{helperText}</p>}
+
+            {isOpen &&
+                position &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                    <div
+                        ref={menuRef}
+                        data-admin-select-portal="true"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            position: 'fixed',
+                            top: position.top,
+                            bottom: position.bottom,
+                            left: position.left,
+                            width: position.width,
+                            zIndex: 9999,
+                        }}
+                        className="bg-white border border-slate-200/90 rounded-xl shadow-xl shadow-slate-900/10 ring-1 ring-black/5 overflow-hidden flex flex-col"
+                    >
+                        {/* Search bar */}
+                        <div className="p-2 border-b border-slate-100 bg-slate-50/60 shrink-0">
+                            <div className="relative flex items-center">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Tìm kiếm danh mục..."
+                                    className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            searchInputRef.current?.focus();
+                                        }}
+                                        className="absolute right-2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Options list */}
+                        <div
+                            style={{ maxHeight: Math.max(110, position.maxHeight - 88) }}
+                            className="overflow-y-auto p-1.5 space-y-0.5"
+                        >
+                            {filteredCategories.length === 0 ? (
+                                <div className="py-6 text-center text-xs text-slate-400">
+                                    Không tìm thấy danh mục phù hợp
+                                </div>
+                            ) : (
+                                filteredCategories.map((cat) => {
+                                    const isSelected = normalizedSelectedIds.includes(cat.id);
+                                    const isPrimary = cat.id === effectivePrimaryId;
+
+                                    return (
+                                        <div
+                                            key={cat.id}
+                                            onClick={() => handleToggleCategory(cat.id)}
+                                            className={`w-full px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer ${
+                                                isSelected
+                                                    ? 'bg-blue-50/90 text-blue-700 font-semibold'
+                                                    : 'text-slate-700 font-medium hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <span
+                                                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                                        isSelected
+                                                            ? 'bg-blue-600 border-blue-600 text-white'
+                                                            : 'border-slate-300 bg-white'
+                                                    }`}
+                                                >
+                                                    {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
+                                                </span>
+                                                <span className="truncate">{cat.name}</span>
+                                            </div>
+
+                                            {isSelected && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => handleSetPrimary(cat.id, e)}
+                                                    title={isPrimary ? 'Đang là danh mục chính' : 'Đặt làm danh mục chính'}
+                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold shrink-0 transition-colors cursor-pointer ${
+                                                        isPrimary
+                                                            ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                                            : 'bg-white text-slate-500 border border-slate-200 hover:border-amber-300 hover:text-amber-600'
+                                                    }`}
+                                                >
+                                                    <Star className={`w-2.5 h-2.5 ${isPrimary ? 'fill-amber-500 text-amber-500' : ''}`} />
+                                                    {isPrimary ? 'Chính' : 'Đặt chính'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-2.5 py-2 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between text-[11px] shrink-0">
+                            <span className="text-slate-500">
+                                {normalizedSelectedIds.length > 0
+                                    ? `Đã chọn ${normalizedSelectedIds.length} danh mục`
+                                    : 'Chưa chọn danh mục'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                {normalizedSelectedIds.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearAll}
+                                        className="text-rose-600 hover:text-rose-700 font-medium cursor-pointer"
+                                    >
+                                        Bỏ chọn hết
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOpen(false)}
+                                    className="px-2.5 py-1 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+                                >
+                                    Xong
+                                </button>
+                            </div>
+                        </div>
+                    </div>,
+                    document.body
+                )}
+        </div>
+    );
+}
+
 export default function ProductList() {
     const { showToast } = useToast();
 
@@ -365,7 +782,8 @@ export default function ProductList() {
         sku: '',
         slug: '',
         brandId: '' as string | number,
-        primaryCategoryId: '' as string | number,
+        categoryIds: [] as number[],
+        primaryCategoryId: null as number | null,
         productType: 'OTHER' as ProductType,
         price: 1000000,
         status: 'ACTIVE' as BackendProductStatus,
@@ -448,10 +866,27 @@ export default function ProductList() {
                 const matchedBrand = brands.find((b) => b.id === p.brandId);
                 const brandName = matchedBrand?.name || (p.brandId ? `Brand #${p.brandId}` : 'Chưa gán');
 
-                // Resolve Category Name
-                const catId = p.primaryCategoryId ?? (p.categoryIds && p.categoryIds.length > 0 ? p.categoryIds[0] : null);
-                const matchedCat = categories.find((c) => c.id === catId);
-                const categoryName = matchedCat?.name || (catId ? `Danh mục #${catId}` : 'Chưa phân loại');
+                // Resolve Category Names (multi-category)
+                const rawCategoryIds = Array.isArray(p.categoryIds)
+                    ? Array.from(new Set(p.categoryIds.map(Number).filter((id) => !Number.isNaN(id) && id > 0)))
+                    : [];
+                const resolvedPrimaryCatId =
+                    p.primaryCategoryId !== undefined && p.primaryCategoryId !== null
+                        ? Number(p.primaryCategoryId)
+                        : (rawCategoryIds[0] ?? null);
+                const normalizedCategoryIds =
+                    resolvedPrimaryCatId !== null && !rawCategoryIds.includes(resolvedPrimaryCatId)
+                        ? [resolvedPrimaryCatId, ...rawCategoryIds]
+                        : rawCategoryIds;
+                const categoryNames = normalizedCategoryIds.map((id) => {
+                    const matched = categories.find((c) => c.id === id);
+                    return matched?.name || `Danh mục #${id}`;
+                });
+                const matchedPrimaryCat = categories.find((c) => c.id === resolvedPrimaryCatId);
+                const categoryName =
+                    matchedPrimaryCat?.name ||
+                    categoryNames[0] ||
+                    (resolvedPrimaryCatId ? `Danh mục #${resolvedPrimaryCatId}` : 'Chưa phân loại');
 
                 const rawImageUrl = p.imageUrl?.trim() || '';
                 const splitUrls = rawImageUrl
@@ -472,9 +907,10 @@ export default function ProductList() {
                     slug: p.slug || '',
                     brandId: p.brandId ?? null,
                     brand: brandName,
-                    categoryIds: p.categoryIds || [],
-                    primaryCategoryId: p.primaryCategoryId ?? null,
+                    categoryIds: normalizedCategoryIds,
+                    primaryCategoryId: resolvedPrimaryCatId,
                     category: categoryName,
+                    categoryNames,
                     productType: (p.productType as ProductType) || 'COMPONENT',
                     price: typeof p.price === 'number' ? p.price : 0,
                     image: avatarImage,
@@ -594,7 +1030,7 @@ export default function ProductList() {
             `"${p.name.replace(/"/g, '""')}"`,
             p.productType,
             `"${p.brand.replace(/"/g, '""')}"`,
-            `"${p.category.replace(/"/g, '""')}"`,
+            `"${(p.categoryNames && p.categoryNames.length > 0 ? p.categoryNames.join(', ') : p.category).replace(/"/g, '""')}"`,
             p.price,
             p.status,
             p.createdAt,
@@ -665,7 +1101,27 @@ export default function ProductList() {
             spec = getSpecTemplateForCategory(catName).defaultSpecsJson;
         }
 
-        setEditForm({ ...p, specification: spec });
+        const normalizedEditCatIds = Array.from(
+            new Set(
+                [
+                    ...(p.categoryIds || []),
+                    ...(p.primaryCategoryId ? [Number(p.primaryCategoryId)] : []),
+                ]
+                    .map(Number)
+                    .filter((id) => !Number.isNaN(id) && id > 0)
+            )
+        );
+        const normalizedEditPrimaryId =
+            p.primaryCategoryId && normalizedEditCatIds.includes(Number(p.primaryCategoryId))
+                ? Number(p.primaryCategoryId)
+                : (normalizedEditCatIds[0] ?? null);
+
+        setEditForm({
+            ...p,
+            categoryIds: normalizedEditCatIds,
+            primaryCategoryId: normalizedEditPrimaryId,
+            specification: spec,
+        });
         setEditSelectedFile(null);
         setEditGallery(
             (p.gallery || []).map((url, idx) => ({
@@ -837,7 +1293,13 @@ export default function ProductList() {
 
         try {
             const brandIdNum = editForm.brandId ? Number(editForm.brandId) : null;
-            const catIdNum = editForm.primaryCategoryId ? Number(editForm.primaryCategoryId) : null;
+            const selectedCatIds = Array.from(
+                new Set((editForm.categoryIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))
+            );
+            const primaryCatIdNum =
+                editForm.primaryCategoryId && selectedCatIds.includes(Number(editForm.primaryCategoryId))
+                    ? Number(editForm.primaryCategoryId)
+                    : (selectedCatIds[0] ?? null);
 
             await adminProductService.updateProduct(editForm.numericId, {
                 name: editForm.name.trim(),
@@ -848,8 +1310,8 @@ export default function ProductList() {
                 status: editForm.status,
                 imageUrl: combinedImageUrl,
                 brandId: brandIdNum,
-                primaryCategoryId: catIdNum,
-                categoryIds: catIdNum ? [catIdNum] : [],
+                primaryCategoryId: primaryCatIdNum,
+                categoryIds: selectedCatIds,
                 specification: cleanEmptySpecsForSaving(editForm.specification),
                 description: editForm.description,
             });
@@ -936,7 +1398,13 @@ export default function ProductList() {
         try {
             const finalSlug = addForm.slug.trim() || generateSlug(addForm.name);
             const brandIdNum = addForm.brandId ? Number(addForm.brandId) : null;
-            const catIdNum = addForm.primaryCategoryId ? Number(addForm.primaryCategoryId) : null;
+            const selectedCatIds = Array.from(
+                new Set((addForm.categoryIds || []).map(Number).filter((id) => !Number.isNaN(id) && id > 0))
+            );
+            const primaryCatIdNum =
+                addForm.primaryCategoryId && selectedCatIds.includes(Number(addForm.primaryCategoryId))
+                    ? Number(addForm.primaryCategoryId)
+                    : (selectedCatIds[0] ?? null);
 
             await adminProductService.createProduct({
                 name: addForm.name.trim(),
@@ -947,8 +1415,8 @@ export default function ProductList() {
                 status: addForm.status,
                 imageUrl: combinedImageUrl,
                 brandId: brandIdNum,
-                primaryCategoryId: catIdNum,
-                categoryIds: catIdNum ? [catIdNum] : [],
+                primaryCategoryId: primaryCatIdNum,
+                categoryIds: selectedCatIds,
                 specification: cleanEmptySpecsForSaving(addForm.specification),
                 description: addForm.description,
             });
@@ -966,7 +1434,8 @@ export default function ProductList() {
                 sku: '',
                 slug: '',
                 brandId: brands[0]?.id || '',
-                primaryCategoryId: resetCat?.id || '',
+                categoryIds: resetCat ? [resetCat.id] : [],
+                primaryCategoryId: resetCat?.id ?? null,
                 productType: 'OTHER',
                 price: 1000000,
                 status: 'ACTIVE',
@@ -1087,17 +1556,40 @@ export default function ProductList() {
         {
             key: 'categoryBrand',
             header: 'Danh mục & Hãng',
-            render: (p) => (
-                <div className="space-y-1">
-                    <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        {p.category}
-                    </span>
-                    <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                        <Tag className="w-3 h-3 text-gray-400" />
-                        <span>{p.brand}</span>
+            render: (p) => {
+                const displayCategories =
+                    p.categoryNames && p.categoryNames.length > 0 ? p.categoryNames : [p.category];
+                const visibleCategories = displayCategories.slice(0, 2);
+                const hiddenCount = displayCategories.length - visibleCategories.length;
+
+                return (
+                    <div className="space-y-1.5 max-w-[240px]">
+                        <div className="flex flex-wrap items-center gap-1" title={displayCategories.join(', ')}>
+                            {visibleCategories.map((catName, idx) => (
+                                <span
+                                    key={`${p.id}-cat-${idx}`}
+                                    className={`inline-block px-2 py-0.5 rounded-lg text-xs font-medium border truncate max-w-[150px] ${
+                                        idx === 0
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-slate-50 text-slate-700 border-slate-200'
+                                    }`}
+                                >
+                                    {catName}
+                                </span>
+                            ))}
+                            {hiddenCount > 0 && (
+                                <span className="inline-block px-1.5 py-0.5 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    +{hiddenCount}
+                                </span>
+                            )}
+                        </div>
+                        <div className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                            <Tag className="w-3 h-3 text-gray-400" />
+                            <span>{p.brand}</span>
+                        </div>
                     </div>
-                </div>
-            ),
+                );
+            },
         },
         {
             key: 'price',
@@ -1219,7 +1711,8 @@ export default function ProductList() {
                                 sku: `SP-${Date.now().toString(36).slice(-5).toUpperCase()}`,
                                 slug: '',
                                 brandId: brands[0]?.id || '',
-                                primaryCategoryId: defaultCat?.id || '',
+                                categoryIds: defaultCat ? [defaultCat.id] : [],
+                                primaryCategoryId: defaultCat?.id ?? null,
                                 productType: 'OTHER',
                                 price: 1000000,
                                 status: 'ACTIVE',
@@ -1411,31 +1904,33 @@ export default function ProductList() {
                                 className="font-mono uppercase"
                             />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <AdminSelect
+                            <div className="space-y-4">
+                                <CategoryMultiSelect
                                     label="Danh mục sản phẩm"
-                                    value={addForm.primaryCategoryId}
-                                    onChange={(e) => {
-                                        const catId = e.target.value;
-                                        const selectedCat = categories.find((c) => String(c.id) === String(catId));
-                                        const catName = selectedCat?.name || '';
-                                        const templateInfo = getSpecTemplateForCategory(catName);
-                                        const mergedSpecs = mergeSpecsWithTemplate(addForm.specification, templateInfo.items);
-
-                                        setAddForm((prev) => ({
-                                            ...prev,
-                                            primaryCategoryId: catId,
-                                            specification: mergedSpecs,
-                                        }));
+                                    categories={categories}
+                                    selectedIds={addForm.categoryIds}
+                                    primaryCategoryId={addForm.primaryCategoryId}
+                                    helperText="Có thể chọn nhiều danh mục cho 1 sản phẩm. Nhấn biểu tượng ngôi sao (★) để chọn danh mục chính."
+                                    onChange={(nextIds, nextPrimaryId) => {
+                                        const primaryCat = categories.find((c) => c.id === nextPrimaryId);
+                                        const catName = primaryCat?.name || '';
+                                        setAddForm((prev) => {
+                                            const mergedSpecs =
+                                                nextPrimaryId !== prev.primaryCategoryId && catName
+                                                    ? mergeSpecsWithTemplate(
+                                                          prev.specification,
+                                                          getSpecTemplateForCategory(catName).items
+                                                      )
+                                                    : prev.specification;
+                                            return {
+                                                ...prev,
+                                                categoryIds: nextIds,
+                                                primaryCategoryId: nextPrimaryId,
+                                                specification: mergedSpecs,
+                                            };
+                                        });
                                     }}
-                                >
-                                    <option value="">-- Chọn danh mục --</option>
-                                    {categories.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </AdminSelect>
+                                />
 
                                 <AdminSelect
                                     label="Thương hiệu"
@@ -1586,35 +2081,40 @@ export default function ProductList() {
                                     className="font-mono"
                                 />
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <AdminSelect
-                                        label="Danh mục"
-                                        value={editForm.primaryCategoryId ?? ''}
-                                        onChange={(e) => {
-                                            const catId = e.target.value ? Number(e.target.value) : null;
-                                            const selectedCat = categories.find((c) => c.id === catId);
-                                            const catName = selectedCat?.name || '';
-                                            const templateInfo = getSpecTemplateForCategory(catName);
+                                <div className="space-y-4">
+                                    <CategoryMultiSelect
+                                        label="Danh mục sản phẩm"
+                                        categories={categories}
+                                        selectedIds={editForm.categoryIds || []}
+                                        primaryCategoryId={editForm.primaryCategoryId ?? null}
+                                        helperText="Có thể chọn nhiều danh mục cho 1 sản phẩm. Nhấn biểu tượng ngôi sao (★) để chọn danh mục chính."
+                                        onChange={(nextIds, nextPrimaryId) => {
+                                            const primaryCat = categories.find((c) => c.id === nextPrimaryId);
+                                            const catName = primaryCat?.name || '';
+                                            const catNames = nextIds.map(
+                                                (id) => categories.find((c) => c.id === id)?.name || `Danh mục #${id}`
+                                            );
 
                                             setEditForm((prev) => {
                                                 if (!prev) return null;
-                                                const mergedSpecs = mergeSpecsWithTemplate(prev.specification, templateInfo.items);
+                                                const mergedSpecs =
+                                                    nextPrimaryId !== prev.primaryCategoryId && catName
+                                                        ? mergeSpecsWithTemplate(
+                                                              prev.specification,
+                                                              getSpecTemplateForCategory(catName).items
+                                                          )
+                                                        : prev.specification;
                                                 return {
                                                     ...prev,
-                                                    primaryCategoryId: catId,
-                                                    category: catName,
+                                                    categoryIds: nextIds,
+                                                    primaryCategoryId: nextPrimaryId,
+                                                    category: catName || 'Chưa phân loại',
+                                                    categoryNames: catNames,
                                                     specification: mergedSpecs,
                                                 };
                                             });
                                         }}
-                                    >
-                                        <option value="">-- Chọn danh mục --</option>
-                                        {categories.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.name}
-                                            </option>
-                                        ))}
-                                    </AdminSelect>
+                                    />
 
                                     <AdminSelect
                                         label="Thương hiệu"
@@ -1789,8 +2289,15 @@ export default function ProductList() {
                                         <span className="text-lg font-bold text-gray-900 mt-0.5 block">#{selectedProduct.numericId}</span>
                                     </div>
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Danh mục</span>
-                                        <span className="text-sm font-bold text-blue-600 mt-1 block truncate">{selectedProduct.category}</span>
+                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">
+                                            Danh mục {selectedProduct.categoryNames.length > 1 ? `(${selectedProduct.categoryNames.length})` : ''}
+                                        </span>
+                                        <span
+                                            className="text-sm font-bold text-blue-600 mt-1 block truncate"
+                                            title={selectedProduct.categoryNames.join(', ') || selectedProduct.category}
+                                        >
+                                            {selectedProduct.category}
+                                        </span>
                                     </div>
                                     <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
                                         <span className="text-[11px] font-medium text-gray-400 block uppercase">Thương hiệu</span>
@@ -1807,6 +2314,36 @@ export default function ProductList() {
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* Multi-category list */}
+                                {selectedProduct.categoryNames && selectedProduct.categoryNames.length > 0 && (
+                                    <div className="bg-gray-50/70 p-3.5 rounded-xl border border-gray-100">
+                                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                                            Danh sách danh mục ({selectedProduct.categoryNames.length})
+                                        </span>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            {(selectedProduct.categoryIds || []).map((catId, idx) => {
+                                                const catName = selectedProduct.categoryNames[idx] || `Danh mục #${catId}`;
+                                                const isPrimary = catId === selectedProduct.primaryCategoryId;
+                                                return (
+                                                    <span
+                                                        key={catId}
+                                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border ${
+                                                            isPrimary
+                                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                                : 'bg-white text-slate-700 border-slate-200'
+                                                        }`}
+                                                    >
+                                                        {isPrimary && (
+                                                            <Star className="w-3 h-3 text-amber-500 fill-amber-400 shrink-0" />
+                                                        )}
+                                                        <span>{catName}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Fast Copy Meta Identifiers */}
                                 <div className="bg-blue-50/60 p-4 rounded-2xl border border-blue-100 space-y-2.5">

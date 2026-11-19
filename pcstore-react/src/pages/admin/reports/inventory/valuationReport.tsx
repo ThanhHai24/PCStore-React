@@ -92,14 +92,11 @@ export default function InventoryValuationReportPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Báo Cáo Định Giá Hàng Tồn Kho & Tháp Tuổi Kho (Aging)
+              Báo Cáo Định Giá Hàng Tồn Kho
             </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-              <Sparkles className="w-3 h-3 text-amber-600" /> Valuation & Aging
-            </span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Đánh giá quy mô vốn ứ đọng, tháp tuổi linh kiện và phân bổ dòng tiền lưu kho
+
           </p>
         </div>
 
@@ -121,7 +118,7 @@ export default function InventoryValuationReportPage() {
             <p className="text-2xl font-black text-blue-600 mt-1">
               {summary ? formatVND(summary.totalInventoryValue) : '0 ₫'}
             </p>
-            <span className="text-[11px] text-gray-400 font-medium">Toàn bộ serial lưu kho</span>
+            <span className="text-[11px] text-gray-400 font-medium">Toàn bộ sản phẩm lưu kho</span>
           </div>
           <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
             <Coins className="w-7 h-7" />
@@ -130,12 +127,12 @@ export default function InventoryValuationReportPage() {
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-gray-500">Vốn Hàng Có Thể Bán (Sellable)</span>
+            <span className="text-xs font-semibold text-gray-500">Vốn Hàng Có Thể Bán</span>
             <p className="text-2xl font-black text-emerald-600 mt-1">
               {summary ? formatVND(summary.sellableValue) : '0 ₫'}
             </p>
             <span className="text-[11px] text-emerald-600 font-medium">
-              {summary ? formatNumber(summary.sellableSerials) : 0} serial khả dụng
+              {summary ? formatNumber(summary.sellableSerials) : 0} sản phẩm khả dụng
             </span>
           </div>
           <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
@@ -147,7 +144,7 @@ export default function InventoryValuationReportPage() {
           <div>
             <span className="text-xs font-semibold text-gray-500">Vốn Hàng Lỗi / Chờ Trả NCC</span>
             <p className="text-2xl font-black text-rose-600 mt-1">
-              {summary ? formatNumber(summary.defectiveSerials) : 0} serial
+              {summary ? formatNumber(summary.defectiveSerials) : 0} Sản phẩm
             </p>
             <span className="text-[11px] text-rose-500 font-medium">Cần hoàn vốn hoặc đổi mới</span>
           </div>
@@ -164,7 +161,7 @@ export default function InventoryValuationReportPage() {
           <div className="border-b pb-3 border-gray-100">
             <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-600" />
-              <span>Tháp Tuổi Tồn Kho (Inventory Aging)</span>
+              <span>Tháp Tuổi Tồn Kho</span>
             </h2>
             <p className="text-xs text-gray-500">Phân bổ giá trị vốn theo thời gian lưu kho từ ngày nhập</p>
           </div>

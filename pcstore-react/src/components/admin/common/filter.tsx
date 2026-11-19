@@ -186,37 +186,50 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
         <div className={`bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3 ${className}`}>
             {/* Top Toolbar Row */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                {/* Search Bar & Filter Button */}
-                <div className="flex flex-1 flex-wrap items-center justify-between gap-2.5 min-w-0">
+                {/* Search Bar, Reset & Filter Button */}
+                <div className="flex flex-1 flex-nowrap items-center justify-between gap-2.5 min-w-0">
                     {showSearch && (
                         <SearchBar
                             value={searchQuery}
                             onChange={activeSearchChange}
                             onSearch={onSearch}
                             placeholder={searchPlaceholder}
-                            className={searchBarClassName || "w-full sm:w-96 md:w-[70%] lg:w-[80%]"}
+                            className={searchBarClassName || "flex-1 min-w-0"}
                         />
                     )}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
+                        {/* Reset Button */}
+                        {(activeFilterCount > 0 || searchQuery) && (
+                            <button
+                                type="button"
+                                onClick={handleResetAll}
+                                className="flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                title="Đặt lại"
+                                aria-label="Đặt lại"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </button>
+                        )}
+
                         {/* Single Filter Button with Dropdown Popover */}
                         {fields.length > 0 && (
-                            <div className="relative inline-block text-left" ref={dropdownRef}>
+                            <div className="relative inline-block text-left shrink-0" ref={dropdownRef}>
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(!isOpen)}
-                                    className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-all ${isOpen || activeFilterCount > 0
+                                    className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl border whitespace-nowrap transition-all ${isOpen || activeFilterCount > 0
                                         ? 'bg-blue-50 text-blue-600 border-blue-200 ring-2 ring-blue-500/10'
                                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-sm'
                                         }`}
                                 >
-                                    <Filter className="w-4 h-4 text-blue-600" />
+                                    <Filter className="w-4 h-4 text-blue-600 shrink-0" />
                                     <span>Bộ lọc</span>
                                     {activeFilterCount > 0 && (
                                         <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">
                                             {activeFilterCount}
                                         </span>
                                     )}
-                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Dropdown Popover */}
@@ -277,19 +290,6 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                                     </div>
                                 )}
                             </div>
-                        )}
-
-                        {/* Reset Button */}
-                        {(activeFilterCount > 0 || searchQuery) && (
-                            <button
-                                type="button"
-                                onClick={handleResetAll}
-                                className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-                                title="Xóa tất cả bộ lọc"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span className="hidden md:inline">Đặt lại</span>
-                            </button>
                         )}
                     </div>
 

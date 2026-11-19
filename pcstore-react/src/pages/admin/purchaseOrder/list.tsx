@@ -1637,20 +1637,17 @@ export default function PurchaseOrderList() {
                     activeTab={activeDetailTab}
                     onTabChange={(t) => setActiveDetailTab(t as any)}
                     footer={
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => handlePrintOrder(selectedOrder)}
-                                    icon={Printer}
-                                    size="sm"
-                                >
-                                    In đơn đặt hàng
-                                </AdminButton>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {selectedOrder.status === 'DRAFT' && (
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
+                                type="button"
+                                variant="secondary"
+                                onClick={() => handlePrintOrder(selectedOrder)}
+                                icon={Printer}
+                                size="sm"
+                            >
+                                In đơn đặt hàng
+                            </AdminButton>
+                            {selectedOrder.status === 'DRAFT' && (
                                     <>
                                         <AdminButton
                                             type="button"
@@ -1726,15 +1723,14 @@ export default function PurchaseOrderList() {
                                     </AdminButton>
                                 )}
 
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => setIsDetailModalOpen(false)}
-                                >
-                                    Đóng
-                                </AdminButton>
-                            </div>
+                            <AdminButton
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => setIsDetailModalOpen(false)}
+                            >
+                                Đóng
+                            </AdminButton>
                         </div>
                     }
                 >

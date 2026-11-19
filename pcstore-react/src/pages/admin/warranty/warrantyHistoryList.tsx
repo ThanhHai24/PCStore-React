@@ -22,7 +22,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import { AdminTable, AdminActionDropdown, type Column } from '../../../components/admin/common/table';
 import { AdminButton, AdminInput } from '../../../components/admin/common/modal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminWarrantyService } from '../../../services/adminWarrantyService';
@@ -240,20 +240,23 @@ export default function WarrantyHistoryList() {
         },
         {
             key: 'actions',
-            header: 'Tra cứu',
+            header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <AdminButton
-                    variant="secondary"
-                    size="sm"
-                    icon={<Search className="w-3.5 h-3.5" />}
-                    onClick={() => {
-                        setSerialQuery(item.serialNumber);
-                        lookupSerial(item.serialNumber);
-                    }}
-                >
-                    Xem dòng thời gian
-                </AdminButton>
+                <AdminActionDropdown
+                    actions={[
+                        {
+                            key: 'view-timeline',
+                            label: 'Xem dòng thời gian',
+                            icon: Search,
+                            variant: 'primary',
+                            onClick: () => {
+                                setSerialQuery(item.serialNumber);
+                                lookupSerial(item.serialNumber);
+                            },
+                        },
+                    ]}
+                />
             ),
         },
     ];

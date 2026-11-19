@@ -33,7 +33,7 @@ import {
     Package2,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import { AdminTable, AdminActionDropdown, type Column } from '../../../components/admin/common/table';
 import {
     AdminModal,
     type ModalTab,
@@ -817,43 +817,54 @@ export default function PackagingList() {
         {
             key: 'actions',
             header: 'Thao tác',
-            render: (rec) => (
-                <div className="flex items-center gap-1.5">
-                    {rec.fulfillmentStatus === 'READY_TO_PACK' || rec.fulfillmentStatus === 'PACKING_IN_PROGRESS' ? (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenPackingModal(rec)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-xs cursor-pointer"
-                        >
-                            <span>Đóng gói</span>
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setPrintRecord(rec);
-                                setIsPrintModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all cursor-pointer shadow-2xs"
-                        >
-                            <Printer className="w-3.5 h-3.5 text-gray-500" />
-                            <span>In phiếu</span>
-                        </button>
-                    )}
-
-                    {rec.fulfillmentStatus === 'PACKED_WAITING_HANDOVER' && (
-                        <button
-                            type="button"
-                            onClick={() => navigate('/admin/warehouse/handover')}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-all cursor-pointer"
-                            title="Chuyển sang trang Bàn giao ĐVVC"
-                        >
-                            <Truck className="w-3.5 h-3.5" />
-                            <span>Bàn giao ĐVVC</span>
-                        </button>
-                    )}
-                </div>
-            ),
+            align: 'right',
+            render: (rec) => {
+                const canPack =
+                    rec.fulfillmentStatus === 'READY_TO_PACK' ||
+                    rec.fulfillmentStatus === 'PACKING_IN_PROGRESS';
+                return (
+                    <AdminActionDropdown
+                        maxInline={3}
+                        actions={[
+                            {
+                                key: 'pack-order',
+                                label: 'Đóng gói',
+                                icon: Box,
+                                variant: 'primary',
+                                highlight: true,
+                                hidden: !canPack,
+                                onClick: () => handleOpenPackingModal(rec),
+                            },
+                            {
+                                key: 'handover-carrier',
+                                label: 'Bàn giao ĐVVC',
+                                icon: Truck,
+                                variant: 'primary',
+                                highlight: true,
+                                hidden: rec.fulfillmentStatus !== 'PACKED_WAITING_HANDOVER',
+                                onClick: () => navigate('/admin/warehouse/handover'),
+                            },
+                        ]}
+                        moreActions={
+                            canPack
+                                ? []
+                                : [
+                                      {
+                                          key: 'print-packing',
+                                          label: 'In phiếu đóng gói',
+                                          description: 'Xuất bản in phiếu đóng gói đơn hàng',
+                                          icon: Printer,
+                                          variant: 'primary',
+                                          onClick: () => {
+                                              setPrintRecord(rec);
+                                              setIsPrintModalOpen(true);
+                                          },
+                                      },
+                                  ]
+                        }
+                    />
+                );
+            },
         },
     ];
 
@@ -1017,28 +1028,25 @@ export default function PackagingList() {
                     icon={Package2}
                     size="xl"
                     footer={
-                        <div className="flex items-center justify-between w-full">
-
-                            <div className="flex items-center gap-2">
-                                <AdminButton
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => setIsPackingModalOpen(false)}
-                                >
-                                    Đóng
-                                </AdminButton>
-                                <AdminButton
-                                    type="button"
-                                    variant="primary"
-                                    onClick={handleConfirmPackaging}
-                                    isLoading={isSubmitting}
-                                    disabled={isSubmitting}
-                                    icon={<CheckCircle2 className="w-4 h-4" />}
-                                    className="!bg-indigo-600 hover:!bg-indigo-700"
-                                >
-                                    Hoàn tất đóng gói
-                                </AdminButton>
-                            </div>
+                        <div className="flex items-center justify-end gap-3 w-full">
+                            <AdminButton
+                                type="button"
+                                variant="secondary"
+                                onClick={() => setIsPackingModalOpen(false)}
+                            >
+                                Đóng
+                            </AdminButton>
+                            <AdminButton
+                                type="button"
+                                variant="primary"
+                                onClick={handleConfirmPackaging}
+                                isLoading={isSubmitting}
+                                disabled={isSubmitting}
+                                icon={<CheckCircle2 className="w-4 h-4" />}
+                                className="!bg-indigo-600 hover:!bg-indigo-700"
+                            >
+                                Hoàn tất đóng gói
+                            </AdminButton>
                         </div>
                     }
                 >

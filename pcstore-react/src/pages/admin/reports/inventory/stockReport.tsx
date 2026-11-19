@@ -118,29 +118,29 @@ export default function InventoryStockReportPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-blue-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Tổng Serial Trong Kho</span>
+            <span className="text-xs font-semibold text-gray-500">Tổng Sản Phẩm Trong Kho</span>
             <Boxes className="w-4 h-4 text-blue-600" />
           </div>
           <div>
             <p className="text-xl font-black text-gray-900">
               {summary ? formatNumber(summary.totalSerialsInStore) : '0'}
             </p>
-            <span className="text-[11px] text-gray-400 mt-1 block">Tất cả trạng thái</span>
+            <span className="text-[11px] text-gray-400 mt-1 block"></span>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-emerald-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Serial Có Thể Bán</span>
+            <span className="text-xs font-semibold text-gray-500">Sản Phẩm Có Thể Bán</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div>
             <p className="text-xl font-black text-emerald-600">
               {summary ? formatNumber(summary.sellableSerials) : '0'}
             </p>
-            <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
+            {/* <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
               Vốn: {summary ? formatCompactVND(summary.sellableValue) : '0 ₫'}
-            </span>
+            </span> */}
           </div>
         </div>
 
@@ -153,20 +153,20 @@ export default function InventoryStockReportPage() {
             <p className="text-xl font-black text-indigo-600">
               {summary ? formatVND(summary.totalInventoryValue) : '0 ₫'}
             </p>
-            <span className="text-[11px] text-gray-400 mt-1 block">Định giá theo giá nhập kho</span>
+            <span className="text-[11px] text-gray-400 mt-1 block"></span>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-rose-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Serial Lỗi / Chờ Trả</span>
+            <span className="text-xs font-semibold text-gray-500">Sản Phẩm Lỗi / Chờ Trả</span>
             <RotateCcw className="w-4 h-4 text-rose-600" />
           </div>
           <div>
             <p className="text-xl font-black text-rose-600">
               {summary ? formatNumber(summary.defectiveSerials) : '0'}
             </p>
-            <span className="text-[11px] text-rose-500 font-medium mt-1 block">Cần hoàn trả nhà cung cấp</span>
+            <span className="text-[11px] text-rose-500 font-medium mt-1 block"></span>
           </div>
         </div>
 
@@ -179,7 +179,7 @@ export default function InventoryStockReportPage() {
             <p className="text-xl font-black text-amber-600">
               {summary ? formatNumber(summary.packingAndDeliveringSerials) : '0'}
             </p>
-            <span className="text-[11px] text-gray-400 mt-1 block">Đang trên luồng xuất</span>
+            <span className="text-[11px] text-gray-400 mt-1 block"></span>
           </div>
         </div>
       </div>

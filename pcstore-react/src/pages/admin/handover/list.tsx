@@ -31,7 +31,7 @@ import {
     Check,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import { AdminTable, AdminActionDropdown, type Column } from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminModalHeader,
@@ -506,59 +506,63 @@ export default function HandoverList() {
         {
             key: 'actions',
             header: 'Thao tác',
-            render: (rec) => (
-                <div className="flex items-center gap-1.5">
-                    {rec.fulfillmentStatus === 'PACKED_WAITING_HANDOVER' ? (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenHandoverModal(rec)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all shadow-xs cursor-pointer"
-                        >
-                            <Truck className="w-3.5 h-3.5" />
-                            <span>Bàn giao ĐVVC</span>
-                        </button>
-                    ) : (
-                        <>
-                            {rec.fulfillmentStatus !== 'COMPLETED' && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleConfirmCustomerDelivery(rec)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all cursor-pointer shadow-2xs"
-                                    title="Khách hàng đã nhận hàng & Hoàn tất (Cập nhật Serial sang SOLD)"
-                                >
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>Giao thành công</span>
-                                </button>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={() => {
+            align: 'right',
+            render: (rec) => {
+                const isWaitingHandover = rec.fulfillmentStatus === 'PACKED_WAITING_HANDOVER';
+                return (
+                    <AdminActionDropdown
+                        maxInline={3}
+                        actions={[
+                            {
+                                key: 'handover-carrier',
+                                label: 'Bàn giao ĐVVC',
+                                icon: Truck,
+                                variant: 'primary',
+                                highlight: true,
+                                hidden: !isWaitingHandover,
+                                onClick: () => handleOpenHandoverModal(rec),
+                            },
+                            {
+                                key: 'confirm-delivery',
+                                label: 'Giao thành công (Khách hàng đã nhận hàng & Hoàn tất)',
+                                icon: CheckCircle2,
+                                variant: 'success',
+                                highlight: true,
+                                hidden: isWaitingHandover || rec.fulfillmentStatus === 'COMPLETED',
+                                onClick: () => handleConfirmCustomerDelivery(rec),
+                            },
+                            {
+                                key: 'shipping-tracking',
+                                label: 'Chi tiết vận chuyển',
+                                icon: ExternalLink,
+                                variant: 'primary',
+                                hidden: isWaitingHandover,
+                                onClick: () => {
                                     setTrackingRecord(rec);
                                     setIsTrackingModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-all cursor-pointer"
-                                title="Theo dõi lộ trình từ đối tác vận chuyển ngoài"
-                            >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Chi tiết vận chuyển</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setPrintRecord(rec);
-                                    setIsPrintModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1 p-1.5 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg transition-all cursor-pointer shadow-2xs"
-                                title="In biên bản bàn giao"
-                            >
-                                <Printer className="w-3.5 h-3.5 text-gray-500" />
-                            </button>
-                        </>
-                    )}
-                </div>
-            ),
+                                },
+                            },
+                        ]}
+                        moreActions={
+                            isWaitingHandover
+                                ? []
+                                : [
+                                      {
+                                          key: 'print-handover',
+                                          label: 'In biên bản bàn giao',
+                                          description: 'Xuất bản in biên bản bàn giao ĐVVC',
+                                          icon: Printer,
+                                          variant: 'primary',
+                                          onClick: () => {
+                                              setPrintRecord(rec);
+                                              setIsPrintModalOpen(true);
+                                          },
+                                      },
+                                  ]
+                        }
+                    />
+                );
+            },
         },
     ];
 

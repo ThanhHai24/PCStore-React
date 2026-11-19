@@ -252,8 +252,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
             {/* Modal Footer */}
             {showFooter && (
-                <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 shrink-0">
-                    <div className="flex items-center gap-3 ml-auto">
+                <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3 shrink-0">
+                    <div className="flex items-center justify-end gap-3 w-full">
                         {footer ? (
                             footer
                         ) : (

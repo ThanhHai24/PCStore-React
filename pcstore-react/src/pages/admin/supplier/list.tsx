@@ -1037,49 +1037,45 @@ export default function SupplierList() {
                 activeTab={activeAddTab}
                 onTabChange={setActiveAddTab}
                 footer={
-                    <div className="flex items-center justify-between w-full">
-                        <div className="flex items-center gap-2">
-                            {activeAddTab === 'contact' && (
-                                <AdminButton
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setActiveAddTab('basic')}
-                                >
-                                    Quay lại
-                                </AdminButton>
-                            )}
-                            {activeAddTab === 'basic' && (
-                                <AdminButton
-                                    type="button"
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={() => setActiveAddTab('contact')}
-                                >
-                                    Tiếp theo: Đại diện & Địa chỉ
-                                </AdminButton>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-end gap-3 w-full">
+                        {activeAddTab === 'contact' && (
                             <AdminButton
                                 type="button"
-                                variant="secondary"
-                                onClick={() => setIsAddModalOpen(false)}
-                                disabled={isSubmitting}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveAddTab('basic')}
                             >
-                                Hủy bỏ
+                                Quay lại
                             </AdminButton>
+                        )}
+                        {activeAddTab === 'basic' && (
                             <AdminButton
                                 type="button"
                                 variant="primary"
-                                onClick={handleSaveAdd}
-                                disabled={isSubmitting}
-                                isLoading={isSubmitting}
-                                loadingText="Đang lưu..."
+                                size="sm"
+                                onClick={() => setActiveAddTab('contact')}
                             >
-                                Lưu nhà cung cấp
+                                Tiếp theo: Đại diện & Địa chỉ
                             </AdminButton>
-                        </div>
+                        )}
+                        <AdminButton
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setIsAddModalOpen(false)}
+                            disabled={isSubmitting}
+                        >
+                            Hủy bỏ
+                        </AdminButton>
+                        <AdminButton
+                            type="button"
+                            variant="primary"
+                            onClick={handleSaveAdd}
+                            disabled={isSubmitting}
+                            isLoading={isSubmitting}
+                            loadingText="Đang lưu..."
+                        >
+                            Lưu nhà cung cấp
+                        </AdminButton>
                     </div>
                 }
             >

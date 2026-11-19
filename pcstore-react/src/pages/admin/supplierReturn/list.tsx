@@ -934,67 +934,62 @@ export default function SupplierReturnList() {
         },
         {
             key: 'actions',
-            header: 'Thao tác nghiệp vụ',
+            header: 'Thao tác',
             align: 'right',
             render: (order) => (
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Nút hành động nhanh theo giai đoạn */}
-                    {order.status === 'WAITING_PACK' && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenPackModal(order)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                            title="Nhân viên kho tiếp nhận đóng gói"
-                        >
-                            <Box className="w-3.5 h-3.5" />
-                            <span>Kho đóng gói</span>
-                        </button>
-                    )}
-
-                    {order.status === 'WAITING_HANDOVER' && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenHandoverModal(order)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                            title="Bàn giao kiện hàng cho ĐVVC"
-                        >
-                            <Truck className="w-3.5 h-3.5" />
-                            <span>Giao ĐVVC</span>
-                        </button>
-                    )}
-
-                    {order.status === 'HANDED_OVER' && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenDeliveredModal(order)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                            title="Xác nhận ĐVVC đã giao tới NCC"
-                        >
-                            <Building2 className="w-3.5 h-3.5" />
-                            <span>Đã tới NCC</span>
-                        </button>
-                    )}
-
-                    {order.status === 'DELIVERED_SUPPLIER' && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenCompleteModal(order)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                            title="Quản lý xác nhận đối soát & Hoàn tất"
-                        >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Hoàn tất quy trình</span>
-                        </button>
-                    )}
-
-                    {/* Xem chi tiết & In biên bản */}
+                <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                     <AdminActionDropdown
-                        onView={() => handleOpenDetail(order)}
-                        viewLabel="Xem chi tiết & Tiến trình"
+                        maxInline={3}
                         actions={[
+                            {
+                                key: 'pack-order',
+                                label: 'Kho đóng gói',
+                                icon: Box,
+                                variant: 'warning',
+                                highlight: true,
+                                hidden: order.status !== 'WAITING_PACK',
+                                onClick: () => handleOpenPackModal(order),
+                            },
+                            {
+                                key: 'handover-carrier',
+                                label: 'Giao ĐVVC',
+                                icon: Truck,
+                                variant: 'primary',
+                                highlight: true,
+                                hidden: order.status !== 'WAITING_HANDOVER',
+                                onClick: () => handleOpenHandoverModal(order),
+                            },
+                            {
+                                key: 'delivered-supplier',
+                                label: 'Xác nhận đã tới NCC',
+                                icon: Building2,
+                                variant: 'primary',
+                                highlight: true,
+                                hidden: order.status !== 'HANDED_OVER',
+                                onClick: () => handleOpenDeliveredModal(order),
+                            },
+                            {
+                                key: 'complete-return',
+                                label: 'Hoàn tất quy trình',
+                                icon: CheckCircle2,
+                                variant: 'success',
+                                highlight: true,
+                                hidden: order.status !== 'DELIVERED_SUPPLIER',
+                                onClick: () => handleOpenCompleteModal(order),
+                            },
+                            {
+                                key: 'view-order',
+                                label: 'Xem chi tiết & Tiến trình',
+                                icon: Eye,
+                                variant: 'primary',
+                                onClick: () => handleOpenDetail(order),
+                            },
+                        ]}
+                        moreActions={[
                             {
                                 key: 'print',
                                 label: 'In biên bản xuất hoàn & Bàn giao ĐVVC',
+                                description: 'Xuất bản in biên bản bàn giao',
                                 icon: Printer,
                                 variant: 'primary',
                                 onClick: () => {
@@ -1100,18 +1095,19 @@ export default function SupplierReturnList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div>
-                    {!item.isInActiveReturnOrder && (
-                        <button
-                            type="button"
-                            onClick={() => handleOpenCreateModal(item.supplierId, [item.serialNumber])}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                        >
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                            <span>Lập đơn hoàn NCC</span>
-                        </button>
-                    )}
-                </div>
+                <AdminActionDropdown
+                    actions={[
+                        {
+                            key: 'create-return-order',
+                            label: 'Lập đơn hoàn NCC',
+                            icon: ShieldAlert,
+                            variant: 'danger',
+                            highlight: true,
+                            hidden: item.isInActiveReturnOrder,
+                            onClick: () => handleOpenCreateModal(item.supplierId, [item.serialNumber]),
+                        },
+                    ]}
+                />
             ),
         },
     ];

@@ -20,7 +20,7 @@ import {
     Sparkles,
 } from 'lucide-react';
 import { AdminFilter, type FilterField } from '../../../components/admin/common/filter';
-import { AdminTable, type Column } from '../../../components/admin/common/table';
+import { AdminTable, AdminActionDropdown, type Column } from '../../../components/admin/common/table';
 import {
     AdminModal,
     AdminSelect,
@@ -44,6 +44,8 @@ export default function SparePartsList() {
     // Data State
     const [loading, setLoading] = useState<boolean>(true);
     const [parts, setParts] = useState<SparePartItem[]>([]);
+    const [totalElements, setTotalElements] = useState<number>(0);
+    const [totalPages, setTotalPages] = useState<number>(1);
     const [page, setPage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(10);
 
@@ -60,12 +62,20 @@ export default function SparePartsList() {
     const [newStatus, setNewStatus] = useState<string>('INSTALLED');
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-    // Fetch spare parts
+    // Fetch spare parts (server-side pagination & filtering)
     const fetchParts = useCallback(async () => {
         setLoading(true);
         try {
-            const list = await adminWarrantyService.getAllSpareParts();
-            setParts(list);
+            const res = await adminWarrantyService.getSparePartsPage({
+                keyword: searchQuery.trim() || undefined,
+                status: filters.status || undefined,
+                page: page - 1,
+                size: pageSize,
+            });
+            setParts(res.content || []);
+            const total = res.totalElements ?? (res.content?.length || 0);
+            setTotalElements(total);
+            setTotalPages(Math.max(1, res.totalPages || Math.ceil(total / pageSize)));
         } catch (error: any) {
             addToast({
                 type: 'error',
@@ -75,51 +85,21 @@ export default function SparePartsList() {
         } finally {
             setLoading(false);
         }
-    }, [addToast]);
+    }, [searchQuery, filters.status, page, pageSize, addToast]);
 
     useEffect(() => {
         fetchParts();
     }, [fetchParts]);
 
-    // Filtered data
-    const filteredParts = useMemo(() => {
-        return parts.filter((p) => {
-            if (searchQuery.trim()) {
-                const kw = searchQuery.trim().toLowerCase();
-                const matchKw =
-                    p.productName.toLowerCase().includes(kw) ||
-                    p.productCode.toLowerCase().includes(kw) ||
-                    p.requestCode.toLowerCase().includes(kw) ||
-                    p.serialNumbers.some((s) => s.toLowerCase().includes(kw));
-                if (!matchKw) return false;
-            }
-
-            if (filters.status) {
-                if (String(p.status) !== filters.status) return false;
-            }
-
-            return true;
-        });
-    }, [parts, searchQuery, filters.status]);
-
     // KPI Metrics
     const stats = useMemo(() => {
-        const total = parts.length;
+        const total = totalElements || parts.length;
         const reserved = parts.filter((p) => p.status === 'RESERVED' || p.status === 1).length;
         const installed = parts.filter((p) => p.status === 'INSTALLED' || p.status === 2).length;
         const returned = parts.filter((p) => p.status === 'RETURNED' || p.status === 3).length;
         const totalCost = parts.reduce((acc, cur) => acc + (cur.totalCost || 0), 0);
         return { total, reserved, installed, returned, totalCost };
-    }, [parts]);
-
-    // Total pages
-    const totalPages = Math.max(1, Math.ceil(filteredParts.length / pageSize));
-
-    // Paginated content
-    const paginatedParts = useMemo(() => {
-        const start = (page - 1) * pageSize;
-        return filteredParts.slice(start, start + pageSize);
-    }, [filteredParts, page, pageSize]);
+    }, [parts, totalElements]);
 
     // Open Status Modal
     const handleOpenStatus = (part: SparePartItem) => {
@@ -245,6 +225,14 @@ export default function SparePartsList() {
             key: 'status',
             header: 'Trạng thái',
             render: (item) => {
+                if (item.status === 'PENDING' || item.status === 0) {
+                    return (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-300">
+                            <Clock className="w-3 h-3" />
+                            Chờ duyệt xuất
+                        </span>
+                    );
+                }
                 if (item.status === 'RESERVED' || item.status === 1) {
                     return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
@@ -271,6 +259,7 @@ export default function SparePartsList() {
                 }
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-300">
+                        <XCircle className="w-3 h-3" />
                         Đã hủy
                     </span>
                 );
@@ -281,14 +270,18 @@ export default function SparePartsList() {
             header: 'Thao tác',
             align: 'right',
             render: (item) => (
-                <div className="flex items-center justify-end gap-1">
-                    <button
-                        onClick={() => handleOpenStatus(item)}
-                        className="px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md transition"
-                    >
-                        Đổi trạng thái
-                    </button>
-                </div>
+                <AdminActionDropdown
+                    actions={[
+                        {
+                            key: 'change-status',
+                            label: 'Đổi trạng thái linh kiện',
+                            icon: RefreshCw,
+                            variant: 'primary',
+                            highlight: true,
+                            onClick: () => handleOpenStatus(item),
+                        },
+                    ]}
+                />
             ),
         },
     ];
@@ -302,9 +295,11 @@ export default function SparePartsList() {
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
+                { label: 'Chờ duyệt xuất (PENDING)', value: 'PENDING' },
                 { label: 'Đang giữ kho (RESERVED)', value: 'RESERVED' },
                 { label: 'Đã lắp vào máy (INSTALLED)', value: 'INSTALLED' },
                 { label: 'Đã hoàn kho (RETURNED)', value: 'RETURNED' },
+                { label: 'Đã hủy (CANCELLED)', value: 'CANCELLED' },
             ],
         },
     ];
@@ -458,10 +453,10 @@ export default function SparePartsList() {
             {/* Table */}
             <AdminTable
                 columns={columns}
-                data={paginatedParts}
+                data={parts}
                 rowKey="id"
                 loading={loading}
-                totalItems={filteredParts.length}
+                totalItems={totalElements}
                 currentPage={page}
                 pageSize={pageSize}
                 totalPages={totalPages}
@@ -509,6 +504,7 @@ export default function SparePartsList() {
                             value={newStatus}
                             onChange={(e) => setNewStatus(e.target.value)}
                             options={[
+                                { label: 'Chờ duyệt xuất kho (PENDING)', value: 'PENDING' },
                                 { label: 'Đang giữ cho ca sửa (RESERVED)', value: 'RESERVED' },
                                 { label: 'Đã lắp ráp vào thiết bị khách (INSTALLED)', value: 'INSTALLED' },
                                 { label: 'Hoàn trả lại kho kỹ thuật (RETURNED)', value: 'RETURNED' },

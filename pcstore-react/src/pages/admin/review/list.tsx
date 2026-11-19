@@ -969,7 +969,7 @@ export const ReviewCommentList: React.FC = () => {
                 showFooter={true}
                 footer={
                     selectedReview ? (
-                        <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center justify-end gap-3 w-full">
                             <AdminButton
                                 type="button"
                                 variant="danger"

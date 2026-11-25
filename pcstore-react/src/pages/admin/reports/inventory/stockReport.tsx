@@ -1,23 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Boxes,
-  Package,
-  Layers,
-  Barcode,
-  Calendar,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Truck,
-  RotateCcw,
-  Sparkles,
-} from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { RefreshCw } from 'lucide-react';
 import {
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
   XAxis,
@@ -40,24 +24,11 @@ function formatVND(amount: number): string {
   }).format(amount || 0);
 }
 
-function formatCompactVND(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2).replace(/\.00$/, '')} tỷ`;
-  }
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')} tr`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(0)}k`;
-  }
-  return String(value || 0);
-}
-
 function formatNumber(num: number): string {
   return new Intl.NumberFormat('vi-VN').format(num || 0);
 }
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#64748B'];
+const COLORS = ['#2563EB', '#059669', '#0EA5E9', '#64748B', '#D97706', '#E11D48', '#6366F1', '#0D9488'];
 
 export default function InventoryStockReportPage() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -89,155 +60,168 @@ export default function InventoryStockReportPage() {
   }, [loadStockData]);
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Báo Cáo Tồn Kho & Quản Lý Serial</h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-              <Sparkles className="w-3 h-3 text-blue-600" /> Stock Real-time
-            </span>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Báo cáo kho hàng</span>
+            <span className="text-slate-300">/</span>
+            <span>Tồn kho thời gian thực</span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Tổng quan số lượng, giá trị vốn tồn kho và cơ cấu phân bổ trạng thái linh kiện
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Báo cáo tồn kho &amp; quản lý serial
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Tổng quan số lượng khả dụng, giá trị vốn tồn kho và cơ cấu phân bổ trạng thái linh kiện theo danh mục.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={loadStockData}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới</span>
         </button>
       </div>
 
-      {/* 5 KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-blue-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Tổng Sản Phẩm Trong Kho</span>
-            <Boxes className="w-4 h-4 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-xl font-black text-gray-900">
-              {summary ? formatNumber(summary.totalSerialsInStore) : '0'}
-            </p>
-            <span className="text-[11px] text-gray-400 mt-1 block"></span>
-          </div>
+      {/* ==================== FLAT 5-COLUMN KPI STRIP ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Tổng sản phẩm trong kho</span>
+          <p className="text-xl font-semibold text-slate-900 tracking-tight">
+            {summary ? formatNumber(summary.totalSerialsInStore) : '0'}
+          </p>
+          <span className="text-[11px] text-slate-500">Tổng serial đang quản lý</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-emerald-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Sản Phẩm Có Thể Bán</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-xl font-black text-emerald-600">
-              {summary ? formatNumber(summary.sellableSerials) : '0'}
-            </p>
-            {/* <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">
-              Vốn: {summary ? formatCompactVND(summary.sellableValue) : '0 ₫'}
-            </span> */}
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Sản phẩm có thể bán</span>
+          <p className="text-xl font-semibold text-emerald-700 tracking-tight">
+            {summary ? formatNumber(summary.sellableSerials) : '0'}
+          </p>
+          <span className="text-[11px] text-slate-500">Sẵn sàng xuất bán ngay</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-indigo-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Tổng Giá Trị Vốn Kho</span>
-            <Package className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div>
-            <p className="text-xl font-black text-indigo-600">
-              {summary ? formatVND(summary.totalInventoryValue) : '0 ₫'}
-            </p>
-            <span className="text-[11px] text-gray-400 mt-1 block"></span>
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Tổng giá trị vốn kho</span>
+          <p className="text-xl font-semibold text-slate-900 tracking-tight">
+            {summary ? formatVND(summary.totalInventoryValue) : '0 ₫'}
+          </p>
+          <span className="text-[11px] text-slate-500">Định giá theo giá vốn nhập</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-rose-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Sản Phẩm Lỗi / Chờ Trả</span>
-            <RotateCcw className="w-4 h-4 text-rose-600" />
-          </div>
-          <div>
-            <p className="text-xl font-black text-rose-600">
-              {summary ? formatNumber(summary.defectiveSerials) : '0'}
-            </p>
-            <span className="text-[11px] text-rose-500 font-medium mt-1 block"></span>
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Hàng lỗi / Chờ trả</span>
+          <p
+            className={`text-xl font-semibold tracking-tight ${
+              (summary?.defectiveSerials ?? 0) > 0 ? 'text-rose-600' : 'text-slate-900'
+            }`}
+          >
+            {summary ? formatNumber(summary.defectiveSerials) : '0'}
+          </p>
+          <span className="text-[11px] text-slate-500">Cần xử lý bảo hành / NCC</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-amber-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Đang Đóng Gói / Giao</span>
-            <Truck className="w-4 h-4 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-xl font-black text-amber-600">
-              {summary ? formatNumber(summary.packingAndDeliveringSerials) : '0'}
-            </p>
-            <span className="text-[11px] text-gray-400 mt-1 block"></span>
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Đang đóng gói / Giao</span>
+          <p className="text-xl font-semibold text-slate-900 tracking-tight">
+            {summary ? formatNumber(summary.packingAndDeliveringSerials) : '0'}
+          </p>
+          <span className="text-[11px] text-slate-500">Đang giữ chỗ cho đơn hàng</span>
         </div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* ==================== CHARTS GRID ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Category Stock Distribution */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600" />
-              <span>Phân Bổ Tồn Kho Theo Danh Mục</span>
+        <div className="bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Phân bổ tồn kho theo danh mục
             </h2>
-            <p className="text-xs text-gray-500">Số lượng serial có sẵn theo từng nhóm phần cứng</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Số lượng serial có sẵn theo từng nhóm phần cứng
+            </p>
           </div>
 
           <div className="h-[260px]">
             {categories.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={categories} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="categoryName" tick={{ fontSize: 10 }} interval={0} angle={-25} textAnchor="end" />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(val: any) => [formatNumber(Number(val || 0)) + ' chiếc', 'Số lượng tồn'] as any} />
-                  <Bar dataKey="value" name="Tồn kho" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                <BarChart data={categories} margin={{ top: 8, right: 12, left: -8, bottom: 16 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                  <XAxis
+                    dataKey="categoryName"
+                    tick={{ fontSize: 10, fill: '#64748B' }}
+                    axisLine={{ stroke: '#E2E8F0' }}
+                    tickLine={false}
+                    interval={0}
+                    angle={-22}
+                    textAnchor="end"
+                    height={48}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#64748B' }}
+                    axisLine={false}
+                    tickLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    formatter={(val: any) => [formatNumber(Number(val || 0)) + ' chiếc', 'Số lượng tồn'] as any}
+                    contentStyle={{
+                      borderRadius: '6px',
+                      borderColor: '#E2E8F0',
+                      fontSize: '12px',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  />
+                  <Bar dataKey="value" name="Tồn kho" fill="#2563EB" radius={[3, 3, 0, 0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-xs text-gray-400 pt-24">Chưa có dữ liệu danh mục</p>
+              <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                Chưa có dữ liệu danh mục
+              </div>
             )}
           </div>
         </div>
 
         {/* Serial Status Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Barcode className="w-4 h-4 text-purple-600" />
-              <span>Cơ Cấu Trạng Thái Serial Kho</span>
+        <div className="bg-white p-5 rounded-md border border-slate-200 flex flex-col space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Cơ cấu trạng thái serial kho
             </h2>
-            <p className="text-xs text-gray-500">Tỷ lệ các trạng thái vòng đời serial trong kho</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tỷ lệ các trạng thái vòng đời serial trong hệ thống kho
+            </p>
           </div>
 
-          <div className="space-y-3 pt-2">
+          <div className="space-y-3.5 pt-1 flex-1">
             {serialStatus.length > 0 ? (
               serialStatus.map((st, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-gray-700">{st.label}</span>
-                    <span className="text-gray-900 font-semibold">
-                      {formatNumber(st.count)} chiếc ({st.percentage}%)
+                <div key={idx} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="inline-flex items-center gap-2 text-slate-700 font-medium">
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                      />
+                      <span>{st.label}</span>
+                    </span>
+                    <span className="text-slate-900 font-semibold tabular-nums whitespace-nowrap">
+                      {formatNumber(st.count)} chiếc{' '}
+                      <span className="text-slate-500 font-normal">({st.percentage}%)</span>
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-slate-100 rounded-sm h-1.5 overflow-hidden">
                     <div
-                      className="h-2.5 rounded-full transition-all duration-500"
+                      className="h-1.5 rounded-sm transition-all duration-300"
                       style={{
-                        width: `${st.percentage}%`,
+                        width: `${Math.min(100, st.percentage)}%`,
                         backgroundColor: COLORS[idx % COLORS.length],
                       }}
                     />
@@ -245,41 +229,67 @@ export default function InventoryStockReportPage() {
                 </div>
               ))
             ) : (
-              <p className="text-center text-xs text-gray-400 py-16">Chưa có dữ liệu trạng thái serial</p>
+              <div className="h-[220px] flex items-center justify-center text-xs text-slate-400">
+                Chưa có dữ liệu trạng thái serial
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Category Breakdown Table */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <h2 className="text-base font-bold text-gray-900 border-b pb-3 border-gray-100">
-          Chi Tiết Tồn Kho Theo Từng Danh Mục
-        </h2>
+      {/* ==================== CATEGORY BREAKDOWN TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Chi tiết tồn kho theo từng danh mục
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tổng hợp số lượng serial tồn và tỷ trọng đóng góp trên toàn kho
+            </p>
+          </div>
+          <span className="text-xs text-slate-500 tabular-nums shrink-0">
+            <strong className="font-medium text-slate-900">{formatNumber(categories.length)}</strong> danh mục
+          </span>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-3">#</th>
-                <th className="py-2.5 px-3">Tên Danh Mục Phần Cứng</th>
-                <th className="py-2.5 px-3 text-right">Số Lượng Serial Tồn</th>
-                <th className="py-2.5 px-3 text-right">Tỷ Trọng (%)</th>
+                <th className="py-2.5 px-4 w-12">#</th>
+                <th className="py-2.5 px-4">Danh mục phần cứng</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Số lượng serial tồn</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap min-w-[160px]">Tỷ trọng (%)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800 tabular-nums">
               {categories.length > 0 ? (
                 categories.map((c, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3 font-bold text-gray-400">{idx + 1}</td>
-                    <td className="py-3 px-3 font-semibold text-gray-900">{c.categoryName}</td>
-                    <td className="py-3 px-3 text-right font-bold text-blue-600">{formatNumber(c.value)}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-gray-700">{c.percentage}%</td>
+                  <tr key={c.categoryId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-medium text-slate-400">{idx + 1}</td>
+                    <td className="py-3 px-4 font-medium text-slate-900">{c.categoryName}</td>
+                    <td className="py-3 px-4 text-right font-semibold text-slate-900 whitespace-nowrap">
+                      {formatNumber(c.value)}
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-2.5">
+                        <div className="w-20 h-1.5 bg-slate-100 rounded-sm overflow-hidden shrink-0">
+                          <div
+                            className="h-full bg-blue-600 rounded-sm"
+                            style={{ width: `${Math.min(100, c.percentage)}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-slate-700 w-10 text-right">
+                          {c.percentage}%
+                        </span>
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-gray-400">
+                  <td colSpan={4} className="py-10 text-center text-slate-400">
                     Chưa có dữ liệu phân bổ
                   </td>
                 </tr>

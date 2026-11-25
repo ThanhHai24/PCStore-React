@@ -192,7 +192,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
     const modalContent = (
         <div
-            className={`relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-[80vw] h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${className}`}
+            className={`relative bg-white rounded-md shadow-lg border border-slate-200 w-[80vw] h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${className}`}
             onClick={(e) => e.stopPropagation()}
         >
             {/* Modal Header */}

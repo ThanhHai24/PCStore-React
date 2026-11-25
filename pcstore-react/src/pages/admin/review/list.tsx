@@ -165,22 +165,13 @@ export const ReviewCommentList: React.FC = () => {
         setCurrentPage(1);
     }, [activeTab, searchQuery, filterValues]);
 
-    // ==================== KPI CALCULATIONS ====================
+    // ==================== TAB COUNTERS ====================
 
     const totalReviews = allReviews.length;
-    const avgSystemRating =
-        totalReviews > 0
-            ? (allReviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1)
-            : '0.0';
-    const positiveReviewsCount = allReviews.filter((r) => r.rating >= 4).length;
-    const lowReviewsCount = allReviews.filter((r) => r.rating <= 2).length;
-
     const totalRootComments = allComments.length;
     const unansweredCommentsCount = allComments.filter(
         (c) => !c.replies.some((rep) => rep.isAdminAuthor)
     ).length;
-    const answeredCommentsCount = totalRootComments - unansweredCommentsCount;
-    const totalRepliesCount = allComments.reduce((acc, c) => acc + c.replies.length, 0);
 
     // ==================== FILTERED LISTS ====================
 
@@ -450,28 +441,32 @@ export const ReviewCommentList: React.FC = () => {
         {
             key: 'product',
             header: 'Sản phẩm',
+            align: 'left',
             render: (item) => (
-                <div className="flex items-center gap-3 max-w-xs">
+                <div className="flex items-center gap-2.5 max-w-[260px] min-w-0">
                     {item.productImage && (
-                        <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-10 h-10 rounded-xl object-cover border border-gray-200 shrink-0"
-                        />
+                        <div className="w-9 h-9 aspect-square rounded-md border border-slate-200 bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img
+                                src={item.productImage}
+                                alt={item.productName}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
                     )}
                     <div className="min-w-0">
                         <Link
                             to={`/product/${item.productId}#reviews`}
                             target="_blank"
-                            className="text-xs font-bold text-gray-900 hover:text-blue-600 line-clamp-1 flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[13px] font-medium text-slate-900 hover:text-blue-600 line-clamp-1 flex items-center gap-1"
                         >
                             <span className="truncate">
                                 {item.productName || `Sản phẩm #${item.productId}`}
                             </span>
-                            <ExternalLink className="w-3 h-3 shrink-0 text-gray-400" />
+                            <ExternalLink className="w-3 h-3 shrink-0 text-slate-400" />
                         </Link>
-                        <span className="text-[11px] text-gray-400 font-mono">
-                            ID SP: #{item.productId}
+                        <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                            #{item.productId}
                         </span>
                     </div>
                 </div>
@@ -479,68 +474,43 @@ export const ReviewCommentList: React.FC = () => {
         },
         {
             key: 'customer',
-            header: 'Khách hàng',
+            header: 'Khách hàng & Đánh giá',
+            align: 'left',
             render: (item) => (
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 overflow-hidden">
-                        {item.userAvatar ? (
-                            <img
-                                src={item.userAvatar}
-                                alt={item.userName}
-                                className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <User className="w-4 h-4" />
-                        )}
+                <div className="space-y-1 min-w-[140px]">
+                    <div className="flex items-center gap-1.5">
+                        <p className="text-[13px] font-medium text-slate-900 truncate max-w-[160px]" title={item.userName}>
+                            {item.userName}
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-900">{item.userName}</p>
-                        <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
-                            <CheckCircle2 className="w-3 h-3" /> Đã mua hàng
+                    <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5" aria-label={`${item.rating} trên 5 sao`}>
+                            {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                    key={s}
+                                    className={`w-3.5 h-3.5 ${
+                                        s <= item.rating
+                                            ? 'fill-amber-400 text-amber-400'
+                                            : 'fill-slate-200 text-slate-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                        <span className="text-[11px] font-medium text-slate-600 tabular-nums">
+                            {item.rating}/5
                         </span>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'rating',
-            header: 'Đánh giá',
-            align: 'center',
-            render: (item) => (
-                <div className="inline-flex flex-col items-center gap-1">
-                    <div className="flex items-center space-x-0.5">
-                        {[1, 2, 3, 4, 5].map((s) => (
-                            <Star
-                                key={s}
-                                className={`w-3.5 h-3.5 ${
-                                    s <= item.rating
-                                        ? 'fill-amber-400 text-amber-400'
-                                        : 'fill-gray-200 text-gray-200'
-                                }`}
-                            />
-                        ))}
-                    </div>
-                    <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            item.rating >= 4
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : item.rating === 3
-                                ? 'bg-amber-50 text-amber-700'
-                                : 'bg-rose-50 text-rose-700'
-                        }`}
-                    >
-                        {item.rating}/5 sao
-                    </span>
-                </div>
-            ),
-        },
-        {
             key: 'comment',
             header: 'Nội dung nhận xét',
+            align: 'left',
             render: (item) => (
-                <div className="max-w-md space-y-1.5">
-                    <p className="text-xs text-gray-700 line-clamp-2 leading-relaxed">
-                        {item.comment || <span className="italic text-gray-400">Không có lời bình</span>}
+                <div className="max-w-[340px] space-y-1.5">
+                    <p className="text-xs text-slate-700 line-clamp-2 break-words leading-relaxed">
+                        {item.comment || <span className="text-slate-400">—</span>}
                     </p>
                     {item.images && item.images.length > 0 && (
                         <div className="flex items-center gap-1.5">
@@ -548,12 +518,12 @@ export const ReviewCommentList: React.FC = () => {
                                 <img
                                     key={i}
                                     src={img}
-                                    alt="Ảnh"
+                                    alt="Ảnh đánh giá"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setLightboxUrl(img);
                                     }}
-                                    className="w-8 h-8 rounded-lg object-cover border border-gray-200 cursor-pointer hover:border-blue-500"
+                                    className="w-8 h-8 aspect-square rounded-md object-cover border border-slate-200 cursor-pointer hover:border-blue-500 transition-colors"
                                 />
                             ))}
                         </div>
@@ -564,11 +534,12 @@ export const ReviewCommentList: React.FC = () => {
         {
             key: 'date',
             header: 'Thời gian',
+            align: 'right',
             render: (item) => (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
                     <p>{item.date}</p>
                     {item.isEdited && (
-                        <span className="text-[10px] text-amber-600 font-medium">Đã chỉnh sửa</span>
+                        <span className="text-[11px] text-slate-400">Đã sửa</span>
                     )}
                 </div>
             ),
@@ -601,28 +572,32 @@ export const ReviewCommentList: React.FC = () => {
         {
             key: 'product',
             header: 'Sản phẩm',
+            align: 'left',
             render: (item) => (
-                <div className="flex items-center gap-3 max-w-xs">
+                <div className="flex items-center gap-2.5 max-w-[260px] min-w-0">
                     {item.productImage && (
-                        <img
-                            src={item.productImage}
-                            alt={item.productName}
-                            className="w-10 h-10 rounded-xl object-cover border border-gray-200 shrink-0"
-                        />
+                        <div className="w-9 h-9 aspect-square rounded-md border border-slate-200 bg-white p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
+                            <img
+                                src={item.productImage}
+                                alt={item.productName}
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
                     )}
                     <div className="min-w-0">
                         <Link
                             to={`/product/${item.productId}#reviews`}
                             target="_blank"
-                            className="text-xs font-bold text-gray-900 hover:text-blue-600 line-clamp-1 flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[13px] font-medium text-slate-900 hover:text-blue-600 line-clamp-1 flex items-center gap-1"
                         >
                             <span className="truncate">
                                 {item.productName || `Sản phẩm #${item.productId}`}
                             </span>
-                            <ExternalLink className="w-3 h-3 shrink-0 text-gray-400" />
+                            <ExternalLink className="w-3 h-3 shrink-0 text-slate-400" />
                         </Link>
-                        <span className="text-[11px] text-gray-400 font-mono">
-                            ID SP: #{item.productId}
+                        <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                            #{item.productId}
                         </span>
                     </div>
                 </div>
@@ -631,18 +606,19 @@ export const ReviewCommentList: React.FC = () => {
         {
             key: 'author',
             header: 'Người gửi',
+            align: 'left',
             render: (item) => (
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-xs flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4" />
+                <div className="flex items-center gap-2.5 min-w-0 max-w-[180px]">
+                    <div className="w-8 h-8 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold flex items-center justify-center shrink-0">
+                        <User className="w-3.5 h-3.5" />
                     </div>
-                    <div>
-                        <p className="text-xs font-bold text-gray-900">{item.userName}</p>
-                        {item.isAdminAuthor ? (
-                            <span className="text-[10px] text-blue-600 font-bold">QTV PCStore</span>
-                        ) : (
-                            <span className="text-[10px] text-gray-400">Khách hàng</span>
-                        )}
+                    <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-slate-900 truncate" title={item.userName}>
+                            {item.userName}
+                        </p>
+                        <span className="text-[11px] text-slate-500">
+                            {item.isAdminAuthor ? 'QTV PCStore' : 'Khách hàng'}
+                        </span>
                     </div>
                 </div>
             ),
@@ -650,23 +626,24 @@ export const ReviewCommentList: React.FC = () => {
         {
             key: 'content',
             header: 'Câu hỏi / Bình luận',
+            align: 'left',
             render: (item) => (
-                <div className="max-w-md space-y-1">
-                    <p className="text-xs text-gray-800 font-medium line-clamp-2 leading-relaxed">
+                <div className="max-w-[340px] space-y-1.5">
+                    <p className="text-xs text-slate-700 line-clamp-2 break-words leading-relaxed">
                         {item.content}
                     </p>
                     {item.images && item.images.length > 0 && (
-                        <div className="flex items-center gap-1.5 pt-0.5">
+                        <div className="flex items-center gap-1.5">
                             {item.images.map((img, i) => (
                                 <img
                                     key={i}
                                     src={img}
-                                    alt="Ảnh"
+                                    alt="Ảnh bình luận"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setLightboxUrl(img);
                                     }}
-                                    className="w-8 h-8 rounded-lg object-cover border border-gray-200 cursor-pointer"
+                                    className="w-8 h-8 aspect-square rounded-md object-cover border border-slate-200 cursor-pointer hover:border-blue-500 transition-colors"
                                 />
                             ))}
                         </div>
@@ -676,31 +653,33 @@ export const ReviewCommentList: React.FC = () => {
         },
         {
             key: 'status',
-            header: 'Trạng thái phản hồi',
-            align: 'center',
+            header: 'Trạng thái',
+            align: 'left',
             render: (item) => {
                 const hasAdminReply = item.replies.some((r) => r.isAdminAuthor);
-                return (
-                    <div className="inline-flex flex-col items-center gap-1">
-                        {hasAdminReply ? (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-700 inline-flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Đã trả lời ({item.replies.length})</span>
-                            </span>
-                        ) : (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 inline-flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" />
-                                <span>Chờ QTV phản hồi</span>
-                            </span>
-                        )}
-                    </div>
+                return hasAdminReply ? (
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>Đã trả lời</span>
+                        <span className="text-slate-400 tabular-nums">({item.replies.length})</span>
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span>Chờ phản hồi</span>
+                    </span>
                 );
             },
         },
         {
             key: 'date',
             header: 'Thời gian',
-            render: (item) => <span className="text-xs text-gray-500">{item.date}</span>,
+            align: 'right',
+            render: (item) => (
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                    {item.date}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -738,169 +717,86 @@ export const ReviewCommentList: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div>
-                    <h1 className="text-xl font-extrabold text-gray-900 flex items-center gap-2.5">
-                        <MessageSquare className="w-6 h-6 text-blue-600" />
-                        <span>Quản lý Đánh giá & Bình luận Sản phẩm</span>
+        <div className="w-full space-y-4 min-w-0 font-sans">
+            {/* Compact Page Header (Borderless) */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight truncate">
+                        Quản lý đánh giá & bình luận
                     </h1>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                         Theo dõi đánh giá sao từ khách hàng đã mua và phản hồi câu hỏi tư vấn trực tuyến
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2.5">
-                    <AdminButton
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
                         type="button"
-                        variant="secondary"
-                        icon={RefreshCw}
                         onClick={fetchAllData}
-                        isLoading={loading}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-xs rounded-md border border-slate-200 transition-colors disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                     >
-                        Làm mới dữ liệu
-                    </AdminButton>
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                        <span>Làm mới</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-xs w-fit">
+            {/* Segmented Mode Switcher Tabs (No Redundant KPI Cards) */}
+            <div
+                role="tablist"
+                aria-label="Phân loại đánh giá và bình luận"
+                className="inline-flex items-center p-1 bg-slate-100 rounded-md border border-slate-200"
+            >
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'reviews'}
                     onClick={() => setActiveTab('reviews')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                         activeTab === 'reviews'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:bg-gray-50'
+                            ? 'bg-white text-slate-900 font-semibold border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900 font-medium border border-transparent'
                     }`}
                 >
-                    <Star className="w-4 h-4" />
-                    <span>Đánh giá sản phẩm ({totalReviews})</span>
+                    <Star className={`w-3.5 h-3.5 ${activeTab === 'reviews' ? 'text-amber-500' : 'text-slate-400'}`} />
+                    <span>Đánh giá sản phẩm</span>
+                    <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-medium tabular-nums ${
+                            activeTab === 'reviews' ? 'bg-slate-100 text-slate-800' : 'bg-slate-200/70 text-slate-600'
+                        }`}
+                    >
+                        {totalReviews}
+                    </span>
                 </button>
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'comments'}
                     onClick={() => setActiveTab('comments')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                         activeTab === 'comments'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:bg-gray-50'
+                            ? 'bg-white text-slate-900 font-semibold border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900 font-medium border border-transparent'
                     }`}
                 >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Hỏi đáp & Bình luận ({totalRootComments})</span>
+                    <MessageSquare className={`w-3.5 h-3.5 ${activeTab === 'comments' ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <span>Hỏi đáp & Bình luận</span>
+                    <span
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-medium tabular-nums ${
+                            activeTab === 'comments' ? 'bg-slate-100 text-slate-800' : 'bg-slate-200/70 text-slate-600'
+                        }`}
+                    >
+                        {totalRootComments}
+                    </span>
                     {unansweredCommentsCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-black">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200 tabular-nums">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                             {unansweredCommentsCount} chờ
                         </span>
                     )}
                 </button>
             </div>
-
-            {/* KPI Cards */}
-            {activeTab === 'reviews' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">Tổng lượt đánh giá</p>
-                            <p className="text-2xl font-black text-gray-900 mt-1">{totalReviews}</p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                            <Star className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">Điểm sao trung bình</p>
-                            <p className="text-2xl font-black text-amber-500 mt-1">
-                                {avgSystemRating} / 5.0
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
-                            <Star className="w-5 h-5 fill-amber-400" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">
-                                Đánh giá tích cực (4-5 sao)
-                            </p>
-                            <p className="text-2xl font-black text-emerald-600 mt-1">
-                                {positiveReviewsCount}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">
-                                Cần lưu ý (1-2 sao)
-                            </p>
-                            <p className="text-2xl font-black text-rose-600 mt-1">
-                                {lowReviewsCount}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5" />
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">
-                                Tổng câu hỏi / bình luận
-                            </p>
-                            <p className="text-2xl font-black text-gray-900 mt-1">
-                                {totalRootComments}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                            <MessageSquare className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">
-                                Chờ QTV phản hồi
-                            </p>
-                            <p className="text-2xl font-black text-amber-600 mt-1">
-                                {unansweredCommentsCount}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                            <AlertTriangle className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">Đã phản hồi</p>
-                            <p className="text-2xl font-black text-emerald-600 mt-1">
-                                {answeredCommentsCount}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500">
-                                Tổng lượt phản hồi
-                            </p>
-                            <p className="text-2xl font-black text-indigo-600 mt-1">
-                                {totalRepliesCount}
-                            </p>
-                        </div>
-                        <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                            <CornerDownRight className="w-5 h-5" />
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Filter Bar */}
             <AdminFilter
@@ -998,86 +894,94 @@ export const ReviewCommentList: React.FC = () => {
                 }
             >
                 {selectedReview && (
-                    <div className="space-y-5 text-xs">
-                        <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between flex-wrap gap-3">
-                            <div className="flex items-center gap-3">
+                    <div className="space-y-4 text-xs">
+                        {/* Flat Product Context Strip */}
+                        <div className="pb-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
                                 {selectedReview.productImage && (
-                                    <img
-                                        src={selectedReview.productImage}
-                                        alt={selectedReview.productName}
-                                        className="w-14 h-14 rounded-xl object-cover border border-gray-200"
-                                    />
+                                    <div className="w-12 h-12 aspect-square rounded-md border border-slate-200 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                        <img
+                                            src={selectedReview.productImage}
+                                            alt={selectedReview.productName}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
                                 )}
-                                <div>
-                                    <p className="font-extrabold text-sm text-gray-900">
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-sm text-slate-900 truncate">
                                         {selectedReview.productName ||
                                             `Sản phẩm #${selectedReview.productId}`}
                                     </p>
                                     <Link
                                         to={`/product/${selectedReview.productId}#reviews`}
                                         target="_blank"
-                                        className="text-blue-600 hover:underline font-bold inline-flex items-center gap-1 mt-1"
+                                        className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1 mt-0.5"
                                     >
-                                        <span>Mở trang chi tiết sản phẩm</span>
-                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        <span>Mở trang sản phẩm</span>
+                                        <ExternalLink className="w-3 h-3" />
                                     </Link>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs inline-flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Đã mua hàng (COMPLETED)
-                                </span>
-                            </div>
+                            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Đã mua hàng
+                            </span>
                         </div>
 
-                        <div className="p-5 rounded-2xl border border-gray-200 space-y-3 bg-white">
-                            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                                <div>
-                                    <p className="font-bold text-sm text-gray-900">
-                                        Khách hàng: {selectedReview.userName}
-                                    </p>
-                                    <p className="text-gray-400 text-[11px]">
-                                        Mã KH: #{selectedReview.userId} • Thời gian:{' '}
-                                        {selectedReview.date}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-1">
+                        {/* Customer & Rating Header */}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                                <p className="font-semibold text-sm text-slate-900">
+                                    {selectedReview.userName}
+                                </p>
+                                <p className="text-slate-500 text-[11px] tabular-nums mt-0.5">
+                                    Mã KH: #{selectedReview.userId} · {selectedReview.date}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-0.5">
                                     {[1, 2, 3, 4, 5].map((s) => (
                                         <Star
                                             key={s}
-                                            className={`w-5 h-5 ${
+                                            className={`w-4 h-4 ${
                                                 s <= selectedReview.rating
                                                     ? 'fill-amber-400 text-amber-400'
-                                                    : 'fill-gray-200 text-gray-200'
+                                                    : 'fill-slate-200 text-slate-200'
                                             }`}
                                         />
                                     ))}
                                 </div>
+                                <span className="text-xs font-semibold text-slate-700 tabular-nums">
+                                    {selectedReview.rating}/5
+                                </span>
                             </div>
-
-                            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-line">
-                                {selectedReview.comment}
-                            </p>
-
-                            {selectedReview.images && selectedReview.images.length > 0 && (
-                                <div className="pt-2 space-y-2">
-                                    <p className="font-bold text-gray-600">
-                                        Hình ảnh đính kèm ({selectedReview.images.length}):
-                                    </p>
-                                    <div className="flex flex-wrap gap-3">
-                                        {selectedReview.images.map((url, idx) => (
-                                            <img
-                                                key={idx}
-                                                src={url}
-                                                alt="Ảnh đánh giá"
-                                                onClick={() => setLightboxUrl(url)}
-                                                className="w-24 h-24 rounded-xl object-cover border border-gray-200 hover:border-blue-500 cursor-pointer shadow-xs"
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
+
+                        {/* Quoted Review Content */}
+                        <div className="border-l-2 border-slate-300 bg-slate-50/70 pl-3.5 pr-3 py-2.5 rounded-r-md">
+                            <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line break-words">
+                                {selectedReview.comment || 'Không có lời bình.'}
+                            </p>
+                        </div>
+
+                        {selectedReview.images && selectedReview.images.length > 0 && (
+                            <div className="pt-1 space-y-2">
+                                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider tabular-nums">
+                                    Hình ảnh đính kèm ({selectedReview.images.length})
+                                </p>
+                                <div className="flex flex-wrap gap-2.5">
+                                    {selectedReview.images.map((url, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={url}
+                                            alt="Ảnh đánh giá"
+                                            onClick={() => setLightboxUrl(url)}
+                                            className="w-20 h-20 aspect-square rounded-md object-cover border border-slate-200 hover:border-blue-500 cursor-pointer transition-colors"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </AdminModal>
@@ -1093,25 +997,27 @@ export const ReviewCommentList: React.FC = () => {
             >
                 {selectedComment && (
                     <div className="space-y-5 text-xs">
-                        {/* Product Banner */}
-                        <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
+                        {/* Flat Product Context Strip */}
+                        <div className="pb-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+                            <div className="flex items-center gap-3 min-w-0">
                                 {selectedComment.productImage && (
-                                    <img
-                                        src={selectedComment.productImage}
-                                        alt={selectedComment.productName}
-                                        className="w-12 h-12 rounded-xl object-cover border border-gray-200"
-                                    />
+                                    <div className="w-11 h-11 aspect-square rounded-md border border-slate-200 bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                        <img
+                                            src={selectedComment.productImage}
+                                            alt={selectedComment.productName}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    </div>
                                 )}
-                                <div>
-                                    <p className="font-bold text-gray-900 text-sm">
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-slate-900 text-sm truncate">
                                         {selectedComment.productName ||
                                             `Sản phẩm #${selectedComment.productId}`}
                                     </p>
                                     <Link
                                         to={`/product/${selectedComment.productId}#reviews`}
                                         target="_blank"
-                                        className="text-blue-600 hover:underline font-semibold inline-flex items-center gap-1"
+                                        className="text-blue-600 hover:underline font-medium inline-flex items-center gap-1 mt-0.5"
                                     >
                                         <span>Xem trên trang bán hàng</span>
                                         <ExternalLink className="w-3 h-3" />
@@ -1138,22 +1044,24 @@ export const ReviewCommentList: React.FC = () => {
                             </AdminButton>
                         </div>
 
-                        {/* Root Question Card */}
-                        <div className="p-4 rounded-2xl bg-white border border-gray-200 space-y-2 shadow-2xs">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-extrabold text-sm text-gray-900">
+                        {/* Root Question Quote (Flat, Left-Border Accent) */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="font-semibold text-sm text-slate-900 truncate">
                                         {selectedComment.userName}
                                     </span>
-                                    <span className="text-gray-400">• {selectedComment.date}</span>
+                                    <span className="text-slate-500 tabular-nums shrink-0">· {selectedComment.date}</span>
                                 </div>
-                                <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-mono text-[10px]">
-                                    Comment #{selectedComment.id}
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 font-mono tabular-nums text-[11px] shrink-0">
+                                    #{selectedComment.id}
                                 </span>
                             </div>
-                            <p className="text-gray-800 text-sm font-medium border-l-3 border-blue-500 pl-3 py-0.5 whitespace-pre-line">
-                                {selectedComment.content}
-                            </p>
+                            <div className="border-l-2 border-blue-600 bg-slate-50/70 pl-3.5 pr-3 py-2.5 rounded-r-md">
+                                <p className="text-slate-800 text-sm leading-relaxed whitespace-pre-line break-words">
+                                    {selectedComment.content}
+                                </p>
+                            </div>
                             {selectedComment.images && selectedComment.images.length > 0 && (
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {selectedComment.images.map((img, i) => (
@@ -1162,7 +1070,7 @@ export const ReviewCommentList: React.FC = () => {
                                             src={img}
                                             alt="Ảnh câu hỏi"
                                             onClick={() => setLightboxUrl(img)}
-                                            className="w-20 h-20 rounded-xl object-cover border border-gray-200 cursor-pointer"
+                                            className="w-16 h-16 aspect-square rounded-md object-cover border border-slate-200 hover:border-blue-500 cursor-pointer transition-colors"
                                         />
                                     ))}
                                 </div>
@@ -1170,46 +1078,46 @@ export const ReviewCommentList: React.FC = () => {
                         </div>
 
                         {/* Replies List */}
-                        <div className="space-y-3">
-                            <h4 className="font-extrabold text-gray-800 uppercase tracking-wider text-[11px]">
-                                Danh sách phản hồi ({selectedComment.replies.length})
+                        <div className="space-y-2.5 pt-1 border-t border-slate-200">
+                            <h4 className="font-semibold text-slate-500 uppercase tracking-wider text-[11px] pt-2 tabular-nums">
+                                Phản hồi ({selectedComment.replies.length})
                             </h4>
 
                             {selectedComment.replies.length === 0 ? (
-                                <div className="p-4 rounded-2xl bg-amber-50/50 border border-dashed border-amber-200 text-amber-800 text-center">
-                                    Câu hỏi này chưa có phản hồi. Hãy nhập câu trả lời của QTV bên dưới!
+                                <div className="p-3.5 rounded-md bg-slate-50 border border-dashed border-slate-200 text-slate-500 text-center">
+                                    Câu hỏi này chưa có phản hồi. Hãy nhập câu trả lời của QTV bên dưới.
                                 </div>
                             ) : (
-                                <div className="space-y-2.5 pl-4 border-l-2 border-blue-200">
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
                                     {selectedComment.replies.map((rep) => {
                                         const isMyReply =
                                             user && String(user.id) === String(rep.userId);
                                         return (
                                             <div
                                                 key={rep.id}
-                                                className={`p-3.5 rounded-2xl border space-y-1.5 ${
+                                                className={`p-3.5 space-y-1.5 ${
                                                     rep.isAdminAuthor
-                                                        ? 'bg-blue-50/60 border-blue-200'
-                                                        : 'bg-gray-50 border-gray-200'
+                                                        ? 'bg-slate-50/60'
+                                                        : 'bg-white'
                                                 }`}
                                             >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-gray-900">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-semibold text-slate-900">
                                                             {rep.userName}
                                                         </span>
                                                         {rep.isAdminAuthor && (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-white text-blue-700 border border-blue-200">
                                                                 <ShieldCheck className="w-3 h-3" />
                                                                 <span>QTV PCStore</span>
                                                             </span>
                                                         )}
-                                                        <span className="text-gray-400 text-[11px]">
-                                                            • {rep.date}
+                                                        <span className="text-slate-400 text-[11px] tabular-nums">
+                                                            · {rep.date}
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex items-center gap-1 shrink-0">
                                                         {isMyReply && (
                                                             <button
                                                                 type="button"
@@ -1222,7 +1130,7 @@ export const ReviewCommentList: React.FC = () => {
                                                                         rep.images || []
                                                                     );
                                                                 }}
-                                                                className="p-1 text-gray-500 hover:text-blue-600 rounded cursor-pointer"
+                                                                className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                                                                 title="Sửa phản hồi"
                                                             >
                                                                 <Edit3 className="w-3.5 h-3.5" />
@@ -1233,7 +1141,7 @@ export const ReviewCommentList: React.FC = () => {
                                                             onClick={() =>
                                                                 handleDeleteReplyInModal(rep.id)
                                                             }
-                                                            className="p-1 text-gray-500 hover:text-rose-600 rounded cursor-pointer"
+                                                            className="p-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600/40"
                                                             title="Xóa phản hồi"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -1249,7 +1157,7 @@ export const ReviewCommentList: React.FC = () => {
                                                             onChange={(e) =>
                                                                 setEditingReplyText(e.target.value)
                                                             }
-                                                            className="w-full bg-white border border-blue-400 rounded-xl p-2.5 text-xs outline-none"
+                                                            className="w-full bg-white border border-slate-300 rounded-md p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15"
                                                         />
                                                         <div className="flex justify-end gap-2">
                                                             <button
@@ -1257,7 +1165,7 @@ export const ReviewCommentList: React.FC = () => {
                                                                 onClick={() =>
                                                                     setEditingReplyId(null)
                                                                 }
-                                                                className="px-3 py-1 rounded-lg bg-gray-200 text-gray-700 font-semibold cursor-pointer"
+                                                                className="px-3 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium cursor-pointer"
                                                             >
                                                                 Hủy
                                                             </button>
@@ -1267,7 +1175,7 @@ export const ReviewCommentList: React.FC = () => {
                                                                 onClick={() =>
                                                                     handleSaveReplyEdit(rep.id)
                                                                 }
-                                                                className="px-3 py-1 rounded-lg bg-blue-600 text-white font-bold cursor-pointer"
+                                                                className="px-3 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer"
                                                             >
                                                                 {savingReplyEdit
                                                                     ? 'Đang lưu...'
@@ -1277,7 +1185,7 @@ export const ReviewCommentList: React.FC = () => {
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <p className="text-gray-800 whitespace-pre-line leading-relaxed">
+                                                        <p className="text-slate-700 whitespace-pre-line break-words leading-relaxed">
                                                             {rep.content}
                                                         </p>
                                                         {rep.images && rep.images.length > 0 && (
@@ -1290,7 +1198,7 @@ export const ReviewCommentList: React.FC = () => {
                                                                         onClick={() =>
                                                                             setLightboxUrl(img)
                                                                         }
-                                                                        className="w-16 h-16 rounded-lg object-cover border border-gray-200 cursor-pointer"
+                                                                        className="w-16 h-16 aspect-square rounded-md object-cover border border-slate-200 cursor-pointer"
                                                                     />
                                                                 ))}
                                                             </div>
@@ -1304,21 +1212,21 @@ export const ReviewCommentList: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Admin Reply Input Form */}
+                        {/* Flat Admin Reply Input Form */}
                         <form
                             onSubmit={handleSendAdminReply}
-                            className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-3"
+                            className="pt-4 border-t border-slate-200 space-y-3"
                         >
-                            <label className="block font-extrabold text-blue-900 text-xs flex items-center gap-1.5">
-                                <CornerDownRight className="w-4 h-4 text-blue-600" />
-                                <span>Gửi phản hồi chính thức từ QTV PCStore:</span>
+                            <label className="font-semibold text-slate-800 text-xs flex items-center gap-1.5">
+                                <CornerDownRight className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Gửi phản hồi chính thức từ QTV PCStore</span>
                             </label>
                             <textarea
                                 rows={3}
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
                                 placeholder="Nhập nội dung tư vấn, giải đáp cho khách hàng..."
-                                className="w-full bg-white border border-gray-300 rounded-xl p-3 text-xs text-gray-800 outline-none focus:border-blue-500"
+                                className="w-full bg-white border border-slate-200 rounded-md p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15"
                             />
 
                             {replyFiles.length > 0 && (
@@ -1326,7 +1234,7 @@ export const ReviewCommentList: React.FC = () => {
                                     {replyFiles.map((item, idx) => (
                                         <div
                                             key={idx}
-                                            className="relative w-14 h-14 rounded-xl overflow-hidden border border-blue-300"
+                                            className="relative w-14 h-14 aspect-square rounded-md overflow-hidden border border-slate-200"
                                         >
                                             <img
                                                 src={item.preview}
@@ -1341,7 +1249,7 @@ export const ReviewCommentList: React.FC = () => {
                                                         prev.filter((_, i) => i !== idx)
                                                     );
                                                 }}
-                                                className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full p-0.5 cursor-pointer"
+                                                className="absolute top-0.5 right-0.5 bg-slate-900/75 text-white rounded-md p-0.5 cursor-pointer"
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>
@@ -1350,7 +1258,7 @@ export const ReviewCommentList: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <input
                                         ref={replyFileRef}
@@ -1378,10 +1286,10 @@ export const ReviewCommentList: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => replyFileRef.current?.click()}
-                                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                                        className="text-xs font-medium text-slate-600 hover:text-blue-600 flex items-center gap-1.5 cursor-pointer rounded-md px-2 py-1 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                                     >
                                         <Camera className="w-4 h-4" />
-                                        <span>Đính kèm ảnh minh họa</span>
+                                        <span>Đính kèm ảnh</span>
                                     </button>
                                 </div>
 
@@ -1391,12 +1299,12 @@ export const ReviewCommentList: React.FC = () => {
                                         submittingReply ||
                                         (!replyText.trim() && replyFiles.length === 0)
                                     }
-                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                    className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs border border-blue-600 flex items-center gap-1.5 disabled:opacity-50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                                 >
                                     {submittingReply ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
-                                        <Send className="w-4 h-4" />
+                                        <Send className="w-3.5 h-3.5" />
                                     )}
                                     <span>
                                         {submittingReply ? 'Đang gửi...' : 'Gửi phản hồi QTV'}
@@ -1441,7 +1349,7 @@ export const ReviewCommentList: React.FC = () => {
                     <img
                         src={lightboxUrl}
                         alt="Xem ảnh lớn"
-                        className="max-w-3xl max-h-[85vh] rounded-2xl object-contain"
+                        className="max-w-3xl max-h-[85vh] rounded-md object-contain"
                     />
                 </div>
             )}

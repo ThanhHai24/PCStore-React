@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  PieChart as PieChartIcon,
-  BarChart3,
   Calendar,
   RefreshCw,
-  Layers,
-  Award,
-  CreditCard,
   Package,
   Download,
-  Sparkles,
+  Search,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -56,7 +51,7 @@ function formatNumber(num: number): string {
   return new Intl.NumberFormat('vi-VN').format(num || 0);
 }
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#14B8A6'];
+const COLORS = ['#2563EB', '#0EA5E9', '#0D9488', '#6366F1', '#64748B', '#F59E0B', '#E11D48', '#8B5CF6'];
 
 export default function RevenueStructureReportPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -117,6 +112,7 @@ export default function RevenueStructureReportPage() {
   const totalCatRevenue = categories.reduce((s, c) => s + c.value, 0);
   const totalBrandRevenue = brands.reduce((s, b) => s + b.revenue, 0);
   const totalPayRevenue = paymentMethods.reduce((s, p) => s + p.amount, 0);
+  const totalTopProductsRevenue = topProducts.reduce((s, p) => s + p.revenue, 0);
 
   const filteredTopProducts = topProducts.filter(
     (p) =>
@@ -146,127 +142,158 @@ export default function RevenueStructureReportPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Báo Cáo Cơ Cấu Doanh Thu Sản Phẩm</h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              <Sparkles className="w-3 h-3 text-indigo-600" /> Structure Analytics
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Báo cáo bán hàng</span>
+            <span className="text-slate-300">/</span>
+            <span className="tabular-nums">
+              Kỳ phân tích: {startDate} — {endDate}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Phân bổ doanh thu theo Danh mục, Thương hiệu, Phương thức thanh toán và Top sản phẩm
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Báo cáo cơ cấu doanh thu sản phẩm
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Phân bổ doanh thu theo danh mục linh kiện, thương hiệu, phương thức thanh toán và xếp hạng SKU chủ lực.
           </p>
         </div>
 
-        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Xuất CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ==================== COMPACT FILTER BAR ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl bg-gray-100 p-1">
+          <div className="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200">
             <button
+              type="button"
               onClick={() => handleSelectPreset('30D')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === '30D' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === '30D'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               30 ngày
             </button>
             <button
+              type="button"
               onClick={() => handleSelectPreset('THIS_QUARTER')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_QUARTER' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === 'THIS_QUARTER'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               Quý này
             </button>
             <button
+              type="button"
               onClick={() => handleSelectPreset('THIS_YEAR')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_YEAR' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === 'THIS_YEAR'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               Năm nay
             </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2.5 h-8 text-xs tabular-nums">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
-            <span className="text-gray-400">-</span>
+            <span className="text-slate-300">—</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
           </div>
+        </div>
 
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Lọc</span>
-          </button>
+        <div className="relative w-full lg:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Tìm sản phẩm hoặc mã SKU..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-8 pl-8 pr-3 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
+          />
         </div>
       </div>
 
-      {/* KPI Highlight Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Doanh Thu Danh Mục</span>
-            <p className="text-xl font-bold text-gray-900 mt-1">{formatVND(totalCatRevenue)}</p>
-            <span className="text-[11px] text-blue-600 font-medium">{categories.length} danh mục phát sinh</span>
-          </div>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-            <Layers className="w-6 h-6" />
-          </div>
+      {/* ==================== FLAT 3-COLUMN KPI STRIP ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Doanh thu theo danh mục</span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatVND(totalCatRevenue)}
+          </p>
+          <span className="text-xs text-slate-500">
+            {formatNumber(categories.length)} danh mục phát sinh
+          </span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Doanh Thu Thương Hiệu</span>
-            <p className="text-xl font-bold text-gray-900 mt-1">{formatVND(totalBrandRevenue)}</p>
-            <span className="text-[11px] text-emerald-600 font-medium">{brands.length} thương hiệu đối tác</span>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <Award className="w-6 h-6" />
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Doanh thu theo thương hiệu</span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatVND(totalBrandRevenue)}
+          </p>
+          <span className="text-xs text-slate-500">
+            {formatNumber(brands.length)} thương hiệu đối tác
+          </span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Doanh Thu Theo Thanh Toán</span>
-            <p className="text-xl font-bold text-gray-900 mt-1">{formatVND(totalPayRevenue)}</p>
-            <span className="text-[11px] text-purple-600 font-medium">{paymentMethods.length} cổng thanh toán</span>
-          </div>
-          <div className="p-3 rounded-xl bg-purple-50 text-purple-600">
-            <CreditCard className="w-6 h-6" />
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Doanh thu theo thanh toán</span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatVND(totalPayRevenue)}
+          </p>
+          <span className="text-xs text-slate-500">
+            {formatNumber(paymentMethods.length)} cổng thanh toán
+          </span>
         </div>
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ==================== CHARTS GRID (3 COLUMNS) ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Chart 1: Donut Category Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <PieChartIcon className="w-4 h-4 text-blue-600" />
-              <span>Cơ Cấu Theo Danh Mục</span>
-            </h2>
-            <p className="text-xs text-gray-500">Tỷ trọng doanh thu giữa các nhóm phần cứng</p>
+        <div className="bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">Cơ cấu theo danh mục</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Tỷ trọng doanh thu giữa các nhóm phần cứng</p>
           </div>
 
-          <div className="h-[220px]">
+          <div className="h-[200px]">
             {categories.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -276,32 +303,43 @@ export default function RevenueStructureReportPage() {
                     nameKey="categoryName"
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={48}
+                    outerRadius={76}
                     paddingAngle={2}
                   >
                     {categories.map((_, index) => (
                       <Cell key={`cell-cat-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(val: any) => formatVND(Number(val || 0)) as any} />
+                  <Tooltip
+                    formatter={(val: any) => formatVND(Number(val || 0)) as any}
+                    contentStyle={{
+                      borderRadius: '6px',
+                      borderColor: '#E2E8F0',
+                      fontSize: '12px',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-xs text-gray-400 pt-16">Chưa có dữ liệu danh mục</p>
+              <p className="text-center text-xs text-slate-400 pt-16">Chưa có dữ liệu danh mục</p>
             )}
           </div>
 
-          <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
+          <div className="space-y-1 pt-2 border-t border-slate-100 max-h-[145px] overflow-y-auto pr-1">
             {categories.map((c, i) => (
-              <div key={i} className="flex items-center justify-between text-xs py-0.5">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-gray-700 truncate">{c.categoryName}</span>
+              <div key={i} className="flex items-center justify-between gap-2 text-xs py-0.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  />
+                  <span className="text-slate-700 truncate">{c.categoryName}</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-gray-900">{formatCompactVND(c.value)}</span>
-                  <span className="text-[11px] text-gray-400">{c.percentage}%</span>
+                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                  <span className="font-medium text-slate-900">{formatCompactVND(c.value)}</span>
+                  <span className="text-[11px] text-slate-500 w-10 text-right">{c.percentage}%</span>
                 </div>
               </div>
             ))}
@@ -309,38 +347,56 @@ export default function RevenueStructureReportPage() {
         </div>
 
         {/* Chart 2: Bar Brand Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-emerald-600" />
-              <span>Top Thương Hiệu Đóng Góp</span>
-            </h2>
-            <p className="text-xs text-gray-500">Doanh thu theo các hãng công nghệ lớn</p>
+        <div className="bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">Top thương hiệu đóng góp</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Doanh thu theo các hãng công nghệ</p>
           </div>
 
-          <div className="h-[220px]">
+          <div className="h-[200px]">
             {brands.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={brands} layout="vertical" margin={{ top: 5, right: 10, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis type="number" tickFormatter={(v) => formatCompactVND(v)} tick={{ fontSize: 10 }} />
-                  <YAxis type="category" dataKey="brandName" tick={{ fontSize: 10 }} width={70} />
-                  <Tooltip formatter={(val: any) => formatVND(Number(val || 0)) as any} />
-                  <Bar dataKey="revenue" name="Doanh thu" fill="#10B981" radius={[0, 4, 4, 0]} maxBarSize={18} />
+                <BarChart data={brands} layout="vertical" margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(v) => formatCompactVND(v)}
+                    tick={{ fontSize: 10, fill: '#64748B' }}
+                    axisLine={{ stroke: '#E2E8F0' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="brandName"
+                    tick={{ fontSize: 11, fill: '#475569' }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={78}
+                  />
+                  <Tooltip
+                    formatter={(val: any) => formatVND(Number(val || 0)) as any}
+                    contentStyle={{
+                      borderRadius: '6px',
+                      borderColor: '#E2E8F0',
+                      fontSize: '12px',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  />
+                  <Bar dataKey="revenue" name="Doanh thu" fill="#2563EB" radius={[0, 3, 3, 0]} maxBarSize={16} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-xs text-gray-400 pt-16">Chưa có dữ liệu thương hiệu</p>
+              <p className="text-center text-xs text-slate-400 pt-16">Chưa có dữ liệu thương hiệu</p>
             )}
           </div>
 
-          <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
+          <div className="space-y-1 pt-2 border-t border-slate-100 max-h-[145px] overflow-y-auto pr-1">
             {brands.map((b, i) => (
-              <div key={i} className="flex items-center justify-between text-xs py-0.5">
-                <span className="text-gray-700 truncate">{b.brandName}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-gray-900">{formatCompactVND(b.revenue)}</span>
-                  <span className="text-[11px] text-gray-400">{b.percentage}%</span>
+              <div key={i} className="flex items-center justify-between gap-2 text-xs py-0.5">
+                <span className="text-slate-700 truncate min-w-0">{b.brandName}</span>
+                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                  <span className="font-medium text-slate-900">{formatCompactVND(b.revenue)}</span>
+                  <span className="text-[11px] text-slate-500 w-10 text-right">{b.percentage}%</span>
                 </div>
               </div>
             ))}
@@ -348,16 +404,13 @@ export default function RevenueStructureReportPage() {
         </div>
 
         {/* Chart 3: Payment Method Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-purple-600" />
-              <span>Phương Thức Thanh Toán</span>
-            </h2>
-            <p className="text-xs text-gray-500">Tỷ lệ thanh toán online vs tiền mặt</p>
+        <div className="bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">Phương thức thanh toán</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Tỷ lệ thanh toán trực tuyến và tiền mặt</p>
           </div>
 
-          <div className="h-[220px]">
+          <div className="h-[200px]">
             {paymentMethods.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -367,35 +420,43 @@ export default function RevenueStructureReportPage() {
                     nameKey="methodName"
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={3}
+                    innerRadius={48}
+                    outerRadius={76}
+                    paddingAngle={2}
                   >
                     {paymentMethods.map((_, index) => (
-                      <Cell key={`cell-pay-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                      <Cell key={`cell-pay-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(val: any) => formatVND(Number(val || 0)) as any} />
+                  <Tooltip
+                    formatter={(val: any) => formatVND(Number(val || 0)) as any}
+                    contentStyle={{
+                      borderRadius: '6px',
+                      borderColor: '#E2E8F0',
+                      fontSize: '12px',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-center text-xs text-gray-400 pt-16">Chưa có dữ liệu thanh toán</p>
+              <p className="text-center text-xs text-slate-400 pt-16">Chưa có dữ liệu thanh toán</p>
             )}
           </div>
 
-          <div className="space-y-1 max-h-[140px] overflow-y-auto pr-1">
+          <div className="space-y-1 pt-2 border-t border-slate-100 max-h-[145px] overflow-y-auto pr-1">
             {paymentMethods.map((p, i) => (
-              <div key={i} className="flex items-center justify-between text-xs py-0.5">
-                <div className="flex items-center gap-2 truncate">
+              <div key={i} className="flex items-center justify-between gap-2 text-xs py-0.5">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: COLORS[(i + 3) % COLORS.length] }}
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: COLORS[(i + 2) % COLORS.length] }}
                   />
-                  <span className="text-gray-700 truncate">{p.methodName}</span>
+                  <span className="text-slate-700 truncate">{p.methodName}</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-gray-900">{formatCompactVND(p.amount)}</span>
-                  <span className="text-[11px] text-gray-400">{p.percentage}%</span>
+                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                  <span className="font-medium text-slate-900">{formatCompactVND(p.amount)}</span>
+                  <span className="text-[11px] text-slate-500 w-10 text-right">{p.percentage}%</span>
                 </div>
               </div>
             ))}
@@ -403,68 +464,100 @@ export default function RevenueStructureReportPage() {
         </div>
       </div>
 
-      {/* Top Products Table */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-gray-100">
+      {/* ==================== TOP PRODUCTS TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600" />
-              <span>Top Sản Phẩm Đóng Góp Doanh Thu Cao Nhất</span>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Top sản phẩm đóng góp doanh thu cao nhất
             </h2>
-            <p className="text-xs text-gray-500">Danh sách các SKU chủ lực mang lại nguồn thu chính</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Xếp hạng các SKU chủ lực mang lại nguồn thu và biên lợi nhuận gộp chính
+            </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Tìm theo tên SKU..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs w-48 focus:outline-blue-500"
-            />
-            <button
-              onClick={exportCSV}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất CSV</span>
-            </button>
-          </div>
+          <span className="text-xs text-slate-500 tabular-nums shrink-0">
+            Hiển thị <strong className="font-medium text-slate-900">{formatNumber(filteredTopProducts.length)}</strong> SKU
+          </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-3">#</th>
-                <th className="py-2.5 px-3">Mã SKU</th>
-                <th className="py-2.5 px-3">Tên Sản Phẩm</th>
-                <th className="py-2.5 px-3">Danh Mục</th>
-                <th className="py-2.5 px-3 text-right">Số Lượng Bán</th>
-                <th className="py-2.5 px-3 text-right">Doanh Thu Thuần</th>
-                <th className="py-2.5 px-3 text-right">Lợi Nhuận Gộp</th>
-                <th className="py-2.5 px-3 text-right">Biên Lợi Nhuận</th>
+                <th className="py-2.5 px-4 w-10">#</th>
+                <th className="py-2.5 px-4 min-w-[260px]">Sản phẩm</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">SL bán</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Doanh thu thuần</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap min-w-[140px]">Tỷ trọng</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Lợi nhuận gộp</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Biên LN</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredTopProducts.length > 0 ? (
-                filteredTopProducts.map((p, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3 font-bold text-gray-400">{idx + 1}</td>
-                    <td className="py-3 px-3 font-semibold text-blue-600">{p.productCode}</td>
-                    <td className="py-3 px-3 max-w-[240px] truncate font-medium text-gray-900" title={p.productName}>
-                      {p.productName}
-                    </td>
-                    <td className="py-3 px-3 text-gray-600">{p.categoryName || 'N/A'}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatNumber(p.quantitySold)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-blue-600">{formatVND(p.revenue)}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-emerald-600">{formatVND(p.grossProfit)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-700">{p.grossMarginPercentage}%</td>
-                  </tr>
-                ))
+                filteredTopProducts.map((p, idx) => {
+                  const sharePercent =
+                    totalTopProductsRevenue > 0
+                      ? Number(((p.revenue / totalTopProductsRevenue) * 100).toFixed(1))
+                      : 0;
+                  return (
+                    <tr key={p.productId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 font-medium text-slate-400 tabular-nums">
+                        {idx + 1}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3 min-w-0 max-w-[340px]">
+                          <div className="w-9 h-9 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 text-slate-400">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div
+                              className="font-medium text-slate-900 truncate"
+                              title={p.productName}
+                            >
+                              {p.productName}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate">
+                              <span className="font-medium text-blue-600 tabular-nums shrink-0">
+                                {p.productCode}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="truncate">{p.categoryName || 'N/A'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatNumber(p.quantitySold)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatVND(p.revenue)}
+                      </td>
+                      <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-16 h-1.5 bg-slate-100 rounded-sm overflow-hidden shrink-0">
+                            <div
+                              className="h-full bg-blue-600 rounded-sm"
+                              style={{ width: `${Math.min(100, sharePercent)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-slate-700 w-10 text-right">
+                            {sharePercent}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-emerald-700 tabular-nums whitespace-nowrap">
+                        {formatVND(p.grossProfit)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-700 tabular-nums whitespace-nowrap">
+                        {p.grossMarginPercentage}%
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-400">
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
                     Không có sản phẩm nào phù hợp
                   </td>
                 </tr>

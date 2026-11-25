@@ -229,104 +229,108 @@ export default function DeliveryList() {
         }
     };
 
+    // Restrained 6px status dot indicator (no colorful rounded-full pills)
+    const renderDeliveryStatusIndicator = (st: OrderFulfillmentStatus) => {
+        const conf = FULFILLMENT_STATUS_MAP[st];
+        let dotClass = 'bg-slate-400';
+        if (st === 'HANDED_OVER_TO_CARRIER' || st === 'SHIPPING_IN_TRANSIT') {
+            dotClass = 'bg-blue-600';
+        } else if (st === 'OUT_FOR_DELIVERY') {
+            dotClass = 'bg-amber-500';
+        } else if (st === 'DELIVERED_SUCCESS' || st === 'COMPLETED') {
+            dotClass = 'bg-emerald-600';
+        }
+
+        return (
+            <span
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap"
+                title={conf.description}
+            >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+                <span>{conf.label}</span>
+            </span>
+        );
+    };
+
     // Columns cho AdminTable
     const columns: Column<OrderFulfillmentRecord>[] = [
         {
             key: 'orderCode',
-            header: 'Mã đơn & Vận đơn ĐVVC ngoài',
+            header: 'Mã đơn & Vận đơn',
             render: (rec) => (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-gray-900 font-mono">
-                        <PackageCheck className="w-4 h-4 text-emerald-600" />
-                        <span>{rec.orderCode}</span>
+                <div className="space-y-1 min-w-[155px]">
+                    <div className="font-mono text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                        {rec.orderCode}
                     </div>
                     {rec.carrierInfo?.trackingNumber ? (
-                        <div className="flex items-center gap-1 text-[11px] font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 w-fit">
-                            <Tag className="w-3 h-3" />
-                            <span>{rec.carrierInfo.trackingNumber}</span>
+                        <div className="inline-flex items-center font-mono text-[11px] font-medium text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-200 tabular-nums whitespace-nowrap">
+                            {rec.carrierInfo.trackingNumber}
                         </div>
                     ) : (
-                        <span className="text-[11px] text-gray-400 italic">Chưa có mã vận đơn</span>
+                        <span className="text-[11px] text-slate-400">Chưa có mã vận đơn</span>
                     )}
                 </div>
             ),
         },
         {
             key: 'customer',
-            header: 'Khách hàng & Địa chỉ',
+            header: 'Người nhận & Địa chỉ',
             render: (rec) => (
-                <div className="space-y-1 max-w-xs">
-                    <div className="font-semibold text-gray-800 flex items-center gap-1.5 text-xs">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{rec.recipientName}</span>
-                        <span className="text-gray-400">({rec.recipientPhone})</span>
+                <div className="space-y-0.5 max-w-[250px]">
+                    <div className="flex items-center gap-1.5 text-xs">
+                        <span className="font-medium text-slate-900 truncate">{rec.recipientName}</span>
+                        <span className="font-mono text-slate-500 tabular-nums shrink-0">{rec.recipientPhone}</span>
                     </div>
-                    <div className="text-[11px] text-gray-500 line-clamp-1 flex items-start gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
-                        <span>{rec.address}</span>
+                    <div className="text-xs text-slate-500 line-clamp-2" title={rec.address}>
+                        {rec.address}
                     </div>
                 </div>
             ),
         },
         {
             key: 'carrier',
-            header: 'Đối tác ĐVVC ngoài hệ thống',
+            header: 'Đơn vị vận chuyển',
             render: (rec) => (
-                <div className="space-y-1">
-                    <div className="font-bold text-xs text-gray-900 flex items-center gap-1">
-                        <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>{rec.carrierInfo?.carrierName || 'ĐVVC đối tác'}</span>
+                <div className="space-y-0.5 max-w-[200px]">
+                    <div className="text-xs font-medium text-slate-900 truncate">
+                        {rec.carrierInfo?.carrierName || 'ĐVVC đối tác'}
                     </div>
-                    <div className="text-[11px] text-gray-500">
-                        Shipper: {rec.carrierInfo?.driverName || 'Đang điều phối'} • {rec.carrierInfo?.driverPhone || ''}
+                    <div className="text-[11px] text-slate-500 truncate tabular-nums">
+                        {rec.carrierInfo?.driverName || 'Đang điều phối'}
+                        {rec.carrierInfo?.driverPhone ? ` · ${rec.carrierInfo.driverPhone}` : ''}
                     </div>
                 </div>
             ),
         },
         {
-            key: 'serials',
-            header: 'Mã Serial gán',
+            key: 'amount',
+            header: 'Giá trị / COD',
+            align: 'right',
             render: (rec) => (
-                <div className="space-y-1">
-                    <span className="text-xs font-semibold text-emerald-700">
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div className="font-mono text-xs font-semibold text-slate-900">
+                        {formatVND(rec.finalAmount)}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
                         {rec.assignedSerials.length} serial
-                    </span>
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                        {rec.assignedSerials.map((s) => (
-                            <span
-                                key={s.serialNumber}
-                                className={`font-mono text-[10px] px-1.5 py-0.5 rounded border ${s.status === 'SOLD'
-                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
-                                        : 'bg-slate-100 text-slate-800 border-slate-200'
-                                    }`}
-                                title={`Trạng thái: ${s.status === 'SOLD' ? 'ĐÃ BÁN (SOLD)' : s.status}`}
-                            >
-                                {s.serialNumber}
-                            </span>
-                        ))}
                     </div>
                 </div>
+            ),
+        },
+        {
+            key: 'updatedAt',
+            header: 'Thời gian',
+            align: 'right',
+            render: (rec) => (
+                <span className="text-xs text-slate-600 tabular-nums whitespace-nowrap">
+                    {formatDateTime(rec.customerReceivedAt || rec.carrierInfo?.handoverAt || rec.packedAt)}
+                </span>
             ),
         },
         {
             key: 'status',
-            header: 'Tiến trình giao hàng',
-            render: (rec) => {
-                const conf = FULFILLMENT_STATUS_MAP[rec.fulfillmentStatus];
-                return (
-                    <div className="space-y-1">
-                        <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${conf.badgeClass}`}
-                        >
-                            <Box className="w-3 h-3" />
-                            <span>{conf.label}</span>
-                        </span>
-                        <div className="text-[11px] text-gray-500">
-                            {rec.customerReceivedAt ? `Nhận lúc: ${formatDateTime(rec.customerReceivedAt)}` : conf.description.slice(0, 40) + '...'}
-                        </div>
-                    </div>
-                );
-            },
+            header: 'Trạng thái',
+            render: (rec) => renderDeliveryStatusIndicator(rec.fulfillmentStatus),
         },
         {
             key: 'actions',
@@ -384,6 +388,18 @@ export default function DeliveryList() {
     // Filter fields
     const filterFields: FilterField[] = [
         {
+            id: 'carrier',
+            label: 'Đơn vị vận chuyển',
+            type: 'select',
+            options: [
+                { label: 'Tất cả ĐVVC', value: 'ALL' },
+                ...POPULAR_LOGISTICS_CARRIERS.map((c) => ({
+                    label: c.name,
+                    value: c.name,
+                })),
+            ],
+        },
+        {
             id: 'status',
             label: 'Trạng thái giao nhận',
             type: 'select',
@@ -398,126 +414,61 @@ export default function DeliveryList() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* ======================================================== */}
             {/* HEADER                                                   */}
             {/* ======================================================== */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-emerald-600 text-white rounded-xl shadow-md shadow-emerald-500/20">
-                            <PackageCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý đơn giao hàng (Deliveries & Logistics)
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                Giai đoạn 4: Vận chuyển kiện hàng qua ĐVVC ngoài hệ thống, bàn giao tới khách hàng và xác nhận hoàn tất quy trình bán hàng
-                            </p>
-                        </div>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý đơn giao hàng
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.inTransit} đang vận chuyển · {stats.outForDelivery} đang phát · {stats.completed} hoàn tất
+                    </p>
                 </div>
 
                 {/* Header Actions */}
-                <div className="flex items-center gap-2.5 flex-wrap">
-                    <button
-                        type="button"
-                        onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border transition-all cursor-pointer ${showWorkflowGuide
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                            }`}
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Sơ đồ nghiệp vụ 4 giai đoạn</span>
-                    </button>
-
+                <div className="flex items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => loadData(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
+                        <span>Làm mới</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => navigate('/admin/sales/orders')}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all cursor-pointer shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                         <span>Danh sách đơn bán hàng</span>
                     </button>
                 </div>
             </div>
 
-
-            {/* ======================================================== */}
-            {/* STAT CARDS                                               */}
-            {/* ======================================================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang vận chuyển ngoài</p>
-                        <p className="text-2xl font-bold text-indigo-600">{stats.inTransit}</p>
-                        <p className="text-[11px] text-gray-400">Đang trung chuyển qua bưu cục</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                        <Truck className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang phát hàng</p>
-                        <p className="text-2xl font-bold text-amber-600">{stats.outForDelivery}</p>
-                        <p className="text-[11px] text-gray-400">Shipper đang trên đường giao</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Khách đã nhận</p>
-                        <p className="text-2xl font-bold text-emerald-600">{stats.delivered}</p>
-                        <p className="text-[11px] text-gray-400">Kiểm tra ngoại quan đạt chuẩn</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Hoàn tất quy trình bán hàng</p>
-                        <p className="text-2xl font-bold text-emerald-700">{stats.completed}</p>
-                        <p className="text-[11px] text-gray-400">Tất cả serial đã chuyển sang SOLD</p>
-                    </div>
-                    <div className="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
-                        <PackageCheck className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
             {/* ======================================================== */}
             {/* FILTER & TABLE                                           */}
             {/* ======================================================== */}
-            <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 space-y-4">
+            <div className="space-y-4">
                 <AdminFilter
                     searchQuery={searchQuery}
                     onSearchChange={(q) => setSearchQuery(q)}
                     onSearch={(q) => setSearchQuery(q)}
                     searchPlaceholder="Tìm kiếm theo mã đơn, mã vận đơn, khách hàng, số điện thoại..."
                     fields={filterFields}
-                    values={{ status: statusFilter }}
-                    onFilterChange={(vals) => setStatusFilter(vals.status || 'ALL')}
+                    values={{ status: statusFilter, carrier: carrierFilter }}
+                    onFilterChange={(vals) => {
+                        setStatusFilter(vals.status || 'ALL');
+                        setCarrierFilter(vals.carrier || 'ALL');
+                    }}
                     onReset={() => {
                         setSearchQuery('');
                         setStatusFilter('ALL');
+                        setCarrierFilter('ALL');
                     }}
                 />
 
@@ -534,42 +485,40 @@ export default function DeliveryList() {
             {/* MODAL XÁC NHẬN KHÁCH HÀNG NHẬN HÀNG THÀNH CÔNG (GĐ 4 B3) */}
             {/* ======================================================== */}
             {isDeliveryConfirmModalOpen && targetRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-2xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title={`Khách hàng xác nhận nhận hàng: ${targetRecord.orderCode}`}
-                            subtitle="Giai đoạn 4 Bước 3: Nghiệm thu ngoại quan & Đóng quy trình bán hàng"
+                            title={`Xác nhận nhận hàng: ${targetRecord.orderCode}`}
+                            subtitle="Nghiệm thu ngoại quan & Đóng quy trình bán hàng"
                             icon={CheckCircle2}
                             onClose={() => setIsDeliveryConfirmModalOpen(false)}
                         />
 
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
-                            {/* Card thông tin đơn & serial */}
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Khách hàng:</span>
-                                    <span className="font-bold text-gray-900">{targetRecord.recipientName} ({targetRecord.recipientPhone})</span>
+                        <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                            {/* Flat 2-column order & carrier summary */}
+                            <dl className="bg-slate-50 p-3.5 rounded-md border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <dt className="text-slate-500">Người nhận</dt>
+                                    <dd className="font-medium text-slate-900 mt-0.5">{targetRecord.recipientName}</dd>
+                                    <dd className="font-mono text-slate-600 tabular-nums">{targetRecord.recipientPhone}</dd>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Địa chỉ bàn giao:</span>
-                                    <span className="font-medium text-gray-800 text-right max-w-xs">{targetRecord.address}</span>
+                                <div>
+                                    <dt className="text-slate-500">Đơn vị vận chuyển &amp; Vận đơn</dt>
+                                    <dd className="font-medium text-slate-900 mt-0.5">{targetRecord.carrierInfo?.carrierName}</dd>
+                                    <dd className="font-mono text-slate-600 tabular-nums">{targetRecord.carrierInfo?.trackingNumber}</dd>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Đơn vị vận chuyển ngoài:</span>
-                                    <span className="font-bold text-purple-700">
-                                        {targetRecord.carrierInfo?.carrierName} (Vận đơn: {targetRecord.carrierInfo?.trackingNumber})
-                                    </span>
-                                </div>
-                                <div className="flex justify-between border-t pt-2">
-                                    <span className="text-gray-500">Tổng giá trị thanh toán:</span>
-                                    <span className="font-bold text-emerald-700 font-mono text-sm">
+                                <div className="sm:col-span-2 border-t border-slate-200 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div className="text-slate-600 truncate" title={targetRecord.address}>
+                                        <span className="text-slate-500">Địa chỉ:</span> {targetRecord.address}
+                                    </div>
+                                    <div className="font-mono font-semibold text-slate-900 text-sm tabular-nums shrink-0">
                                         {formatVND(targetRecord.finalAmount)}
-                                    </span>
+                                    </div>
                                 </div>
-                            </div>
+                            </dl>
 
                             {/* Kiểm tra ngoại quan kiện hàng */}
-                            <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 space-y-2.5">
+                            <div className="bg-emerald-50/70 p-3.5 rounded-md border border-emerald-200">
                                 <label className="flex items-start gap-2.5 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -578,10 +527,10 @@ export default function DeliveryList() {
                                         className="rounded text-emerald-600 focus:ring-emerald-500 mt-0.5"
                                     />
                                     <div>
-                                        <span className="font-bold text-emerald-950 block">
+                                        <span className="font-semibold text-emerald-950 block">
                                             Khách hàng đã kiểm tra ngoại quan kiện hàng nguyên vẹn
                                         </span>
-                                        <span className="text-[11px] text-emerald-800">
+                                        <span className="text-[11px] text-emerald-800 tabular-nums">
                                             Tem niêm phong PCStore còn nguyên seal, thùng carton không cấn móp, đầy đủ {targetRecord.assignedSerials.length} mã serial chỉ định.
                                         </span>
                                     </div>
@@ -590,22 +539,18 @@ export default function DeliveryList() {
 
                             {/* Người nhận thực tế */}
                             <div>
-                                <AdminLabel>
-                                    Họ tên người nhận thực tế:
-                                </AdminLabel>
+                                <AdminLabel>Họ tên người nhận thực tế</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={customerName}
                                     onChange={(e) => setCustomerName(e.target.value)}
-                                    className="font-semibold"
+                                    className="font-medium"
                                 />
                             </div>
 
                             {/* Ghi chú phản hồi của khách hàng */}
                             <div>
-                                <AdminLabel>
-                                    Ý kiến / Ghi chú phản hồi của khách hàng:
-                                </AdminLabel>
+                                <AdminLabel>Ý kiến / Ghi chú phản hồi của khách hàng</AdminLabel>
                                 <AdminTextarea
                                     rows={2}
                                     value={customerNotes}
@@ -614,17 +559,14 @@ export default function DeliveryList() {
                             </div>
 
                             {/* Cảnh báo cập nhật serial */}
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 flex items-start gap-2">
-                                <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                <div>
-                                    <strong>Hiệu lực hệ thống:</strong> Khi bấm xác nhận, đơn hàng sẽ chuyển trạng thái{' '}
-                                    <span className="font-bold text-emerald-700">"Hoàn tất giao dịch" (COMPLETED)</span> và toàn bộ các mã serial gán vào đơn sẽ chuyển trạng thái{' '}
-                                    <span className="font-bold text-emerald-700">"ĐÃ BÁN" (SOLD)</span>. Quy trình bán hàng đóng hoàn tất.
-                                </div>
+                            <div className="px-3.5 py-2.5 bg-amber-50 border border-amber-200 rounded-md text-[11px] text-amber-900">
+                                <strong>Hiệu lực hệ thống:</strong> Khi bấm xác nhận, đơn hàng sẽ chuyển sang{' '}
+                                <strong>Hoàn tất giao dịch (COMPLETED)</strong> và toàn bộ các mã serial gán vào đơn sẽ chuyển trạng thái{' '}
+                                <strong>ĐÃ BÁN (SOLD)</strong>.
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -638,7 +580,7 @@ export default function DeliveryList() {
                                 onClick={handleConfirmDeliverySuccess}
                                 isLoading={isSubmitting}
                                 icon={CheckCircle2}
-                                className="!bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-600/30"
+                                className="!bg-emerald-600 hover:!bg-emerald-700"
                             >
                                 Xác nhận nhận hàng thành công
                             </AdminButton>
@@ -651,41 +593,73 @@ export default function DeliveryList() {
             {/* MODAL XEM CHI TIẾT LỘ TRÌNH ĐVVC NGOÀI                   */}
             {/* ======================================================== */}
             {isTrackingModalOpen && trackingRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-3xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title={`Lộ trình vận chuyển ngoài: ${trackingRecord.carrierInfo?.carrierName}`}
-                            subtitle={`Mã vận đơn: ${trackingRecord.carrierInfo?.trackingNumber} • Đơn: ${trackingRecord.orderCode}`}
+                            title={`Lộ trình vận chuyển: ${trackingRecord.carrierInfo?.carrierName}`}
+                            subtitle={`Mã vận đơn: ${trackingRecord.carrierInfo?.trackingNumber} · Đơn: ${trackingRecord.orderCode}`}
                             icon={Truck}
                             onClose={() => setIsTrackingModalOpen(false)}
                         />
 
-                        <div className="p-6 overflow-y-auto space-y-5 text-xs flex-1">
-                            <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-emerald-200">
+                        <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1">
+                            {/* Flat 2-column carrier & recipient summary */}
+                            <dl className="bg-slate-50 p-3.5 rounded-md border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <dt className="text-[11px] text-slate-500 uppercase font-medium">Người nhận &amp; Địa chỉ</dt>
+                                    <dd className="font-semibold text-slate-900 mt-0.5">
+                                        {trackingRecord.recipientName}{' '}
+                                        <span className="font-mono font-normal text-slate-600 tabular-nums">
+                                            ({trackingRecord.recipientPhone})
+                                        </span>
+                                    </dd>
+                                    <dd className="text-slate-600 mt-0.5">{trackingRecord.address}</dd>
+                                </div>
+                                <div>
+                                    <dt className="text-[11px] text-slate-500 uppercase font-medium">Vận chuyển &amp; COD</dt>
+                                    <dd className="font-semibold text-slate-900 mt-0.5">
+                                        {trackingRecord.carrierInfo?.carrierName || 'ĐVVC đối tác'}
+                                    </dd>
+                                    <dd className="font-mono text-slate-600 tabular-nums mt-0.5">
+                                        Vận đơn: {trackingRecord.carrierInfo?.trackingNumber || '—'} · COD:{' '}
+                                        <strong className="text-slate-900">{formatVND(trackingRecord.finalAmount)}</strong>
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            {/* Flat tracking log list (divide-y) */}
+                            <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
+                                <div className="px-4 py-2.5 bg-slate-50 text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                                    Nhật ký hành trình ({trackingRecord.carrierTimeline.length})
+                                </div>
                                 {trackingRecord.carrierTimeline.map((evt, idx) => (
-                                    <div key={evt.id || idx} className="relative flex items-start gap-3 pl-8">
-                                        <div className="absolute left-2 top-1 w-3 h-3 rounded-full bg-emerald-600 border-2 border-white ring-2 ring-emerald-200" />
-                                        <div className="bg-white p-3 rounded-xl border border-gray-200 w-full shadow-2xs space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold text-gray-900">{evt.statusTitle}</span>
-                                                <span className="text-[10px] text-gray-400 font-mono">
-                                                    {formatDateTime(evt.timestamp)}
-                                                </span>
+                                    <div key={evt.id || idx} className="px-4 py-3 space-y-1">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex items-center gap-2">
+                                                <span
+                                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                                        idx === 0 ? 'bg-blue-600' : 'bg-slate-300'
+                                                    }`}
+                                                />
+                                                <span className="font-semibold text-slate-900">{evt.statusTitle}</span>
                                             </div>
-                                            <p className="text-gray-600">{evt.description}</p>
-                                            {evt.location && (
-                                                <div className="text-[11px] text-indigo-700 flex items-center gap-1 font-medium">
-                                                    <MapPin className="w-3 h-3" />
-                                                    <span>{evt.location}</span>
-                                                </div>
-                                            )}
+                                            <span className="text-[11px] text-slate-500 font-mono tabular-nums shrink-0">
+                                                {formatDateTime(evt.timestamp)}
+                                            </span>
                                         </div>
+                                        <p className="text-slate-600 pl-3.5">{evt.description}</p>
+                                        {evt.location && (
+                                            <div className="text-[11px] text-slate-700 flex items-center gap-1 font-medium pl-3.5">
+                                                <MapPin className="w-3 h-3 text-slate-400" />
+                                                <span>{evt.location}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end shrink-0">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -702,87 +676,91 @@ export default function DeliveryList() {
             {/* MODAL IN BIÊN BẢN GIAO NHẬN HOÀN TẤT                     */}
             {/* ======================================================== */}
             {isPrintModalOpen && printRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-3xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title={`Biên bản bàn giao & Nghiệm thu hoàn tất: ${printRecord.orderCode}`}
+                            title={`Biên bản giao nhận hoàn tất: ${printRecord.orderCode}`}
                             icon={Printer}
                             onClose={() => setIsPrintModalOpen(false)}
                         />
 
                         {/* Mẫu in biên bản giao nhận */}
-                        <div className="p-6 bg-white space-y-5 text-gray-900 border-2 border-dashed border-gray-300 m-4 rounded-xl overflow-y-auto flex-1">
-                            <div className="text-center space-y-1 border-b pb-4">
-                                <h2 className="text-lg font-black text-emerald-900 uppercase">
-                                    BIÊN BẢN GIAO NHẬN HÀNG HÓA & NGHIỆM THU HOÀN TẤT
+                        <div className="p-6 bg-white space-y-5 text-slate-900 border border-dashed border-slate-300 m-4 rounded-md overflow-y-auto flex-1">
+                            <div className="text-center space-y-1 border-b border-slate-200 pb-4">
+                                <h2 className="text-base font-semibold text-slate-900 uppercase tracking-tight">
+                                    BIÊN BẢN GIAO NHẬN HÀNG HÓA &amp; NGHIỆM THU HOÀN TẤT
                                 </h2>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-slate-500">
                                     Chứng nhận khách hàng đã nhận đủ sản phẩm và xác nhận ngoại quan nguyên vẹn
                                 </p>
-                                <div className="flex justify-center gap-4 text-xs font-mono text-gray-700 mt-2">
-                                    <span>Mã đơn: <strong>{printRecord.orderCode}</strong></span>
-                                    <span>•</span>
-                                    <span>Vận đơn: <strong>{printRecord.carrierInfo?.trackingNumber}</strong></span>
+                                <div className="flex flex-wrap justify-center gap-3 text-xs font-mono text-slate-700 mt-2 tabular-nums">
+                                    <span>Mã đơn: <strong className="text-slate-900">{printRecord.orderCode}</strong></span>
+                                    <span className="text-slate-300">|</span>
+                                    <span>Vận đơn: <strong className="text-slate-900">{printRecord.carrierInfo?.trackingNumber}</strong></span>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-lg border">
-                                <div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase">Đơn vị vận chuyển (Ngoài):</div>
-                                    <div className="font-bold text-indigo-900">{printRecord.carrierInfo?.carrierName}</div>
-                                    <div>Tài xế giao: {printRecord.carrierInfo?.driverName}</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-3.5 rounded-md border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] font-medium text-slate-500 uppercase">Đơn vị vận chuyển</div>
+                                    <div className="font-semibold text-slate-900">{printRecord.carrierInfo?.carrierName}</div>
+                                    <div className="text-slate-600">Tài xế giao: {printRecord.carrierInfo?.driverName}</div>
                                 </div>
-                                <div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase">Khách hàng nhận hàng:</div>
-                                    <div className="font-bold text-emerald-900">{printRecord.recipientName}</div>
-                                    <div>Thời gian nhận: {formatDateTime(printRecord.customerReceivedAt)}</div>
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] font-medium text-slate-500 uppercase">Khách hàng nhận hàng</div>
+                                    <div className="font-semibold text-slate-900">{printRecord.recipientName}</div>
+                                    <div className="text-slate-600 tabular-nums">
+                                        Thời gian nhận: {formatDateTime(printRecord.customerReceivedAt)}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Danh sách serial */}
                             <div className="space-y-2">
-                                <div className="text-xs font-bold text-gray-800">Danh sách cá thể sản phẩm đã bàn giao (Serial):</div>
-                                <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
-                                    <thead className="bg-gray-100 text-gray-700">
-                                        <tr>
-                                            <th className="p-2 text-left border-b">#</th>
-                                            <th className="p-2 text-left border-b">Tên sản phẩm</th>
-                                            <th className="p-2 text-left border-b">Mã Serial</th>
-                                            <th className="p-2 text-right border-b">Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 font-mono text-[11px]">
-                                        {printRecord.assignedSerials.map((s, idx) => (
-                                            <tr key={s.serialNumber}>
-                                                <td className="p-2 font-sans">{idx + 1}</td>
-                                                <td className="p-2 font-sans font-medium text-gray-900">{s.productName}</td>
-                                                <td className="p-2 font-bold text-indigo-700">{s.serialNumber}</td>
-                                                <td className="p-2 text-right font-sans font-bold text-emerald-700">ĐÃ BÁN (SOLD)</td>
+                                <div className="text-xs font-semibold text-slate-900">Danh sách cá thể sản phẩm đã bàn giao (Serial)</div>
+                                <div className="border border-slate-200 rounded-md overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left font-medium w-10">#</th>
+                                                <th className="px-3 py-2 text-left font-medium">Tên sản phẩm</th>
+                                                <th className="px-3 py-2 text-left font-medium">Mã Serial</th>
+                                                <th className="px-3 py-2 text-right font-medium">Trạng thái</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            {printRecord.assignedSerials.map((s, idx) => (
+                                                <tr key={s.serialNumber}>
+                                                    <td className="px-3 py-2 text-slate-500 tabular-nums">{idx + 1}</td>
+                                                    <td className="px-3 py-2 font-medium text-slate-900">{s.productName}</td>
+                                                    <td className="px-3 py-2 font-mono font-medium text-slate-700 tabular-nums">{s.serialNumber}</td>
+                                                    <td className="px-3 py-2 text-right font-medium text-emerald-700">ĐÃ BÁN (SOLD)</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
                             {/* Nhận xét của khách */}
-                            <div className="text-xs text-gray-700 bg-emerald-50/60 p-3 rounded border border-emerald-200">
-                                <strong>Xác nhận từ khách hàng:</strong> "{printRecord.customerNotes || 'Đã nhận đúng hàng, ngoại quan nguyên vẹn.'}"
+                            <div className="text-xs text-slate-700 bg-slate-50 p-3 rounded-md border border-slate-200">
+                                <strong className="text-slate-900">Xác nhận từ khách hàng:</strong> &ldquo;{printRecord.customerNotes || 'Đã nhận đúng hàng, ngoại quan nguyên vẹn.'}&rdquo;
                             </div>
 
                             {/* Chữ ký 2 bên */}
-                            <div className="grid grid-cols-2 gap-8 pt-4 border-t text-xs text-center">
+                            <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs text-center">
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Người giao hàng (ĐVVC)</p>
-                                    <p className="font-bold text-gray-900">{printRecord.carrierInfo?.driverName}</p>
+                                    <p className="font-medium text-slate-600">Người giao hàng (ĐVVC)</p>
+                                    <p className="font-semibold text-slate-900">{printRecord.carrierInfo?.driverName}</p>
                                 </div>
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Khách hàng nhận hàng</p>
-                                    <p className="font-bold text-emerald-900">{printRecord.recipientName}</p>
+                                    <p className="font-medium text-slate-600">Khách hàng nhận hàng</p>
+                                    <p className="font-semibold text-slate-900">{printRecord.recipientName}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -795,7 +773,6 @@ export default function DeliveryList() {
                                 variant="primary"
                                 onClick={() => window.print()}
                                 icon={Printer}
-                                className="!bg-emerald-600 hover:!bg-emerald-700"
                             >
                                 In biên bản giao nhận
                             </AdminButton>

@@ -1,26 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  ArrowLeftRight,
-  Truck,
-  Building2,
   Calendar,
   RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
   Download,
-  FileCheck,
-  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
   ComposedChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
 import { adminAnalyticsService } from '../../../../services/adminAnalyticsService';
 import type {
@@ -123,45 +114,57 @@ export default function InventoryMovementsReportPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Biến Động Tồn Kho & Hiệu Suất Nhập Hàng NCC
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              <Sparkles className="w-3 h-3 text-indigo-600" /> Procurement Inbound
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Báo cáo kho hàng</span>
+            <span className="text-slate-300">/</span>
+            <span className="tabular-nums">
+              Kỳ theo dõi: {startDate} — {endDate}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Theo dõi lưu lượng nhập kho, chất lượng kiểm hàng và đánh giá mức độ uy tín của Nhà cung cấp
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Biến động tồn kho &amp; hiệu suất nhập hàng NCC
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Theo dõi lưu lượng nhập kho, chất lượng kiểm hàng và đánh giá tỷ lệ lỗi theo từng nhà cung cấp.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2.5 h-9 text-xs tabular-nums">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
-            <span className="text-gray-400">-</span>
+            <span className="text-slate-300">—</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
           </div>
 
           <button
+            type="button"
+            onClick={exportCSV}
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Xuất CSV</span>
+          </button>
+
+          <button
+            type="button"
             onClick={loadMovementsData}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Lọc</span>
@@ -169,142 +172,155 @@ export default function InventoryMovementsReportPage() {
         </div>
       </div>
 
-      {/* 4 Summary Highlight Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+      {/* ==================== PROCUREMENT TRENDS CHART ==================== */}
+      <div className="bg-white p-5 rounded-md border border-slate-200 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 border-slate-100">
           <div>
-            <span className="text-xs font-semibold text-gray-500">Tổng Giá Trị Nhập Hàng</span>
-            <p className="text-xl font-bold text-gray-900 mt-1">{formatVND(totalImportValue)}</p>
-            <span className="text-[11px] text-gray-400">Chi phí nhập từ NCC</span>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Lưu lượng giá trị nhập kho theo thời gian
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Giá trị tiền hàng nhập từ nhà cung cấp qua từng mốc thời gian
+            </p>
           </div>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-            <Truck className="w-6 h-6" />
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 tabular-nums">
+            <span>
+              Tổng nhập: <strong className="font-semibold text-slate-900">{formatVND(totalImportValue)}</strong>
+            </span>
+            <span>
+              SL nhận: <strong className="font-semibold text-slate-900">{formatNumber(totalReceivedQty)}</strong>
+            </span>
+            <span>
+              Hàng lỗi:{' '}
+              <strong className={`font-semibold ${totalDefectiveQty > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                {formatNumber(totalDefectiveQty)} ({overallDefectRate}%)
+              </strong>
+            </span>
           </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Tổng Số Lượng Nhập</span>
-            <p className="text-xl font-bold text-emerald-600 mt-1">{formatNumber(totalReceivedQty)}</p>
-            <span className="text-[11px] text-gray-400">Linh kiện đã kiểm tra</span>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Số Lượng Hàng Lỗi</span>
-            <p className="text-xl font-bold text-rose-600 mt-1">{formatNumber(totalDefectiveQty)}</p>
-            <span className="text-[11px] text-rose-500 font-semibold">Tỷ lệ lỗi: {overallDefectRate}%</span>
-          </div>
-          <div className="p-3 rounded-xl bg-rose-50 text-rose-600">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Số Đối Tác NCC</span>
-            <p className="text-xl font-bold text-indigo-600 mt-1">{suppliers.length}</p>
-            <span className="text-[11px] text-gray-400">Phát sinh giao dịch</span>
-          </div>
-          <div className="p-3 rounded-xl bg-indigo-50 text-indigo-600">
-            <Building2 className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Procurement Trends Chart */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="border-b pb-3 border-gray-100">
-          <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-            <ArrowLeftRight className="w-4 h-4 text-blue-600" />
-            <span>Biểu Đồ Lưu Lượng Giá Trị Nhập Kho Theo Thời Gian</span>
-          </h2>
-          <p className="text-xs text-gray-500">Giá trị tiền hàng nhập kho theo từng mốc thời gian</p>
         </div>
 
         <div className="h-[280px]">
           {procurementTrends.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={procurementTrends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={(v) => formatCompactVND(v)} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(val: any) => [formatVND(Number(val || 0)), 'Giá trị nhập'] as any} />
-                <Bar dataKey="revenue" name="Giá trị nhập" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <ComposedChart data={procurementTrends} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={{ stroke: '#E2E8F0' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  width={56}
+                  tickFormatter={(v) => formatCompactVND(v)}
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  formatter={(val: any) => [formatVND(Number(val || 0)), 'Giá trị nhập'] as any}
+                  contentStyle={{
+                    borderRadius: '6px',
+                    borderColor: '#E2E8F0',
+                    fontSize: '12px',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                />
+                <Bar dataKey="revenue" name="Giá trị nhập" fill="#2563EB" radius={[3, 3, 0, 0]} maxBarSize={30} />
               </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-xs text-gray-400 pt-28">Chưa có dữ liệu nhập hàng trong kỳ</p>
+            <div className="h-full flex items-center justify-center text-xs text-slate-400">
+              Chưa có dữ liệu nhập hàng trong kỳ
+            </div>
           )}
         </div>
       </div>
 
-      {/* Supplier Performance Table */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 border-gray-100">
+      {/* ==================== SUPPLIER PERFORMANCE TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-600" />
-              <span>Bảng Đánh Giá Hiệu Suất & Chất Lượng Nhà Cung Cấp</span>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Bảng đánh giá hiệu suất &amp; chất lượng nhà cung cấp
             </h2>
-            <p className="text-xs text-gray-500">Xếp hạng theo giá trị nhập, số lượng đạt chuẩn và tỷ lệ lỗi kỹ thuật</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Xếp hạng theo giá trị nhập, sản lượng đạt chuẩn và tỷ lệ hàng lỗi kỹ thuật
+            </p>
           </div>
-          <button
-            onClick={exportCSV}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors self-start"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Xuất CSV</span>
-          </button>
+          <span className="text-xs text-slate-500 tabular-nums shrink-0">
+            <strong className="font-medium text-slate-900">{formatNumber(suppliers.length)}</strong> đối tác NCC
+          </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-3">Mã NCC</th>
-                <th className="py-2.5 px-3">Tên Nhà Cung Cấp</th>
-                <th className="py-2.5 px-3 text-right">Số Phiếu Nhập</th>
-                <th className="py-2.5 px-3 text-right">Tổng Giá Trị</th>
-                <th className="py-2.5 px-3 text-right">Tổng Nhận</th>
-                <th className="py-2.5 px-3 text-right">Đạt Chuẩn</th>
-                <th className="py-2.5 px-3 text-right">Hàng Lỗi</th>
-                <th className="py-2.5 px-3 text-right">Tỷ Lệ Lỗi</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Mã NCC</th>
+                <th className="py-2.5 px-4 min-w-[200px]">Tên nhà cung cấp</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Số phiếu nhập</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tổng giá trị</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tổng nhận</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Đạt chuẩn</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Hàng lỗi</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tỷ lệ lỗi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800 tabular-nums">
               {suppliers.length > 0 ? (
-                suppliers.map((s, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3 font-mono font-semibold text-blue-600">{s.supplierCode}</td>
-                    <td className="py-3 px-3 font-medium text-gray-900">{s.supplierName}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-gray-700">{formatNumber(s.receiptCount)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatVND(s.totalImportValue)}</td>
-                    <td className="py-3 px-3 text-right text-gray-700">{formatNumber(s.totalQuantityReceived)}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-emerald-600">{formatNumber(s.acceptedQuantity)}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-rose-600">{formatNumber(s.defectiveQuantity)}</td>
-                    <td className="py-3 px-3 text-right">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                          s.defectRatePercentage > 3
-                            ? 'bg-rose-100 text-rose-800'
-                            : s.defectRatePercentage > 1
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
+                suppliers.map((s, idx) => {
+                  const dotColor =
+                    s.defectRatePercentage > 3
+                      ? 'bg-rose-500'
+                      : s.defectRatePercentage > 1
+                        ? 'bg-amber-500'
+                        : 'bg-emerald-500';
+                  const rateColor =
+                    s.defectRatePercentage > 3
+                      ? 'text-rose-600'
+                      : s.defectRatePercentage > 1
+                        ? 'text-amber-700'
+                        : 'text-slate-700';
+                  return (
+                    <tr key={s.supplierCode ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-blue-600 whitespace-nowrap">
+                        {s.supplierCode}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-slate-900">
+                        {s.supplierName}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-700 whitespace-nowrap">
+                        {formatNumber(s.receiptCount)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-semibold text-slate-900 whitespace-nowrap">
+                        {formatVND(s.totalImportValue)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700 whitespace-nowrap">
+                        {formatNumber(s.totalQuantityReceived)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-emerald-700 whitespace-nowrap">
+                        {formatNumber(s.acceptedQuantity)}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-right font-medium whitespace-nowrap ${
+                          s.defectiveQuantity > 0 ? 'text-rose-600' : 'text-slate-400'
                         }`}
                       >
-                        {s.defectRatePercentage}%
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                        {formatNumber(s.defectiveQuantity)}
+                      </td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <span className={`inline-flex items-center justify-end gap-1.5 font-medium ${rateColor}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+                          <span>{s.defectRatePercentage}%</span>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-400">
+                  <td colSpan={8} className="py-10 text-center text-slate-400">
                     Chưa có giao dịch nhập hàng nào
                   </td>
                 </tr>

@@ -1,19 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  TrendingUp,
   Package,
-  ShoppingBag,
-  DollarSign,
   AlertTriangle,
   RefreshCw,
   Calendar,
-  Layers,
-  ArrowUpRight,
-  ShieldAlert,
-  Boxes,
-  FileCheck,
   ChevronRight,
-  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,7 +15,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   PieChart,
   Pie,
   Cell,
@@ -65,7 +55,7 @@ function formatNumber(num: number): string {
   return new Intl.NumberFormat('vi-VN').format(num || 0);
 }
 
-const PIE_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#64748B'];
+const PIE_COLORS = ['#2563EB', '#0EA5E9', '#0D9488', '#6366F1', '#64748B', '#D97706', '#E11D48', '#8B5CF6'];
 
 export const AdminDashboard: React.FC = () => {
   // Preset dates
@@ -157,80 +147,74 @@ export const AdminDashboard: React.FC = () => {
   }, [loadDashboardData]);
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Top Header & Date Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-4 pb-8">
+      {/* ==================== TOP HEADER & DATE FILTERS ==================== */}
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tổng Quan Hoạt Động Kinh Doanh</h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-              <Sparkles className="w-3 h-3 text-blue-600" /> Real-time Analytics
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Bảng điều khiển</span>
+            <span className="text-slate-300">/</span>
+            <span className="tabular-nums">
+              {startDate} — {endDate}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Dữ liệu tổng hợp trực tiếp từ hệ thống API phân tích kinh doanh PC Store
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Tổng quan hoạt động kinh doanh
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Tổng hợp doanh thu, đơn hàng, lợi nhuận gộp và tình trạng kho hàng PC Store theo thời gian thực.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* Preset Buttons */}
-          <div className="inline-flex rounded-xl bg-gray-100 p-1">
-            <button
-              onClick={() => handleSelectPreset('7D')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === '7D' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              7 ngày
-            </button>
-            <button
-              onClick={() => handleSelectPreset('30D')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === '30D' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              30 ngày
-            </button>
-            <button
-              onClick={() => handleSelectPreset('THIS_QUARTER')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_QUARTER' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Quý này
-            </button>
-            <button
-              onClick={() => handleSelectPreset('THIS_YEAR')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_YEAR' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Năm nay
-            </button>
+          <div className="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200">
+            {(
+              [
+                { id: '7D', label: '7 ngày' },
+                { id: '30D', label: '30 ngày' },
+                { id: 'THIS_QUARTER', label: 'Quý này' },
+                { id: 'THIS_YEAR', label: 'Năm nay' },
+              ] as const
+            ).map((preset) => (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handleSelectPreset(preset.id)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                  activePreset === preset.id
+                    ? 'bg-white text-slate-900 border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                }`}
+              >
+                {preset.label}
+              </button>
+            ))}
           </div>
 
           {/* Date range pickers */}
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2.5 h-8 text-xs tabular-nums">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
-            <span className="text-gray-400">-</span>
+            <span className="text-slate-300">—</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
           </div>
 
           <button
+            type="button"
             onClick={loadDashboardData}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
             title="Làm mới dữ liệu"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -240,226 +224,220 @@ export const AdminDashboard: React.FC = () => {
       </div>
 
       {errorMsg && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex items-center justify-between text-xs">
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
             <span>{errorMsg}</span>
           </div>
           <button
+            type="button"
             onClick={loadDashboardData}
-            className="underline font-semibold text-amber-900 hover:text-amber-700"
+            className="underline font-medium text-amber-900 hover:text-amber-700 shrink-0 cursor-pointer"
           >
             Thử lại
           </button>
         </div>
       )}
 
-      {/* 7 KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-        {/* KPI 1: Doanh thu thuần */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-blue-200 transition-colors">
-          <div className="flex items-center justify-between text-blue-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Doanh Thu Thuần</span>
-            <div className="p-1.5 rounded-lg bg-blue-50">
-              <DollarSign className="w-4 h-4 text-blue-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-gray-900">
+      {/* ==================== FLAT 2-ROW KPI METRIC STRIP ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md overflow-hidden">
+        {/* Top Row: 4 Primary Sales KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+          <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+            <span className="text-xs font-medium text-slate-500">Doanh thu thuần</span>
+            <p className="text-2xl font-semibold text-slate-900 tracking-tight">
               {kpi ? formatVND(kpi.totalRevenue) : '0 ₫'}
             </p>
-            <span className="text-[11px] text-blue-600 font-medium flex items-center gap-1 mt-1">
-              {kpi ? formatCompactVND(kpi.totalRevenue) : '0 ₫'}
+            <span className="text-xs text-slate-500">
+              Quy đổi: {kpi ? formatCompactVND(kpi.totalRevenue) : '0 ₫'}
             </span>
           </div>
-        </div>
 
-        {/* KPI 2: Lợi nhuận gộp & Biên */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-emerald-200 transition-colors">
-          <div className="flex items-center justify-between text-emerald-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Lợi Nhuận Gộp</span>
-            <div className="p-1.5 rounded-lg bg-emerald-50">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-gray-900">
+          <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+            <span className="text-xs font-medium text-slate-500">Lợi nhuận gộp</span>
+            <p className="text-2xl font-semibold text-emerald-700 tracking-tight">
               {kpi ? formatVND(kpi.grossProfit) : '0 ₫'}
             </p>
-            <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-0.5 mt-1">
-              Biên LN: {kpi?.grossMarginPercentage ?? 0}%
+            <span className="text-xs text-slate-500">
+              Biên lợi nhuận: <strong className="font-medium text-slate-700">{kpi?.grossMarginPercentage ?? 0}%</strong>
             </span>
           </div>
-        </div>
 
-        {/* KPI 3: Hóa đơn đã thanh toán */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-indigo-200 transition-colors">
-          <div className="flex items-center justify-between text-indigo-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Hóa Đơn Hoàn Tất</span>
-            <div className="p-1.5 rounded-lg bg-indigo-50">
-              <FileCheck className="w-4 h-4 text-indigo-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-gray-900">
+          <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+            <span className="text-xs font-medium text-slate-500">Hóa đơn hoàn tất</span>
+            <p className="text-2xl font-semibold text-slate-900 tracking-tight">
               {kpi ? formatNumber(kpi.totalPaidInvoices) : '0'}
             </p>
-            <span className="text-[11px] text-gray-500 mt-1 block">Đã thanh toán</span>
+            <span className="text-xs text-slate-500">Đơn đã thanh toán</span>
           </div>
-        </div>
 
-        {/* KPI 4: Sản phẩm đã bán */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-purple-200 transition-colors">
-          <div className="flex items-center justify-between text-purple-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Sản Phẩm Đã Bán</span>
-            <div className="p-1.5 rounded-lg bg-purple-50">
-              <Package className="w-4 h-4 text-purple-600" />
-            </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-gray-900">
+          <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+            <span className="text-xs font-medium text-slate-500">Sản phẩm đã bán</span>
+            <p className="text-2xl font-semibold text-slate-900 tracking-tight">
               {kpi ? formatNumber(kpi.totalProductsSold) : '0'}
             </p>
-            <span className="text-[11px] text-gray-500 mt-1 block">Chiếc / Linh kiện</span>
+            <span className="text-xs text-slate-500">Chiếc / linh kiện</span>
           </div>
         </div>
 
-        {/* KPI 5: Giá trị vốn tồn kho */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-amber-200 transition-colors">
-          <div className="flex items-center justify-between text-amber-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Giá Trị Kho Hàng</span>
-            <div className="p-1.5 rounded-lg bg-amber-50">
-              <Boxes className="w-4 h-4 text-amber-600" />
+        {/* Bottom Row: 3 Operational & Inventory KPIs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 border-t border-slate-200">
+          <div className="px-4 py-3.5 flex items-center justify-between gap-2 tabular-nums">
+            <div>
+              <span className="text-xs font-medium text-slate-500 block">Giá trị kho hàng</span>
+              <span className="text-[11px] text-slate-400">Giá vốn khả dụng</span>
             </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-gray-900">
+            <span className="text-lg font-semibold text-slate-900">
               {kpi ? formatCompactVND(kpi.totalInventoryValue) : '0 ₫'}
-            </p>
-            <span className="text-[11px] text-gray-500 mt-1 block">Giá vốn khả dụng</span>
+            </span>
           </div>
-        </div>
 
-        {/* KPI 6: Cảnh báo sắp hết hàng */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-rose-200 transition-colors">
-          <div className="flex items-center justify-between text-rose-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Sắp Hết Hàng</span>
-            <div className="p-1.5 rounded-lg bg-rose-50">
-              <ShieldAlert className="w-4 h-4 text-rose-600" />
+          <div className="px-4 py-3.5 flex items-center justify-between gap-2 tabular-nums">
+            <div>
+              <span className="text-xs font-medium text-slate-500 block">Sắp hết hàng</span>
+              <span className="text-[11px] text-slate-400">Mã SKU cần nhập</span>
             </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-rose-600">
+            <span
+              className={`text-lg font-semibold ${
+                (kpi?.lowStockProductCount ?? 0) > 0 ? 'text-rose-600' : 'text-slate-900'
+              }`}
+            >
               {kpi ? formatNumber(kpi.lowStockProductCount) : '0'}
-            </p>
-            <span className="text-[11px] text-rose-500 mt-1 block">Mã SKU cần nhập</span>
+            </span>
           </div>
-        </div>
 
-        {/* KPI 7: Đơn đang xử lý */}
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col justify-between hover:border-cyan-200 transition-colors">
-          <div className="flex items-center justify-between text-cyan-600 mb-2">
-            <span className="text-xs font-semibold text-gray-500">Đơn Đang Xử Lý</span>
-            <div className="p-1.5 rounded-lg bg-cyan-50">
-              <ShoppingBag className="w-4 h-4 text-cyan-600" />
+          <div className="px-4 py-3.5 flex items-center justify-between gap-2 tabular-nums">
+            <div>
+              <span className="text-xs font-medium text-slate-500 block">Đơn đang xử lý</span>
+              <span className="text-[11px] text-slate-400">Chưa hoàn tất giao</span>
             </div>
-          </div>
-          <div>
-            <p className="text-lg font-black text-cyan-700">
+            <span className="text-lg font-semibold text-blue-600">
               {kpi ? formatNumber(kpi.processingOrderCount) : '0'}
-            </p>
-            <span className="text-[11px] text-gray-500 mt-1 block">Chưa kết thúc</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Main Charts Row: Combo Revenue/Orders & Category Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Combo Revenue and Orders Trend */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+      {/* ==================== MAIN CHARTS ROW ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left 8/12: Combo Revenue and Orders Trend */}
+        <div className="lg:col-span-8 bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between gap-2 border-b pb-3 border-slate-100">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Biểu Đồ Doanh Thu & Số Lượng Đơn Hàng</h2>
-              <p className="text-xs text-gray-500">Xu hướng biến động theo từng mốc thời gian</p>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Biểu đồ doanh thu &amp; số lượng đơn hàng
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Xu hướng biến động theo từng mốc thời gian
+              </p>
             </div>
             <Link
               to="/admin/reports/sales/trends"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 shrink-0"
             >
-              Xem chi tiết <ChevronRight className="w-3.5 h-3.5" />
+              <span>Xem chi tiết</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="h-[320px] w-full">
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis
-                    yAxisId="left"
-                    tickFormatter={(v) => formatCompactVND(v)}
-                    tick={{ fontSize: 11 }}
-                  />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    tick={{ fontSize: 11 }}
-                    allowDecimals={false}
-                  />
-                  <Tooltip
-                    formatter={(val: any, name: any) => {
-                      const numVal = Number(val || 0);
-                      if (name === 'Doanh thu') return [formatVND(numVal), name] as any;
-                      return [formatNumber(numVal) + ' đơn', name || ''] as any;
-                    }}
-                    labelStyle={{ fontWeight: 'bold' }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="revenue"
-                    name="Doanh thu"
-                    fill="#3B82F6"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="orderCount"
-                    name="Số đơn hàng"
-                    stroke="#F59E0B"
-                    strokeWidth={2.5}
-                    dot={{ r: 3 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs">
-                <Calendar className="w-8 h-8 text-gray-300 mb-2" />
-                <p>Chưa có dữ liệu giao dịch trong khoảng thời gian này</p>
+          {trendData.length > 0 ? (
+            <div className="space-y-3">
+              <div className="h-[290px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={trendData} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      axisLine={{ stroke: '#E2E8F0' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      width={56}
+                      tickFormatter={(v) => formatCompactVND(v)}
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      width={36}
+                      orientation="right"
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      formatter={(val: any, name: any) => {
+                        const numVal = Number(val || 0);
+                        if (name === 'Doanh thu') return [formatVND(numVal), name] as any;
+                        return [formatNumber(numVal) + ' đơn', name || ''] as any;
+                      }}
+                      contentStyle={{
+                        borderRadius: '6px',
+                        borderColor: '#E2E8F0',
+                        fontSize: '12px',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="revenue"
+                      name="Doanh thu"
+                      fill="#2563EB"
+                      radius={[3, 3, 0, 0]}
+                      maxBarSize={32}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="orderCount"
+                      name="Số đơn hàng"
+                      stroke="#059669"
+                      strokeWidth={2.25}
+                      dot={{ r: 3, fill: '#059669' }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
-            )}
-          </div>
+
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#2563EB] shrink-0" />
+                  <span>Doanh thu (VND)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 bg-[#059669] shrink-0" />
+                  <span>Số đơn hàng</span>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-400 text-xs">
+              Chưa có dữ liệu giao dịch trong khoảng thời gian này
+            </div>
+          )}
         </div>
 
-        {/* Right 1 Col: Revenue by Category Donut */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+        {/* Right 4/12: Revenue by Category Donut */}
+        <div className="lg:col-span-4 bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between gap-2 border-b pb-3 border-slate-100">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Cơ Cấu Theo Danh Mục</h2>
-              <p className="text-xs text-gray-500">Tỷ trọng doanh thu theo ngành hàng</p>
+              <h2 className="text-sm font-semibold text-slate-900">Cơ cấu theo danh mục</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Tỷ trọng doanh thu ngành hàng</p>
             </div>
             <Link
               to="/admin/reports/sales/structure"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 shrink-0"
             >
-              Chi tiết <ChevronRight className="w-3.5 h-3.5" />
+              <span>Chi tiết</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="h-[220px] w-full">
+          <div className="h-[195px] w-full">
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -469,8 +447,8 @@ export const AdminDashboard: React.FC = () => {
                     nameKey="categoryName"
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={48}
+                    outerRadius={76}
                     paddingAngle={2}
                   >
                     {categoryData.map((_, index) => (
@@ -479,30 +457,35 @@ export const AdminDashboard: React.FC = () => {
                   </Pie>
                   <Tooltip
                     formatter={(val: any) => formatVND(Number(val || 0)) as any}
+                    contentStyle={{
+                      borderRadius: '6px',
+                      borderColor: '#E2E8F0',
+                      fontSize: '12px',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs">
-                <Layers className="w-8 h-8 text-gray-300 mb-2" />
-                <p>Chưa có dữ liệu danh mục</p>
+              <div className="h-full flex items-center justify-center text-slate-400 text-xs">
+                Chưa có dữ liệu danh mục
               </div>
             )}
           </div>
 
-          <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+          <div className="divide-y divide-slate-100 border-t border-slate-100 max-h-[130px] overflow-y-auto pr-1">
             {categoryData.map((cat, idx) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 truncate">
+              <div key={cat.categoryId ?? idx} className="flex items-center justify-between gap-2 text-xs py-1.5">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}
                   />
-                  <span className="text-gray-700 truncate">{cat.categoryName}</span>
+                  <span className="text-slate-700 truncate">{cat.categoryName}</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-gray-900">{formatCompactVND(cat.value)}</span>
-                  <span className="text-[11px] text-gray-400">{cat.percentage}%</span>
+                <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                  <span className="font-medium text-slate-900">{formatCompactVND(cat.value)}</span>
+                  <span className="text-[11px] text-slate-500 w-9 text-right">{cat.percentage}%</span>
                 </div>
               </div>
             ))}
@@ -510,211 +493,208 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 2: Order Status Distribution, Top Selling Products, Low Stock Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ==================== ROW 2: ORDER STATUS, TOP PRODUCTS, LOW STOCK ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Order Status Breakdown */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+        <div className="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Phân Bổ Trạng Thái Đơn Hàng</h2>
-              <p className="text-xs text-gray-500">Tỷ lệ xử lý các đơn hàng hiện tại</p>
+              <h2 className="text-sm font-semibold text-slate-900">Phân bổ trạng thái đơn hàng</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Tỷ lệ xử lý các đơn hàng hiện tại</p>
             </div>
             <Link
               to="/admin/reports/sales/orders"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 shrink-0"
             >
-              Xem đơn <ChevronRight className="w-3.5 h-3.5" />
+              <span>Xem đơn</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-3 pt-2">
+          <div className="p-5 space-y-3.5 flex-1">
             {orderStatusData.length > 0 ? (
-              orderStatusData.map((st, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-gray-700">{st.label}</span>
-                    <span className="text-gray-900 font-semibold">
-                      {st.count} đơn ({st.percentage}%)
-                    </span>
+              orderStatusData.map((st, idx) => {
+                const statusColor =
+                  st.status === 'COMPLETED'
+                    ? '#059669'
+                    : st.status === 'DELIVERING'
+                      ? '#2563EB'
+                      : st.status === 'PENDING'
+                        ? '#D97706'
+                        : st.status === 'CANCELLED'
+                          ? '#E11D48'
+                          : '#64748B';
+                return (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="inline-flex items-center gap-2 text-slate-700 font-medium">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: statusColor }}
+                        />
+                        <span>{st.label}</span>
+                      </span>
+                      <span className="text-slate-900 font-semibold tabular-nums whitespace-nowrap">
+                        {formatNumber(st.count)} đơn{' '}
+                        <span className="text-slate-500 font-normal">({st.percentage}%)</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-sm h-1.5 overflow-hidden">
+                      <div
+                        className="h-1.5 rounded-sm transition-all duration-300"
+                        style={{
+                          width: `${Math.min(100, st.percentage)}%`,
+                          backgroundColor: statusColor,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${st.percentage}%`,
-                        backgroundColor:
-                          st.status === 'COMPLETED'
-                            ? '#10B981'
-                            : st.status === 'DELIVERING'
-                            ? '#3B82F6'
-                            : st.status === 'PENDING'
-                            ? '#F59E0B'
-                            : st.status === 'CANCELLED'
-                            ? '#EF4444'
-                            : '#64748B',
-                      }}
-                    />
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
-              <p className="text-center text-xs text-gray-400 py-6">Chưa có dữ liệu trạng thái đơn</p>
+              <p className="text-center text-xs text-slate-400 py-10">Chưa có dữ liệu trạng thái đơn</p>
             )}
           </div>
         </div>
 
         {/* Top 5 Selling Products */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+        <div className="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Top Sản Phẩm Bán Chạy</h2>
-              <p className="text-xs text-gray-500">Sản lượng tiêu thụ cao nhất</p>
+              <h2 className="text-sm font-semibold text-slate-900">Top sản phẩm bán chạy</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Sản lượng tiêu thụ cao nhất</p>
             </div>
             <Link
               to="/admin/reports/sales/gross-profit"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 shrink-0"
             >
-              Ma trận SKU <ChevronRight className="w-3.5 h-3.5" />
+              <span>Ma trận SKU</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-100 flex-1">
             {topProducts.length > 0 ? (
               topProducts.map((p, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                  <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </span>
-                      <p className="text-xs font-semibold text-gray-900 truncate" title={p.productName}>
+                <div
+                  key={p.productId ?? idx}
+                  className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 text-slate-400">
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate" title={p.productName}>
                         {p.productName}
                       </p>
+                      <span className="text-[11px] text-slate-500 tabular-nums block truncate">
+                        #{idx + 1} • {p.productCode}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-gray-400 pl-6 block">{p.productCode}</span>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-bold text-blue-600">{formatNumber(p.quantitySold)} chiếc</span>
-                    <span className="text-[10px] text-gray-500 block">{formatCompactVND(p.revenue)}</span>
+                  <div className="text-right shrink-0 tabular-nums">
+                    <span className="text-xs font-semibold text-slate-900 block">
+                      {formatNumber(p.quantitySold)} chiếc
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {formatCompactVND(p.revenue)}
+                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-xs text-gray-400 py-6">Chưa có dữ liệu sản phẩm</p>
+              <p className="text-center text-xs text-slate-400 py-12">Chưa có dữ liệu sản phẩm</p>
             )}
           </div>
         </div>
 
         {/* Low Stock Alerts Quick View */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+        <div className="bg-white rounded-md border border-slate-200 overflow-hidden flex flex-col">
+          <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-2">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Cảnh Báo Hết Hàng</h2>
-              <p className="text-xs text-gray-500">Sản phẩm chạm ngưỡng tồn tối thiểu</p>
+              <h2 className="text-sm font-semibold text-slate-900">Cảnh báo hết hàng</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Sản phẩm chạm ngưỡng tối thiểu</p>
             </div>
             <Link
               to="/admin/reports/inventory/alerts"
-              className="text-xs font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-1"
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 shrink-0"
             >
-              Toàn bộ <ChevronRight className="w-3.5 h-3.5" />
+              <span>Toàn bộ</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="divide-y divide-slate-100 flex-1">
             {lowStockAlerts.length > 0 ? (
               lowStockAlerts.slice(0, 5).map((item, idx) => (
                 <div
-                  key={idx}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/50 border border-rose-100"
+                  key={item.productId ?? idx}
+                  className="px-5 py-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
                 >
-                  <div className="min-w-0 pr-2">
-                    <p className="text-xs font-semibold text-gray-900 truncate" title={item.productName}>
-                      {item.productName}
-                    </p>
-                    <span className="text-[10px] text-rose-700">
-                      Tồn: <strong className="text-rose-900">{item.sellableQuantity}</strong> / Tối thiểu {item.minimumThreshold}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          item.sellableQuantity <= 0 ? 'bg-rose-500' : 'bg-amber-500'
+                        }`}
+                      />
+                      <p className="text-xs font-medium text-slate-900 truncate" title={item.productName}>
+                        {item.productName}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-slate-500 tabular-nums block pl-3 mt-0.5">
+                      Tồn: <strong className="font-semibold text-rose-600">{item.sellableQuantity}</strong> / Tối thiểu{' '}
+                      {item.minimumThreshold}
                     </span>
                   </div>
                   <Link
                     to="/admin/import"
-                    className="px-2 py-1 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg text-[10px] font-bold shrink-0 transition-colors"
+                    className="px-2.5 py-1 bg-white text-slate-700 hover:text-blue-600 border border-slate-200 hover:bg-slate-50 rounded-md text-[11px] font-medium shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                   >
                     Nhập hàng
                   </Link>
                 </div>
               ))
             ) : (
-              <div className="text-center py-6">
-                <span className="inline-block p-2 rounded-full bg-emerald-50 text-emerald-600 mb-1">
-                  <ShieldAlert className="w-5 h-5" />
-                </span>
-                <p className="text-xs text-gray-500 font-medium">Kho hàng đang ở trạng thái an toàn</p>
+              <div className="py-12 text-center text-xs text-slate-500">
+                Kho hàng đang ở trạng thái an toàn
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Quick Navigation to Reports */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-        <h2 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-          <Layers className="w-4 h-4 text-blue-600" />
-          <span>Truy Cập Nhanh Các Báo Cáo Chuyên Sâu</span>
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-          <Link
-            to="/admin/reports/sales/revenue"
-            className="p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/40 transition-all text-center group"
-          >
-            <DollarSign className="w-5 h-5 text-blue-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Doanh Thu</span>
-            <span className="text-[10px] text-gray-400">Doanh thu & đối chiếu</span>
-          </Link>
-
-          <Link
-            to="/admin/reports/sales/structure"
-            className="p-3 rounded-xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all text-center group"
-          >
-            <Layers className="w-5 h-5 text-indigo-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Cơ Cấu SP</span>
-            <span className="text-[10px] text-gray-400">Theo ngành hàng/hãng</span>
-          </Link>
-
-          <Link
-            to="/admin/reports/sales/gross-profit"
-            className="p-3 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition-all text-center group"
-          >
-            <TrendingUp className="w-5 h-5 text-emerald-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Lợi Nhuận Gộp</span>
-            <span className="text-[10px] text-gray-400">Giá vốn & biên lợi nhuận</span>
-          </Link>
-
-          <Link
-            to="/admin/reports/inventory/stock"
-            className="p-3 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/40 transition-all text-center group"
-          >
-            <Boxes className="w-5 h-5 text-amber-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Báo Cáo Kho</span>
-            <span className="text-[10px] text-gray-400">Tồn kho & tuổi kho</span>
-          </Link>
-
-          <Link
-            to="/admin/reports/inventory/movements"
-            className="p-3 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50/40 transition-all text-center group"
-          >
-            <ArrowUpRight className="w-5 h-5 text-purple-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Nhập Hàng NCC</span>
-            <span className="text-[10px] text-gray-400">Hiệu suất nhà cung cấp</span>
-          </Link>
-
-          <Link
-            to="/admin/reports/sales/export"
-            className="p-3 rounded-xl border border-gray-200 hover:border-rose-300 hover:bg-rose-50/40 transition-all text-center group"
-          >
-            <FileCheck className="w-5 h-5 text-rose-600 mx-auto mb-1 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold text-gray-800 block">Khai Thuế & Excel</span>
-            <span className="text-[10px] text-gray-400">Hoạch toán & Tờ khai</span>
-          </Link>
+      {/* ==================== QUICK NAVIGATION TO REPORTS (FLAT STRIP) ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-200">
+          <h2 className="text-xs font-semibold text-slate-700">
+            Truy cập nhanh báo cáo chuyên sâu
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+          {[
+            { to: '/admin/reports/sales/revenue', title: 'Doanh thu', desc: 'Doanh thu & đối chiếu' },
+            { to: '/admin/reports/sales/structure', title: 'Cơ cấu SP', desc: 'Theo ngành hàng / hãng' },
+            { to: '/admin/reports/sales/gross-profit', title: 'Lợi nhuận gộp', desc: 'Giá vốn & biên LN' },
+            { to: '/admin/reports/inventory/stock', title: 'Báo cáo kho', desc: 'Tồn kho & serial' },
+            { to: '/admin/reports/inventory/movements', title: 'Nhập hàng NCC', desc: 'Hiệu suất nhà cung cấp' },
+            { to: '/admin/reports/sales/export', title: 'Khai thuế & Excel', desc: 'Hạch toán & tờ khai' },
+          ].map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className="px-4 py-3 hover:bg-slate-50 transition-colors flex items-center justify-between gap-2 group"
+            >
+              <div className="min-w-0">
+                <span className="text-xs font-medium text-slate-900 group-hover:text-blue-600 block truncate">
+                  {item.title}
+                </span>
+                <span className="text-[11px] text-slate-500 block truncate mt-0.5">{item.desc}</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 shrink-0" />
+            </Link>
+          ))}
         </div>
       </div>
     </div>

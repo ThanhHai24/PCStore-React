@@ -317,8 +317,8 @@ export default function BrandList() {
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: 'Đang hoạt động (ACTIVE)', value: 'ACTIVE' },
-                { label: 'Đang ẩn (HIDDEN)', value: 'HIDDEN' },
+                { label: 'Hiển thị', value: 'ACTIVE' },
+                { label: 'Ẩn', value: 'HIDDEN' },
             ],
         },
     ];
@@ -576,22 +576,42 @@ export default function BrandList() {
         toast.info(`Đã sao chép ${label}: ${text}`, 'Đã sao chép');
     };
 
+    // Helper: Restrained Status Indicator (small dot + neutral text)
+    const renderStatusIndicator = (status: BrandItem['status']) =>
+        status === 'ACTIVE' ? (
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Hiển thị
+            </span>
+        ) : (
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                Ẩn
+            </span>
+        );
+
     // Table Columns Configuration
     const columns: Column<BrandItem>[] = [
         {
             key: 'brand',
             header: 'Thương hiệu',
+            align: 'left',
             render: (brand) => (
-                <div className="flex items-center gap-3 py-1">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                <div className="flex items-center gap-3 min-w-0 max-w-[300px]">
+                    <div className="w-9 h-9 aspect-square rounded-md bg-slate-50 border border-slate-200 p-1 flex items-center justify-center font-semibold text-xs text-slate-700 shrink-0 select-none">
                         {brand.name.slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                        <div className="font-semibold text-gray-900 hover:text-blue-600 transition-colors">
-                            {brand.name}
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-medium text-slate-900 text-[13px] leading-snug truncate" title={brand.name}>
+                                {brand.name}
+                            </span>
+                            <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">
+                                #{brand.id}
+                            </span>
                         </div>
-                        <div className="text-xs text-gray-400 font-mono flex items-center gap-1 mt-0.5">
-                            <span>/{brand.slug}</span>
+                        <div className="text-[11px] text-slate-500 font-mono truncate mt-0.5">
+                            /{brand.slug}
                         </div>
                     </div>
                 </div>
@@ -600,40 +620,43 @@ export default function BrandList() {
         {
             key: 'description',
             header: 'Mô tả',
+            align: 'left',
             render: (brand) => (
-                <div className="max-w-xs text-xs text-gray-600 line-clamp-2" title={brand.description}>
-                    {brand.description || <span className="italic text-gray-400">Chưa có mô tả</span>}
+                <div className="max-w-[260px] text-xs text-slate-600 line-clamp-2" title={brand.description}>
+                    {brand.description && brand.description !== 'Chưa có thông tin mô tả chi tiết cho thương hiệu này.' ? (
+                        brand.description
+                    ) : (
+                        <span className="text-slate-400">—</span>
+                    )}
                 </div>
             ),
         },
         {
             key: 'productsCount',
-            header: 'Số sản phẩm',
-            align: 'center',
+            header: 'Sản phẩm',
+            align: 'right',
             render: (brand) => (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    <Package className="w-3.5 h-3.5 text-blue-500" />
-                    {brand.productsCount} sản phẩm
+                <span className="text-[13px] font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                    {brand.productsCount}
                 </span>
             ),
         },
         {
             key: 'categoriesCount',
-            header: 'Số danh mục bán',
-            align: 'center',
+            header: 'Danh mục',
+            align: 'right',
             render: (brand) => (
-                <div className="flex flex-col items-center gap-1">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                        <FolderTree className="w-3.5 h-3.5 text-purple-500" />
-                        {brand.categoriesCount} danh mục
+                <div className="flex flex-col items-end">
+                    <span className="text-xs font-medium text-slate-800 tabular-nums whitespace-nowrap">
+                        {brand.categoriesCount}
                     </span>
                     {brand.categoryNames.length > 0 && (
                         <span
-                            className="text-[11px] text-gray-400 line-clamp-1 max-w-[160px] text-center"
+                            className="text-[11px] text-slate-400 line-clamp-1 max-w-[150px] text-right"
                             title={brand.categoryNames.join(', ')}
                         >
                             {brand.categoryNames.slice(0, 2).join(', ')}
-                            {brand.categoryNames.length > 2 ? '...' : ''}
+                            {brand.categoryNames.length > 2 ? '…' : ''}
                         </span>
                     )}
                 </div>
@@ -642,37 +665,17 @@ export default function BrandList() {
         {
             key: 'status',
             header: 'Trạng thái',
-            align: 'center',
-            render: (brand) => (
-                <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${brand.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-gray-100 text-gray-600 border-gray-200'
-                        }`}
-                >
-                    {brand.status === 'ACTIVE' ? (
-                        <>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Đang hoạt động
-                        </>
-                    ) : (
-                        <>
-                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                            Đang ẩn
-                        </>
-                    )}
-                </span>
-            ),
+            align: 'left',
+            render: (brand) => renderStatusIndicator(brand.status),
         },
         {
             key: 'createdAt',
             header: 'Ngày tạo',
-            align: 'center',
+            align: 'right',
             render: (brand) => (
-                <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    <span>{brand.createdAt}</span>
-                </div>
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                    {brand.createdAt}
+                </span>
             ),
         },
         {
@@ -715,129 +718,76 @@ export default function BrandList() {
         { id: 'products', label: 'Sản phẩm thuộc thương hiệu', icon: Package, badge: selectedBrand?.productsCount || 0 },
     ];
 
+    const handleOpenAddModal = () => {
+        setAddForm({
+            name: '',
+            slug: '',
+            description: '',
+            status: 'ACTIVE',
+        });
+        setIsAddModalOpen(true);
+    };
+
     return (
-        <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
-                        <Award className="w-7 h-7 text-blue-600" />
-                        Quản lý thương hiệu
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Quản lý hệ thống các hãng sản xuất và nhà cung cấp linh kiện máy tính trong cơ sở dữ liệu
+        <div className="w-full space-y-4 min-w-0 font-sans">
+            {/* Compact Page Header (Borderless) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-baseline gap-2.5">
+                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight truncate">
+                            Quản lý thương hiệu
+                        </h1>
+                        <span className="text-xs font-medium text-slate-500 tabular-nums shrink-0">
+                            {totalElements} thương hiệu
+                        </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Quản lý hãng sản xuất và nhà cung cấp linh kiện máy tính
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => loadBrands(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                         title="Tải lại dữ liệu từ máy chủ"
                     >
-                        <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-                        Làm mới
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+                        <span className="hidden sm:inline">Làm mới</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleExportExcel}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                     >
-                        <Download className="w-4 h-4 text-gray-500" />
-                        Xuất Excel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setAddForm({
-                                name: '',
-                                slug: '',
-                                description: '',
-                                status: 'ACTIVE',
-                            });
-                            setIsAddModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all duration-200 shadow-md shadow-blue-500/20"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm thương hiệu
+                        <Download className="w-3.5 h-3.5 text-slate-500" />
+                        <span className="hidden sm:inline">Xuất Excel</span>
                     </button>
                 </div>
             </div>
 
             {/* Error Notification Banner */}
             {error && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-rose-900">Không thể kết nối đến máy chủ</h4>
-                        <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+                <div className="p-3 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <div className="min-w-0">
+                            <span className="text-xs font-semibold text-rose-900">Không thể kết nối máy chủ: </span>
+                            <span className="text-xs text-rose-700">{error}</span>
+                        </div>
                     </div>
                     <button
                         type="button"
                         onClick={() => loadBrands(false)}
-                        className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors shadow-sm"
+                        className="px-3 py-1.5 rounded-md bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600/40"
                     >
                         Thử lại
                     </button>
                 </div>
             )}
 
-            {/* Quick Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng thương hiệu</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">{totalElements}</h3>
-                        <p className="text-xs text-blue-600 font-medium mt-1">Hãng trong cơ sở dữ liệu</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                        <Award className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang hoạt động</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                            {brands.filter((b) => b.status === 'ACTIVE').length}
-                        </h3>
-                        <p className="text-xs text-emerald-600 font-medium mt-1">Hiển thị trực tuyến</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng sản phẩm liên kết</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                            {brands.reduce((acc, curr) => acc + curr.productsCount, 0)}
-                        </h3>
-                        <p className="text-xs text-indigo-600 font-medium mt-1">Sản phẩm thuộc các hãng</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <Package className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng danh mục phủ sóng</p>
-                        <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                            {new Set(brands.flatMap((b) => b.categoryNames)).size}
-                        </h3>
-                        <p className="text-xs text-purple-600 font-medium mt-1">Nhóm ngành hàng phân phối</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                        <Layers className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Filter Section */}
+            {/* Unified Toolbar: Search + Status Filter + Add Brand */}
             <AdminFilter
                 fields={filterFields}
                 searchQuery={searchQuery}
@@ -846,30 +796,38 @@ export default function BrandList() {
                 onFilterChange={handleFilterChange}
                 onReset={handleFilterReset}
                 searchPlaceholder="Tìm kiếm theo tên thương hiệu, đường dẫn slug hoặc mô tả..."
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold border border-blue-600 hover:bg-blue-700 transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm thương hiệu</span>
+                    </button>
+                }
             />
 
-            {/* Brands Data Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <AdminTable
-                    columns={columns}
-                    data={brands}
-                    rowKey="id"
-                    loading={isLoading}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20]}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    onPageSizeChange={(newSize) => {
-                        setPageSize(newSize);
-                        setCurrentPage(1);
-                    }}
-                    onRowClick={(item) => handleOpenDetail(item)}
-                    itemUnitName="thương hiệu"
-                    emptyText="Không tìm thấy thương hiệu nào phù hợp với bộ lọc tìm kiếm hiện tại."
-                />
-            </div>
+            {/* Brands Data Table (Single Border-First Frame, No Card-in-Card) */}
+            <AdminTable
+                columns={columns}
+                data={brands}
+                rowKey="id"
+                loading={isLoading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20]}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize);
+                    setCurrentPage(1);
+                }}
+                onRowClick={(item) => handleOpenDetail(item)}
+                itemUnitName="thương hiệu"
+                emptyText="Không tìm thấy thương hiệu nào phù hợp với bộ lọc tìm kiếm hiện tại."
+            />
 
             {/* ========================================================================= */}
             {/* ADD BRAND MODAL                                                           */}
@@ -937,13 +895,13 @@ export default function BrandList() {
                     />
 
                     {/* Status checkbox */}
-                    <div className="pt-2">
-                        <label className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:bg-gray-50/80 cursor-pointer transition-colors">
+                    <div className="pt-2 border-t border-slate-200">
+                        <label className="flex items-center justify-between py-2.5 cursor-pointer">
                             <div>
-                                <span className="text-sm font-medium text-gray-900 block">
-                                    Kích hoạt trạng thái hoạt động (ACTIVE)
+                                <span className="text-xs font-semibold text-slate-900 block">
+                                    Hiển thị thương hiệu
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-[11px] text-slate-500">
                                     Thương hiệu sẽ hiển thị trực tuyến và sản phẩm thuộc hãng này được phép bán
                                 </span>
                             </div>
@@ -951,7 +909,7 @@ export default function BrandList() {
                                 type="checkbox"
                                 checked={addForm.status === 'ACTIVE'}
                                 onChange={(e) => setAddForm({ ...addForm, status: e.target.checked ? 'ACTIVE' : 'HIDDEN' })}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
                             />
                         </label>
                     </div>
@@ -1015,13 +973,13 @@ export default function BrandList() {
                         />
 
                         {/* Status Checkbox */}
-                        <div className="pt-2">
-                            <label className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 hover:bg-gray-50/80 cursor-pointer transition-colors">
+                        <div className="pt-2 border-t border-slate-200">
+                            <label className="flex items-center justify-between py-2.5 cursor-pointer">
                                 <div>
-                                    <span className="text-sm font-medium text-gray-900 block">
-                                        Kích hoạt trạng thái hoạt động (ACTIVE)
+                                    <span className="text-xs font-semibold text-slate-900 block">
+                                        Hiển thị thương hiệu
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-[11px] text-slate-500">
                                         Thương hiệu sẽ hiển thị trực tuyến trên cửa hàng
                                     </span>
                                 </div>
@@ -1029,7 +987,7 @@ export default function BrandList() {
                                     type="checkbox"
                                     checked={editForm.status === 'ACTIVE'}
                                     onChange={(e) => setEditForm({ ...editForm, status: e.target.checked ? 'ACTIVE' : 'HIDDEN' })}
-                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
                                 />
                             </label>
                         </div>
@@ -1052,11 +1010,11 @@ export default function BrandList() {
                     onTabChange={(tab) => setActiveDetailTab(tab as 'info' | 'products')}
                     footer={
                         <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            <div className="flex items-center gap-2 text-xs text-slate-500 tabular-nums">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
                                 <span>Thêm vào hệ thống: {selectedBrand.createdAt}</span>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5">
                                 <AdminButton
                                     type="button"
                                     variant="outline"
@@ -1081,100 +1039,77 @@ export default function BrandList() {
                         </div>
                     }
                 >
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {/* TAB 1: THÔNG TIN CHUNG */}
                         {activeDetailTab === 'info' && (
-                            <div className="space-y-5">
-                                {/* Brand Header Card */}
-                                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50/60 to-purple-50/50 border border-blue-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-3.5">
-                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            <div className="space-y-4">
+                                {/* Flat Brand Summary Header */}
+                                <div className="pb-4 border-b border-slate-200 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3.5 min-w-0">
+                                        <div className="w-11 h-11 aspect-square rounded-md bg-slate-50 border border-slate-200 p-1 text-slate-700 flex items-center justify-center font-semibold text-sm shrink-0 select-none">
                                             {selectedBrand.name.slice(0, 2).toUpperCase()}
                                         </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-gray-900">{selectedBrand.name}</h3>
-                                            <p className="text-xs text-blue-600 font-mono">/thuong-hieu/{selectedBrand.slug}</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-base font-semibold text-slate-900 truncate">{selectedBrand.name}</h3>
+                                            <p className="text-xs text-slate-500 font-mono truncate">/thuong-hieu/{selectedBrand.slug}</p>
                                         </div>
                                     </div>
-                                    <span
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${selectedBrand.status === 'ACTIVE'
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                            : 'bg-gray-100 text-gray-600 border-gray-200'
-                                            }`}
-                                    >
-                                        {selectedBrand.status === 'ACTIVE' ? (
-                                            <>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                Đang hoạt động
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                                Đang ẩn
-                                            </>
-                                        )}
-                                    </span>
+                                    {renderStatusIndicator(selectedBrand.status)}
                                 </div>
 
-                                {/* Stats Metrics */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Số lượng sản phẩm</span>
-                                        <span className="text-lg font-bold text-blue-600 mt-0.5 block">{selectedBrand.productsCount} sản phẩm</span>
+                                {/* Flat Metrics Grid */}
+                                <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 border-b border-slate-200">
+                                    <div>
+                                        <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Sản phẩm</dt>
+                                        <dd className="text-base font-semibold text-slate-900 mt-0.5 tabular-nums">{selectedBrand.productsCount}</dd>
                                     </div>
-                                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Số danh mục bán</span>
-                                        <span className="text-lg font-bold text-purple-600 mt-0.5 block">{selectedBrand.categoriesCount} danh mục</span>
+                                    <div>
+                                        <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Danh mục bán</dt>
+                                        <dd className="text-base font-semibold text-slate-900 mt-0.5 tabular-nums">{selectedBrand.categoriesCount}</dd>
                                     </div>
-                                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Trạng thái</span>
-                                        <span className={`text-sm font-bold mt-1 block ${selectedBrand.status === 'ACTIVE' ? 'text-emerald-600' : 'text-gray-500'}`}>
-                                            {selectedBrand.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đang ẩn'}
-                                        </span>
+                                    <div>
+                                        <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Mã ID</dt>
+                                        <dd className="text-sm font-semibold text-slate-900 mt-1 font-mono tabular-nums">#{selectedBrand.id}</dd>
                                     </div>
-                                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                                        <span className="text-[11px] font-medium text-gray-400 block uppercase">Mã ID</span>
-                                        <span className="text-sm font-bold text-gray-800 mt-1 block font-mono">
-                                            #{selectedBrand.id}
-                                        </span>
+                                    <div>
+                                        <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Ngày tạo</dt>
+                                        <dd className="text-sm font-medium text-slate-800 mt-1 tabular-nums">{selectedBrand.createdAt}</dd>
                                     </div>
-                                </div>
+                                </dl>
 
                                 {/* Categories the brand sells */}
                                 <div>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                                        <FolderTree className="w-3.5 h-3.5 text-purple-600" />
-                                        Danh mục sản phẩm thương hiệu này đang bán ({selectedBrand.categoriesCount})
+                                    <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 tabular-nums">
+                                        Danh mục sản phẩm đang phân phối ({selectedBrand.categoriesCount})
                                     </h4>
                                     {selectedBrand.categoryNames.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5">
                                             {selectedBrand.categoryNames.map((cat, idx) => (
                                                 <span
                                                     key={idx}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200 shadow-sm"
+                                                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
                                                 >
-                                                    <Tag className="w-3 h-3 text-purple-500" />
                                                     {cat}
                                                 </span>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-xs text-gray-400 italic">Thương hiệu này hiện chưa có sản phẩm thuộc danh mục nào.</p>
+                                        <p className="text-xs text-slate-400">Thương hiệu này hiện chưa có sản phẩm thuộc danh mục nào.</p>
                                     )}
                                 </div>
 
                                 {/* Fast Copy Meta Identifiers */}
-                                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-2.5">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-500 font-medium">Mã nhận diện thương hiệu (ID):</span>
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md">
+                                    <div className="px-3.5 py-2.5 flex items-center justify-between text-xs gap-2">
+                                        <span className="text-slate-500 font-medium">Mã nhận diện (ID):</span>
                                         <div className="flex items-center gap-2">
-                                            <code className="font-mono text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                            <code className="font-mono tabular-nums text-slate-800 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
                                                 {selectedBrand.id}
                                             </code>
                                             <button
                                                 type="button"
                                                 onClick={() => handleCopy(selectedBrand.id, 'ID thương hiệu')}
-                                                className="p-1 hover:bg-white rounded text-blue-600 transition-colors"
+                                                className="p-1 hover:bg-slate-100 rounded-md text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
                                                 title="Sao chép ID"
                                             >
                                                 <Copy className="w-3.5 h-3.5" />
@@ -1182,16 +1117,16 @@ export default function BrandList() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-500 font-medium">Đường dẫn tĩnh website (Slug):</span>
-                                        <div className="flex items-center gap-2">
-                                            <code className="font-mono text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
+                                    <div className="px-3.5 py-2.5 flex items-center justify-between text-xs gap-2">
+                                        <span className="text-slate-500 font-medium">Đường dẫn tĩnh (Slug):</span>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <code className="font-mono text-slate-800 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 truncate">
                                                 /thuong-hieu/{selectedBrand.slug}
                                             </code>
                                             <button
                                                 type="button"
                                                 onClick={() => handleCopy(`/thuong-hieu/${selectedBrand.slug}`, 'Đường dẫn thương hiệu')}
-                                                className="p-1 hover:bg-white rounded text-blue-600 transition-colors"
+                                                className="p-1 hover:bg-slate-100 rounded-md text-slate-500 hover:text-blue-600 transition-colors cursor-pointer shrink-0"
                                                 title="Sao chép link"
                                             >
                                                 <Copy className="w-3.5 h-3.5" />
@@ -1202,66 +1137,60 @@ export default function BrandList() {
 
                                 {/* Brand Description */}
                                 <div>
-                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                                        Mô tả chi tiết thương hiệu
+                                    <h4 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                                        Mô tả chi tiết
                                     </h4>
-                                    <p className="text-sm text-gray-700 leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-100">
+                                    <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/70 p-3.5 rounded-md border border-slate-200">
                                         {selectedBrand.description}
                                     </p>
                                 </div>
 
                                 {/* Audit Information from Database */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs text-gray-600 space-y-1">
-                                        <div className="flex items-center gap-1.5 font-medium text-gray-700">
-                                            <Clock className="w-3.5 h-3.5 text-gray-400" />
-                                            Ngày tạo:
-                                        </div>
-                                        <div className="pl-5 text-gray-500">
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 text-xs text-slate-600">
+                                    <div className="space-y-0.5">
+                                        <dt className="text-[11px] font-medium text-slate-500">Ngày tạo</dt>
+                                        <dd className="text-slate-800 tabular-nums">
                                             {selectedBrand.createdAt}
-                                            {selectedBrand.createdBy ? ` (Người tạo ID: #${selectedBrand.createdBy})` : ''}
-                                        </div>
+                                            {selectedBrand.createdBy ? ` (ID #${selectedBrand.createdBy})` : ''}
+                                        </dd>
                                     </div>
 
-                                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs text-gray-600 space-y-1">
-                                        <div className="flex items-center gap-1.5 font-medium text-gray-700">
-                                            <User className="w-3.5 h-3.5 text-gray-400" />
-                                            Lần cập nhật gần nhất:
-                                        </div>
-                                        <div className="pl-5 text-gray-500">
+                                    <div className="space-y-0.5">
+                                        <dt className="text-[11px] font-medium text-slate-500">Cập nhật gần nhất</dt>
+                                        <dd className="text-slate-800 tabular-nums">
                                             {selectedBrand.lastModifiedDate}
-                                            {selectedBrand.lastModifiedBy ? ` (Người sửa ID: #${selectedBrand.lastModifiedBy})` : ''}
-                                        </div>
+                                            {selectedBrand.lastModifiedBy ? ` (ID #${selectedBrand.lastModifiedBy})` : ''}
+                                        </dd>
                                     </div>
-                                </div>
+                                </dl>
                             </div>
                         )}
 
                         {/* TAB 2: SẢN PHẨM THUỘC THƯƠNG HIỆU TỪ API */}
                         {activeDetailTab === 'products' && (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-sm text-gray-600">
-                                        Danh sách các sản phẩm của <strong className="text-gray-900">{selectedBrand.name}</strong> trong hệ thống
+                                    <p className="text-xs text-slate-600">
+                                        Danh sách sản phẩm của <strong className="font-semibold text-slate-900">{selectedBrand.name}</strong>
                                     </p>
-                                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                                    <span className="text-xs font-medium text-slate-600 tabular-nums">
                                         {brandProducts.length} sản phẩm
                                     </span>
                                 </div>
 
                                 {isLoadingProducts ? (
-                                    <div className="py-12 flex flex-col items-center justify-center text-gray-400 gap-2">
+                                    <div className="py-10 flex flex-col items-center justify-center text-slate-400 gap-2">
                                         <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                                         <span className="text-xs">Đang tải sản phẩm từ máy chủ...</span>
                                     </div>
                                 ) : brandProducts.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                                    <div className="border border-slate-200 rounded-md divide-y divide-slate-200/80 max-h-96 overflow-y-auto bg-white">
                                         {brandProducts.map((prod: any, idx: number) => (
                                             <div
                                                 key={prod.id || idx}
-                                                className="p-3.5 rounded-xl border border-gray-200 hover:border-blue-300 transition-all bg-white shadow-sm flex items-center gap-3"
+                                                className="px-3.5 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-3"
                                             >
-                                                <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                                <div className="w-10 h-10 aspect-square rounded-md bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden">
                                                     <img
                                                         src={prod.imageUrl || 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?auto=format&fit=crop&w=100&q=80'}
                                                         alt={prod.name}
@@ -1272,36 +1201,25 @@ export default function BrandList() {
                                                     />
                                                 </div>
                                                 <div className="space-y-0.5 flex-1 min-w-0">
-                                                    <div className="text-xs font-semibold text-gray-900 line-clamp-1" title={prod.name}>
+                                                    <div className="text-xs font-medium text-slate-900 truncate" title={prod.name}>
                                                         {prod.name}
                                                     </div>
-                                                    <div className="text-[11px] text-gray-400 font-mono truncate">
-                                                        Mã: {prod.code || `PROD-${prod.id}`}
-                                                    </div>
-                                                    <div className="text-[10px] text-gray-500 font-medium">
-                                                        {prod.productType === 'COMPONENT' ? 'Linh kiện PC' : prod.productType || 'Sản phẩm'}
+                                                    <div className="text-[11px] text-slate-500 font-mono tabular-nums truncate">
+                                                        {prod.code || `PROD-${prod.id}`}
                                                     </div>
                                                 </div>
-                                                <div className="text-right shrink-0">
-                                                    <span
-                                                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium border ${prod.status === 'ACTIVE'
-                                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                            : 'bg-gray-100 text-gray-600 border-gray-200'
-                                                            }`}
-                                                    >
-                                                        {prod.status === 'ACTIVE' ? 'Đang bán' : prod.status || 'Tạm ẩn'}
-                                                    </span>
-                                                </div>
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 shrink-0">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${prod.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                                    {prod.status === 'ACTIVE' ? 'Đang bán' : prod.status || 'Tạm ẩn'}
+                                                </span>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-12 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-center p-6 bg-gray-50/50">
-                                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
-                                            <Package className="w-6 h-6" />
-                                        </div>
-                                        <h5 className="text-sm font-semibold text-gray-800">Chưa có sản phẩm nào thuộc hãng này</h5>
-                                        <p className="text-xs text-gray-500 mt-1 max-w-sm">
+                                    <div className="py-10 border border-dashed border-slate-200 rounded-md flex flex-col items-center justify-center text-center p-6 bg-slate-50/50">
+                                        <Package className="w-6 h-6 text-slate-400 mb-2" />
+                                        <h5 className="text-xs font-semibold text-slate-800">Chưa có sản phẩm nào thuộc hãng này</h5>
+                                        <p className="text-xs text-slate-500 mt-1 max-w-sm">
                                             Hiện tại chưa có sản phẩm nào trong hệ thống được gán cho thương hiệu <strong>{selectedBrand.name}</strong>.
                                         </p>
                                     </div>

@@ -243,28 +243,27 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
     const isGalleryFull = gallery.length >= 10;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* AVATAR SECTION */}
-            <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div className="bg-white p-4 rounded-md border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div>
-                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4 text-blue-600" />
+                        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                             Ảnh đại diện cấu hình PC
-                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                                1 Ảnh chính
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 tabular-nums">
+                                1 ảnh
                             </span>
                         </h4>
                     </div>
                     {isUploading && (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-semibold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 animate-pulse">
+                        <span className="inline-flex items-center gap-1.5 text-xs text-blue-600 font-medium">
                             <Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang tải ảnh...
                         </span>
                     )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                    <div className="relative group w-36 h-36 rounded-2xl bg-white border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center shrink-0 shadow-xs p-2">
+                    <div className="relative group w-36 h-36 aspect-square rounded-md bg-slate-50 border border-dashed border-slate-300 overflow-hidden flex items-center justify-center shrink-0 p-2">
                         <img
                             src={avatarUrl || DEFAULT_PRODUCT_IMAGE}
                             alt="Avatar Preview"
@@ -277,14 +276,14 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                             <button
                                 type="button"
                                 onClick={onClearAvatar}
-                                className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-gray-500 hover:text-rose-600 shadow-sm border border-gray-200 text-xs transition-colors cursor-pointer"
+                                className="absolute top-1.5 right-1.5 p-1 rounded-md bg-white text-slate-500 hover:text-rose-600 border border-slate-200 text-xs transition-colors cursor-pointer"
                                 title="Khôi phục mặc định"
                             >
                                 <RefreshCw className="w-3.5 h-3.5" />
                             </button>
                         )}
                         {selectedAvatarFile && (
-                            <span className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs">
+                            <span className="absolute bottom-1.5 right-1.5 bg-blue-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
                                 Tệp mới
                             </span>
                         )}
@@ -305,16 +304,15 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
             </div>
 
             {/* GALLERY SECTION */}
-            <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+            <div className="bg-white p-4 rounded-md border border-slate-200 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                     <div>
-                        <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-purple-600" />
+                        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                             Thư viện ảnh cấu hình
                             <span
-                                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${isGalleryFull
+                                className={`text-[11px] font-medium px-2 py-0.5 rounded-md border tabular-nums ${isGalleryFull
                                     ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                    : 'bg-purple-50 text-purple-700 border-purple-200'
+                                    : 'bg-slate-100 text-slate-600 border-slate-200'
                                     }`}
                             >
                                 {gallery.length} / 10 ảnh
@@ -338,7 +336,7 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                         />
                     </div>
                 ) : (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
+                    <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                         <span>Đã đạt tối đa 10 ảnh trong thư viện. Vui lòng xóa bớt ảnh nếu muốn thêm ảnh mới.</span>
                     </div>
@@ -346,21 +344,18 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
 
 
                 {gallery.length === 0 ? (
-                    <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/40">
-                        <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                        <p className="text-xs text-gray-600 font-medium">Chưa có ảnh phụ nào trong thư viện</p>
-                        <p className="text-[11px] text-gray-400 mt-1">
-                            Nhấn "Tải ảnh từ máy"
-                        </p>
+                    <div className="p-6 text-center border border-dashed border-slate-200 rounded-md bg-slate-50/50">
+                        <ImageIcon className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs text-slate-600 font-medium">Chưa có ảnh phụ nào trong thư viện</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
                         {gallery.map((item, index) => (
                             <div
                                 key={item.id}
-                                className="group relative aspect-square rounded-xl bg-white border border-gray-200 p-1.5 shadow-2xs hover:shadow-md transition-all overflow-hidden flex items-center justify-center"
+                                className="group relative aspect-square rounded-md bg-white border border-slate-200 p-1.5 hover:border-slate-300 transition-colors overflow-hidden flex items-center justify-center"
                             >
-                                <span className="absolute top-1.5 left-1.5 z-10 bg-gray-900/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                                <span className="absolute top-1.5 left-1.5 z-10 bg-slate-900/75 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded tabular-nums">
                                     #{index + 1}
                                 </span>
                                 <img
@@ -372,7 +367,7 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                                     }}
                                 />
                                 {item.file && (
-                                    <span className="absolute top-1.5 right-1.5 z-10 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                                    <span className="absolute top-1.5 right-1.5 z-10 bg-amber-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
                                         Mới
                                     </span>
                                 )}
@@ -380,7 +375,7 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => onRemoveGalleryItem(item.id)}
-                                        className="p-1.5 rounded-lg bg-white/90 hover:bg-rose-600 text-gray-700 hover:text-white transition-colors shadow-sm cursor-pointer"
+                                        className="p-1.5 rounded-md bg-white hover:bg-rose-600 text-slate-700 hover:text-white transition-colors cursor-pointer"
                                         title="Xóa ảnh này"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -648,7 +643,7 @@ export default function PCConfigList() {
             options: [
                 { label: 'Tất cả danh mục PC', value: '' },
                 ...pcCategories.map((c) => ({
-                    label: `🖥️ ${c.name}`,
+                    label: c.name,
                     value: String(c.id),
                 })),
             ],
@@ -660,9 +655,9 @@ export default function PCConfigList() {
             placeholder: 'Tất cả trạng thái',
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: '✅ Đang bán (Active)', value: 'ACTIVE' },
-                { label: '❌ Hết hàng (Out of Stock)', value: 'OUT_OF_STOCK' },
-                { label: '👁️ Đang ẩn (Inactive)', value: 'INACTIVE' },
+                { label: 'Đang bán', value: 'ACTIVE' },
+                { label: 'Hết hàng', value: 'OUT_OF_STOCK' },
+                { label: 'Tạm ẩn', value: 'INACTIVE' },
             ],
         },
     ];
@@ -1128,115 +1123,142 @@ export default function PCConfigList() {
         showToast(`Đã sao chép ${label}: ${text}`, 'info');
     };
 
+    // Helper: Extract short key component summary (CPU / VGA / RAM) for table row
+    const getKeySpecsSummary = (specJson: string): string => {
+        try {
+            if (!specJson || !specJson.trim()) return '';
+            const parsed = JSON.parse(specJson);
+            if (!Array.isArray(parsed)) return '';
+            const priorityKeys = ['CPU', 'VGA', 'RAM'];
+            const parts: string[] = [];
+            for (const pk of priorityKeys) {
+                const found = parsed.find(
+                    (it: any) => String(it.key || '').toUpperCase().includes(pk) && (it.name || it.value)
+                );
+                if (found) {
+                    const label = String(found.name || found.value || '').trim();
+                    if (label) parts.push(label);
+                }
+            }
+            return parts.join(' · ');
+        } catch {
+            return '';
+        }
+    };
+
+    // Helper: Restrained Status Indicator (small dot + neutral text)
+    const renderStatusIndicator = (status: BackendProductStatus) => {
+        const isAct = status === 'ACTIVE';
+        const isOut = status === 'OUT_OF_STOCK';
+        return (
+            <span className={`inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap ${isAct || isOut ? 'text-slate-700' : 'text-slate-500'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAct ? 'bg-emerald-500' : isOut ? 'bg-amber-500' : 'bg-slate-400'}`} />
+                {isAct ? 'Đang bán' : isOut ? 'Hết hàng' : 'Tạm ẩn'}
+            </span>
+        );
+    };
+
     // Columns Definition for AdminTable
     const columns: Column<AdminProductItem>[] = [
         {
             key: 'product',
             header: 'Cấu hình PC',
-            render: (p: AdminProductItem) => (
-                <div className="flex items-center gap-3.5 py-1 min-w-[280px]">
-                    <div className="relative w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
-                        <img
-                            src={p.image}
-                            alt={p.name}
-                            className="w-full h-full object-contain p-1"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
-                            }}
-                        />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-900 text-sm truncate hover:text-blue-600 transition-colors">
-                                {p.name}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopy(p.sku, 'Mã cấu hình');
+            align: 'left',
+            render: (p: AdminProductItem) => {
+                const keySummary = getKeySpecsSummary(p.specification);
+                return (
+                    <div className="flex items-center gap-3 min-w-[260px] max-w-[360px]">
+                        <div className="w-10 h-10 aspect-square rounded-md bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
+                            <img
+                                src={p.image}
+                                alt={p.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
                                 }}
-                                className="font-mono text-[11px] font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 px-1.5 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-1"
-                                title="Nhấn để sao chép SKU"
-                            >
-                                {p.sku}
-                                <Copy className="w-2.5 h-2.5 text-gray-400" />
-                            </span>
-                            <span className="text-[11px] text-gray-400">•</span>
-                            <span className="text-[11px] text-gray-500 font-medium truncate">{p.brand}</span>
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="font-medium text-slate-900 text-[13px] leading-snug truncate" title={p.name}>
+                                {p.name}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 min-w-0">
+                                <span
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCopy(p.sku, 'Mã cấu hình');
+                                    }}
+                                    className="font-mono tabular-nums text-slate-500 hover:text-blue-600 cursor-pointer transition-colors shrink-0"
+                                    title="Nhấn để sao chép SKU"
+                                >
+                                    {p.sku}
+                                </span>
+                                {keySummary ? (
+                                    <>
+                                        <span className="text-slate-300 shrink-0">·</span>
+                                        <span className="truncate" title={keySummary}>
+                                            {keySummary}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-slate-300 shrink-0">·</span>
+                                        <span className="truncate">{p.brand}</span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            ),
+                );
+            },
         },
         {
             key: 'category',
-            header: 'Danh mục PC',
+            header: 'Danh mục',
+            align: 'left',
             render: (p: AdminProductItem) => (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    <PcCase className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
                     {p.category}
                 </span>
             ),
         },
         {
             key: 'specsSummary',
-            header: 'Linh kiện cấu hình',
+            header: 'Linh kiện',
+            align: 'right',
             render: (p: AdminProductItem) => {
                 const pcItems = extractPcItemsFromSpecs(p.specification);
                 const count = pcItems.length > 0 ? pcItems.length : (p.items?.length || 0);
 
                 return (
-                    <div className="flex items-center gap-1.5">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${count > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500'}`}>
-                            <Cpu className="w-3 h-3 text-emerald-600" />
-                            {count > 0 ? `${count} linh kiện` : 'Chưa gắn linh kiện'}
-                        </span>
-                    </div>
-                );
-            },
-        },
-        {
-            key: 'price',
-            header: 'Giá niêm yết',
-            render: (p: AdminProductItem) => (
-                <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
-                    {formatVND(p.price)}
-                </div>
-            ),
-        },
-        {
-            key: 'status',
-            header: 'Trạng thái',
-            render: (p: AdminProductItem) => {
-                const isAct = p.status === 'ACTIVE';
-                const isOut = p.status === 'OUT_OF_STOCK';
-
-                return (
-                    <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isAct
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : isOut
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-gray-100 text-gray-600 border border-gray-200'
-                            }`}
-                    >
-                        <span
-                            className={`w-1.5 h-1.5 rounded-full ${isAct ? 'bg-emerald-500' : isOut ? 'bg-amber-500' : 'bg-gray-400'
-                                }`}
-                        />
-                        {isAct ? 'Đang bán' : isOut ? 'Hết hàng' : 'Tạm ẩn'}
+                    <span className={`text-xs font-medium tabular-nums whitespace-nowrap ${count > 0 ? 'text-slate-800' : 'text-slate-400'}`}>
+                        {count > 0 ? `${count} món` : '0'}
                     </span>
                 );
             },
         },
         {
+            key: 'price',
+            header: 'Tổng giá trị',
+            align: 'right',
+            render: (p: AdminProductItem) => (
+                <span className="font-semibold text-slate-900 text-[13px] tabular-nums whitespace-nowrap">
+                    {formatVND(p.price)}
+                </span>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Trạng thái',
+            align: 'left',
+            render: (p: AdminProductItem) => renderStatusIndicator(p.status),
+        },
+        {
             key: 'createdAt',
             header: 'Ngày tạo',
+            align: 'right',
             render: (p: AdminProductItem) => (
-                <span className="text-xs text-gray-500 font-medium flex items-center gap-1.5 whitespace-nowrap">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
                     {p.createdAt}
                 </span>
             ),
@@ -1291,136 +1313,86 @@ export default function PCConfigList() {
         { id: 'description', label: 'Bài viết mô tả', icon: Layers },
     ];
 
+    const handleOpenAddModal = () => {
+        const defaultCat = pcCategories[0] || categories[0];
+        const defaultSpecs = getSpecTemplateForCategory('PC').defaultSpecsJson;
+
+        setAddForm({
+            name: '',
+            sku: `PC-${Date.now().toString(36).slice(-5).toUpperCase()}`,
+            slug: '',
+            brandId: brands[0]?.id || '',
+            primaryCategoryId: defaultCat?.id || '',
+            productType: 'PC',
+            price: 15000000,
+            status: 'ACTIVE',
+            specification: defaultSpecs,
+            description: '',
+            image: DEFAULT_PRODUCT_IMAGE,
+        });
+        setAddSelectedFile(null);
+        setAddGallery([]);
+        setActiveAddTab('basic');
+        setIsAddModalOpen(true);
+    };
+
     return (
-        <div className="space-y-6">
-            {/* PAGE HEADER */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <PcCase className="w-7 h-7 text-indigo-600" />
-                        Quản lý cấu hình PC
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Quản lý danh sách cấu hình máy bộ, PC đồng bộ, bộ nâng cấp PC và các linh kiện đi kèm.
+        <div className="w-full space-y-4 min-w-0 font-sans">
+            {/* Compact Page Header (Borderless) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-baseline gap-2.5">
+                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight truncate">
+                            Quản lý cấu hình PC
+                        </h1>
+                        <span className="text-xs font-medium text-slate-500 tabular-nums shrink-0">
+                            {totalElements} cấu hình
+                        </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Quản lý cấu hình máy bộ, PC đồng bộ và danh sách linh kiện thành phần
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => loadProducts(true)}
                         disabled={isRefreshing}
-                        className="p-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={`w-4 h-4 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Làm mới</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleExportCSV}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                     >
-                        <Download className="w-4 h-4 text-gray-500" />
-                        Xuất Excel
+                        <Download className="w-3.5 h-3.5 text-slate-500" />
+                        <span className="hidden sm:inline">Xuất Excel</span>
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const defaultCat = pcCategories[0] || categories[0];
-                            const defaultSpecs = getSpecTemplateForCategory('PC').defaultSpecsJson;
-
-                            setAddForm({
-                                name: '',
-                                sku: `PC-${Date.now().toString(36).slice(-5).toUpperCase()}`,
-                                slug: '',
-                                brandId: brands[0]?.id || '',
-                                primaryCategoryId: defaultCat?.id || '',
-                                productType: 'PC',
-                                price: 15000000,
-                                status: 'ACTIVE',
-                                specification: defaultSpecs,
-                                description: '',
-                                image: DEFAULT_PRODUCT_IMAGE,
-                            });
-                            setAddSelectedFile(null);
-                            setAddGallery([]);
-                            setActiveAddTab('basic');
-                            setIsAddModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-[0.98] transition-all duration-200 shadow-md shadow-indigo-500/20"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm cấu hình PC
-                    </button>
-                </div>
-            </div>
-
-            {/* STATS OVERVIEW CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                        <PcCase className="w-6 h-6 text-indigo-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 font-medium">Tổng cấu hình PC</p>
-                        <p className="text-xl font-bold text-gray-900 mt-0.5">{totalElements}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 font-medium">Đang kinh doanh</p>
-                        <p className="text-xl font-bold text-gray-900 mt-0.5">
-                            {products.filter((p) => p.status === 'ACTIVE').length}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                        <AlertCircle className="w-6 h-6 text-amber-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 font-medium">Tạm hết hàng</p>
-                        <p className="text-xl font-bold text-gray-900 mt-0.5">
-                            {products.filter((p) => p.status === 'OUT_OF_STOCK').length}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                        <EyeOff className="w-6 h-6 text-gray-600" />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 font-medium">Đang ẩn hiển thị</p>
-                        <p className="text-xl font-bold text-gray-900 mt-0.5">
-                            {products.filter((p) => p.status === 'INACTIVE').length}
-                        </p>
-                    </div>
                 </div>
             </div>
 
             {/* ERROR ALERT */}
             {error && (
-                <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
                         <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                        <span>{error}</span>
+                        <span className="truncate">{error}</span>
                     </div>
                     <button
                         type="button"
                         onClick={() => loadProducts()}
-                        className="text-xs font-semibold underline hover:text-rose-900 ml-3"
+                        className="px-2.5 py-1 rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition-colors shrink-0 cursor-pointer"
                     >
                         Thử lại
                     </button>
                 </div>
             )}
 
-            {/* FILTER & SEARCH */}
+            {/* Unified Toolbar: Search + Filter (Brand, PC Category, Status) + Add PC Config */}
             <AdminFilter
                 fields={filterFields}
                 searchQuery={searchQuery}
@@ -1432,34 +1404,42 @@ export default function PCConfigList() {
                 onFilterChange={handleFilterChange}
                 onReset={handleClearFilters}
                 searchPlaceholder="Tìm theo tên cấu hình PC, mã SKU hoặc đường dẫn slug..."
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold border border-blue-600 hover:bg-blue-700 transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm cấu hình PC</span>
+                    </button>
+                }
             />
 
-            {/* TABLE */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <AdminTable
-                    columns={columns}
-                    data={products}
-                    loading={loading}
-                    rowKey="id"
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20]}
-                    onPageChange={(page: number) => setCurrentPage(page)}
-                    onPageSizeChange={(newSize: number) => {
-                        setPageSize(newSize);
-                        setCurrentPage(1);
-                    }}
-                    onRowClick={(item: AdminProductItem) => {
-                        setSelectedProduct(item);
-                        setActiveDetailTab('overview');
-                        setIsDetailModalOpen(true);
-                    }}
-                    itemUnitName="cấu hình PC"
-                    emptyText="Không tìm thấy cấu hình PC nào phù hợp với bộ lọc."
-                />
-            </div>
+            {/* TABLE (Single Border-First Frame, No Card-in-Card) */}
+            <AdminTable
+                columns={columns}
+                data={products}
+                loading={loading}
+                rowKey="id"
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20]}
+                onPageChange={(page: number) => setCurrentPage(page)}
+                onPageSizeChange={(newSize: number) => {
+                    setPageSize(newSize);
+                    setCurrentPage(1);
+                }}
+                onRowClick={(item: AdminProductItem) => {
+                    setSelectedProduct(item);
+                    setActiveDetailTab('overview');
+                    setIsDetailModalOpen(true);
+                }}
+                itemUnitName="cấu hình PC"
+                emptyText="Không tìm thấy cấu hình PC nào phù hợp với bộ lọc."
+            />
 
             {/* ========================================================================= */}
             {/* ADD PC CONFIG MODAL                                                       */}
@@ -1565,7 +1545,7 @@ export default function PCConfigList() {
                                         <option value="">-- Chọn danh mục PC --</option>
                                         {pcCategories.map((c) => (
                                             <option key={c.id} value={c.id}>
-                                                🖥️ {c.name}
+                                                {c.name}
                                             </option>
                                         ))}
                                     </AdminSelect>
@@ -1604,7 +1584,7 @@ export default function PCConfigList() {
                                         onChange={(e) => setAddForm({ ...addForm, price: Number(e.target.value) || 0 })}
                                         suffixText="VNĐ"
                                         helperText={`Hiển thị: ${formatVND(addForm.price)}`}
-                                        className="font-bold"
+                                        className="font-semibold tabular-nums"
                                     />
                                 </div>
 
@@ -1661,12 +1641,6 @@ export default function PCConfigList() {
                     {/* TAB 4: LINH KIỆN CẤU HÌNH (PC BUILDER SPEC FORM) */}
                     {activeAddTab === 'specs' && (
                         <div className="space-y-3">
-                            <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-start gap-2.5">
-                                <PcCase className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-                                <div className="text-xs text-indigo-900 leading-relaxed">
-                                    <strong>Chọn linh kiện cấu hình PC:</strong> Bạn có thể nhấn <em>"Chọn linh kiện từ kho"</em> để liên kết trực tiếp với sản phẩm có sẵn trong kho hàng (CPU, Mainboard, RAM, VGA, SSD, PSU, Case...), hoặc tự nhập thông số tùy chỉnh.
-                                </div>
-                            </div>
                             <DynamicSpecForm
                                 value={addForm.specification}
                                 onChange={(newSpec) => setAddForm({ ...addForm, specification: newSpec })}
@@ -1818,7 +1792,7 @@ export default function PCConfigList() {
                                             onChange={(e) => setEditForm({ ...editForm, price: Number(e.target.value) || 0 })}
                                             suffixText="VNĐ"
                                             helperText={`Hiển thị: ${formatVND(editForm.price)}`}
-                                            className="font-bold"
+                                            className="font-semibold tabular-nums"
                                         />
                                     </div>
 
@@ -1873,12 +1847,6 @@ export default function PCConfigList() {
                         {/* TAB 4: LINH KIỆN CẤU HÌNH (PC BUILDER SPEC FORM) */}
                         {activeEditTab === 'specs' && (
                             <div className="space-y-3">
-                                <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-start gap-2.5">
-                                    <PcCase className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-                                    <div className="text-xs text-indigo-900 leading-relaxed">
-                                        <strong>Chỉnh sửa linh kiện PC:</strong> Bạn có thể chọn lại các linh kiện thành phần cấu hình hoặc thay đổi thông số chi tiết.
-                                    </div>
-                                </div>
                                 <DynamicSpecForm
                                     value={editForm.specification}
                                     onChange={(newSpec) => setEditForm({ ...editForm, specification: newSpec })}
@@ -1908,8 +1876,8 @@ export default function PCConfigList() {
                     onTabChange={setActiveDetailTab}
                     footer={
                         <div className="flex items-center justify-between w-full">
-                            <span className="text-xs text-gray-400 font-mono">
-                                ID: #{selectedProduct.numericId} • Tạo ngày: {selectedProduct.createdAt}
+                            <span className="text-xs text-slate-500 font-mono tabular-nums">
+                                ID: #{selectedProduct.numericId} · Tạo ngày: {selectedProduct.createdAt}
                             </span>
                             <div className="flex items-center gap-2">
                                 <AdminButton
@@ -1922,7 +1890,7 @@ export default function PCConfigList() {
                                     }}
                                     icon={Edit}
                                 >
-                                    Chỉnh sửa cấu hình này
+                                    Chỉnh sửa cấu hình
                                 </AdminButton>
                                 <AdminButton
                                     type="button"
@@ -1936,10 +1904,10 @@ export default function PCConfigList() {
                         </div>
                     }
                 >
-                    <div className="space-y-6">
-                        {/* HERO HEADER */}
-                        <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                            <div className="w-28 h-28 rounded-xl bg-white border border-gray-200 p-2 overflow-hidden shrink-0 shadow-2xs">
+                    <div className="space-y-5">
+                        {/* FLAT SUMMARY HEADER */}
+                        <div className="flex flex-col sm:flex-row items-center gap-4 pb-4 border-b border-slate-200">
+                            <div className="w-20 h-20 aspect-square rounded-md bg-white border border-slate-200 p-1.5 overflow-hidden shrink-0">
                                 <img
                                     src={selectedProduct.image}
                                     alt={selectedProduct.name}
@@ -1949,24 +1917,21 @@ export default function PCConfigList() {
                                     }}
                                 />
                             </div>
-                            <div className="space-y-2 text-center sm:text-left min-w-0 flex-1">
+                            <div className="space-y-1.5 text-center sm:text-left min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                        <PcCase className="w-3.5 h-3.5 text-indigo-500" />
-                                        Cấu hình PC
-                                    </span>
-                                    <span className="font-mono text-xs font-bold text-gray-700 bg-white px-2 py-0.5 rounded border border-gray-200">
+                                    <span className="font-mono tabular-nums text-xs font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
                                         {selectedProduct.sku}
                                     </span>
-                                    <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
+                                    <span className="text-xs text-slate-600 font-medium bg-white px-2 py-0.5 rounded-md border border-slate-200">
                                         {selectedProduct.brand}
                                     </span>
+                                    {renderStatusIndicator(selectedProduct.status)}
                                 </div>
-                                <h3 className="text-lg font-bold text-gray-900 leading-snug">
+                                <h3 className="text-base font-semibold text-slate-900 leading-snug">
                                     {selectedProduct.name}
                                 </h3>
                                 <div className="flex items-baseline gap-2.5 justify-center sm:justify-start">
-                                    <span className="text-xl font-extrabold text-rose-600">
+                                    <span className="text-lg font-semibold text-slate-900 tabular-nums">
                                         {formatVND(selectedProduct.price)}
                                     </span>
                                 </div>
@@ -1975,55 +1940,32 @@ export default function PCConfigList() {
 
                         {/* TAB 1: TỔNG QUAN CẤU HÌNH */}
                         {activeDetailTab === 'overview' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-4 rounded-xl border border-gray-100 bg-white shadow-2xs space-y-3">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                        Thông tin phân loại
-                                    </h4>
-                                    <div className="space-y-2.5 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Danh mục PC:</span>
-                                            <span className="font-semibold text-gray-800">{selectedProduct.category}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Hãng sản xuất:</span>
-                                            <span className="font-semibold text-gray-800">{selectedProduct.brand}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Trạng thái bán:</span>
-                                            <span className="font-semibold text-gray-800">
-                                                {selectedProduct.status === 'ACTIVE'
-                                                    ? 'Đang bán'
-                                                    : selectedProduct.status === 'OUT_OF_STOCK'
-                                                        ? 'Hết hàng'
-                                                        : 'Tạm ẩn'}
-                                            </span>
-                                        </div>
-                                    </div>
+                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-xs">
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Danh mục PC</dt>
+                                    <dd className="font-medium text-slate-900">{selectedProduct.category}</dd>
                                 </div>
-
-                                <div className="p-4 rounded-xl border border-gray-100 bg-white shadow-2xs space-y-3">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                        Hệ thống & Đường dẫn
-                                    </h4>
-                                    <div className="space-y-2.5 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Mã SKU:</span>
-                                            <span className="font-mono font-bold text-gray-800">{selectedProduct.sku}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-500">Đường dẫn slug:</span>
-                                            <span className="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded truncate max-w-[180px]">
-                                                {selectedProduct.slug}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Ngày tạo:</span>
-                                            <span className="font-medium text-gray-800">{selectedProduct.createdAt}</span>
-                                        </div>
-                                    </div>
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Hãng lắp ráp</dt>
+                                    <dd className="font-medium text-slate-900">{selectedProduct.brand}</dd>
                                 </div>
-                            </div>
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Mã SKU</dt>
+                                    <dd className="font-mono font-medium text-slate-900 tabular-nums">{selectedProduct.sku}</dd>
+                                </div>
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Đường dẫn slug</dt>
+                                    <dd className="font-mono text-slate-700 truncate">/{selectedProduct.slug}</dd>
+                                </div>
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Trạng thái</dt>
+                                    <dd>{renderStatusIndicator(selectedProduct.status)}</dd>
+                                </div>
+                                <div className="space-y-1 pb-2 border-b border-slate-100">
+                                    <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Ngày tạo</dt>
+                                    <dd className="font-medium text-slate-900 tabular-nums">{selectedProduct.createdAt}</dd>
+                                </div>
+                            </dl>
                         )}
 
                         {/* TAB 2: DANH SÁCH LINH KIỆN CẤU HÌNH (READ-ONLY VIEW) */}
@@ -2044,16 +1986,16 @@ export default function PCConfigList() {
                         {activeDetailTab === 'gallery' && (
                             <div>
                                 {selectedProduct.gallery.length === 0 ? (
-                                    <div className="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl">
-                                        <ImageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-xs text-gray-500">Chưa có ảnh phụ nào cho cấu hình này</p>
+                                    <div className="p-6 text-center border border-dashed border-slate-200 rounded-md bg-slate-50/50">
+                                        <ImageIcon className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                                        <p className="text-xs text-slate-500">Chưa có ảnh phụ nào cho cấu hình này</p>
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         {selectedProduct.gallery.map((url, idx) => (
                                             <div
                                                 key={idx}
-                                                className="aspect-square rounded-xl bg-white border border-gray-200 overflow-hidden shadow-2xs p-1"
+                                                className="aspect-square rounded-md bg-white border border-slate-200 overflow-hidden p-1"
                                             >
                                                 <img
                                                     src={url}
@@ -2072,8 +2014,8 @@ export default function PCConfigList() {
 
                         {/* TAB 4: MÔ TẢ CHI TIẾT */}
                         {activeDetailTab === 'description' && (
-                            <div className="p-4 rounded-xl border border-gray-200 bg-white">
-                                <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                            <div className="p-4 rounded-md border border-slate-200 bg-slate-50/50">
+                                <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
                                     {selectedProduct.description || 'Chưa có thông tin mô tả chi tiết.'}
                                 </p>
                             </div>

@@ -292,7 +292,7 @@ export const SelectDropdownMenu: React.FC<SelectDropdownMenuProps> = ({
                 width: position.width,
                 zIndex: 9999,
             }}
-            className={`bg-white border border-slate-200/90 rounded-xl shadow-xl shadow-slate-900/10 ring-1 ring-black/5 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
+            className={`bg-white border border-slate-200 rounded-md shadow-md overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 ${menuClassName}`}
             role="listbox"
         >
             {/* Optional Search Input inside Dropdown */}
@@ -337,7 +337,7 @@ export const SelectDropdownMenu: React.FC<SelectDropdownMenuProps> = ({
                                 }
                             }}
                             placeholder={searchPlaceholder}
-                            className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all"
+                            className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-md text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 transition-colors"
                         />
                         {searchQuery && (
                             <button
@@ -394,7 +394,7 @@ export const SelectDropdownMenu: React.FC<SelectDropdownMenuProps> = ({
                                             onSelect(opt);
                                         }
                                     }}
-                                    className={`w-full text-left rounded-lg flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${itemTextClass} ${
+                                    className={`w-full text-left rounded-md flex items-center justify-between gap-2.5 transition-colors cursor-pointer ${itemTextClass} ${
                                         opt.disabled
                                             ? 'opacity-45 cursor-not-allowed text-slate-400'
                                             : isSelected
@@ -637,13 +637,13 @@ export const SelectDropdown = forwardRef<HTMLSelectElement, SelectDropdownProps>
         // Compute trigger classes based on variant & size
         const sizePaddingClass =
             variant === 'compact'
-                ? 'pl-3 pr-2.5 py-1.5 text-xs rounded-xl'
+                ? 'pl-2.5 pr-2 py-1.5 text-xs rounded-md'
                 : variant === 'filter'
-                  ? 'px-3.5 py-2 text-xs rounded-xl'
+                  ? 'px-3 py-1.5 text-xs rounded-md'
                   : size === 'sm'
-                    ? 'px-2.5 py-1.5 text-xs rounded-lg'
+                    ? 'px-2.5 py-1.5 text-xs rounded-md'
                     : size === 'lg'
-                      ? 'px-4 py-2.5 text-base rounded-xl'
+                      ? 'px-4 py-2.5 text-base rounded-md'
                       : 'px-3 py-2 text-sm rounded-md';
 
         const stateBorderClass = error
@@ -651,8 +651,8 @@ export const SelectDropdown = forwardRef<HTMLSelectElement, SelectDropdownProps>
             : isOpen
               ? 'border-blue-600 ring-2 ring-blue-500/15 bg-white'
               : variant === 'filter' || variant === 'compact'
-                ? 'border-[#E2E8F0] hover:border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 shadow-xs'
-                : 'border-gray-200 hover:border-gray-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20';
+                ? 'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15'
+                : 'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20';
 
         const displayIcon = selectedOption?.icon || icon;
         const hasValue =

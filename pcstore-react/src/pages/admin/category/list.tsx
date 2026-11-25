@@ -731,9 +731,9 @@ export const CategoryList: React.FC = () => {
             icon: Layers,
             options: [
                 { label: 'Tất cả nhóm', value: '' },
-                { label: '⭐ Danh mục gốc (Cấp 1)', value: 'ROOT' },
+                { label: 'Danh mục gốc (Cấp 1)', value: 'ROOT' },
                 ...rootCategories.map((rc) => ({
-                    label: `📂 ${rc.name}`,
+                    label: rc.name,
                     value: rc.id,
                 })),
             ],
@@ -745,86 +745,108 @@ export const CategoryList: React.FC = () => {
             icon: Eye,
             options: [
                 { label: 'Tất cả trạng thái', value: '' },
-                { label: 'Đang hiển thị (ACTIVE)', value: 'ACTIVE' },
-                { label: 'Tạm ẩn (HIDDEN)', value: 'HIDDEN' },
+                { label: 'Hiển thị', value: 'ACTIVE' },
+                { label: 'Ẩn', value: 'HIDDEN' },
             ],
         },
     ];
+
+    // Helper: Restrained Status Indicator (small dot + neutral text)
+    const renderStatusIndicator = (status: CategoryItem['status']) =>
+        status === 'ACTIVE' ? (
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Hiển thị
+            </span>
+        ) : (
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                Ẩn
+            </span>
+        );
 
     // Table Columns Definition
     const categoryTableColumns: Column<CategoryItem>[] = [
         {
             key: 'category',
             header: 'Danh mục',
+            align: 'left',
             render: (cat) => (
-                <div className="flex items-center gap-3">
-                    <img
-                        src={cat.image}
-                        alt={cat.name}
-                        className="w-10 h-10 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0 bg-gray-50"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
-                        }}
-                    />
+                <div className={`flex items-center gap-3 min-w-0 max-w-[320px] ${cat.parentId ? 'pl-3' : ''}`}>
+                    <div className="w-9 h-9 aspect-square rounded-md border border-slate-200 bg-slate-50 overflow-hidden shrink-0">
+                        <img
+                            src={cat.image}
+                            alt={cat.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                    'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+                            }}
+                        />
+                    </div>
                     <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-gray-900 text-xs truncate max-w-[200px]">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-medium text-slate-900 text-[13px] leading-snug truncate" title={cat.name}>
                                 {cat.name}
                             </span>
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono text-gray-500 bg-gray-100 border border-gray-200">
-                                ID: {cat.id}
+                            <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">
+                                #{cat.id}
                             </span>
                         </div>
-                        <p className="text-[11px] text-gray-400 font-mono mt-0.5 truncate max-w-[220px]">
-                            /{cat.slug}
-                        </p>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 min-w-0">
+                            <span className="font-mono truncate">/{cat.slug}</span>
+                            {cat.parentId && (
+                                <>
+                                    <span className="text-slate-300 shrink-0">·</span>
+                                    <span className="truncate text-slate-500" title={`Thuộc: ${cat.parentName}`}>
+                                        Thuộc: {cat.parentName}
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'parent',
-            header: 'Nhóm danh mục',
-            render: (cat) =>
-                cat.parentId ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        <Layers className="w-3 h-3 text-indigo-500" /> {cat.parentName}
-                    </span>
-                ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                        <FolderTree className="w-3 h-3 text-purple-600" /> Danh mục gốc (Cấp 1)
-                    </span>
-                ),
-        },
-        {
             key: 'description',
             header: 'Mô tả',
+            align: 'left',
             render: (cat) => (
-                <p className="text-xs text-gray-600 line-clamp-2 max-w-[280px]">
-                    {cat.description || <span className="italic text-gray-400">Chưa có mô tả</span>}
+                <p className="text-xs text-slate-600 line-clamp-2 max-w-[280px]">
+                    {cat.description && cat.description !== 'Chưa có mô tả chi tiết.' ? (
+                        cat.description
+                    ) : (
+                        <span className="text-slate-400">—</span>
+                    )}
                 </p>
+            ),
+        },
+        {
+            key: 'order',
+            header: 'Thứ tự',
+            align: 'right',
+            render: (cat) => (
+                <span className="text-xs font-medium text-slate-700 tabular-nums whitespace-nowrap">
+                    {cat.order}
+                </span>
             ),
         },
         {
             key: 'status',
             header: 'Trạng thái',
-            render: (cat) =>
-                cat.status === 'ACTIVE' ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đang hiển thị
-                    </span>
-                ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                        <EyeOff className="w-3 h-3 text-rose-600" /> Tạm ẩn
-                    </span>
-                ),
+            align: 'left',
+            render: (cat) => renderStatusIndicator(cat.status),
         },
         {
             key: 'createdAt',
             header: 'Ngày tạo',
-            accessorKey: 'createdAt',
-            className: 'font-medium text-gray-600 text-xs',
+            align: 'right',
+            render: (cat) => (
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                    {cat.createdAt}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -860,20 +882,44 @@ export const CategoryList: React.FC = () => {
         },
     ];
 
+    const handleOpenAddModal = () => {
+        setFormData({
+            name: '',
+            slug: '',
+            description: '',
+            parentId: '',
+            image: '',
+            status: 'ACTIVE',
+            isFeatured: false,
+            showOnMenu: true,
+            metaTitle: '',
+            metaDescription: '',
+            metaKeywords: '',
+        });
+        if (imageInputRef.current) {
+            imageInputRef.current.value = '';
+        }
+        setIsAddModalOpen(true);
+    };
+
     return (
-        <div className="w-full space-y-6 min-w-0 font-sans">
-            {/* Header Title & Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
-                        <FolderTree className="w-7 h-7 text-blue-600" />
-                        <span>Quản lý danh mục</span>
-                    </h1>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Hệ thống phân cấp danh mục sản phẩm
+        <div className="w-full space-y-4 min-w-0 font-sans">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-baseline gap-2.5">
+                        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight truncate">
+                            Quản lý danh mục
+                        </h1>
+                        <span className="text-xs font-medium text-slate-500 tabular-nums shrink-0">
+                            {totalElements} danh mục
+                        </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Hệ thống phân cấp danh mục sản phẩm và trạng thái hiển thị
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => {
@@ -881,73 +927,46 @@ export const CategoryList: React.FC = () => {
                             loadParentOptions();
                         }}
                         disabled={isRefreshing}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-xs rounded-md border border-slate-200 transition-colors disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                         title="Làm mới dữ liệu từ máy chủ"
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">Làm mới</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={handleExportCSV}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-xs rounded-md border border-slate-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                         title="Xuất dữ liệu ra file CSV"
                     >
-                        <Download className="w-3.5 h-3.5 text-gray-500" />
+                        <Download className="w-3.5 h-3.5 text-slate-500" />
                         <span className="hidden sm:inline">Xuất CSV</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setFormData({
-                                name: '',
-                                slug: '',
-                                description: '',
-                                parentId: '',
-                                image: '',
-                                status: 'ACTIVE',
-                                isFeatured: false,
-                                showOnMenu: true,
-                                metaTitle: '',
-                                metaDescription: '',
-                                metaKeywords: '',
-                            });
-                            if (imageInputRef.current) {
-                                imageInputRef.current.value = '';
-                            }
-                            setIsAddModalOpen(true);
-                        }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all shadow-blue-500/20"
-                    >
-                        <Plus className="w-4 h-4 text-white" />
-                        <span>Thêm danh mục</span>
                     </button>
                 </div>
             </div>
 
             {/* Error Banner (if any) */}
             {error && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start justify-between gap-3 animate-in fade-in">
-                    <div className="flex items-start gap-2.5">
-                        <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h4 className="text-xs font-bold text-rose-900">Không thể kết nối API máy chủ</h4>
-                            <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+                <div className="p-3 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <div className="min-w-0">
+                            <span className="text-xs font-semibold text-rose-900">Không thể kết nối máy chủ: </span>
+                            <span className="text-xs text-rose-700">{error}</span>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={() => loadCategories()}
-                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-md transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600/40"
                     >
                         Thử lại
                     </button>
                 </div>
             )}
 
-            {/* Reusable Admin Filter Toolbar */}
+            {/* Unified Toolbar: Search + Filter (Parent, Status) + Add Category */}
             <AdminFilter
                 searchQuery={searchQuery}
                 onSearchChange={(query) => {
@@ -961,35 +980,38 @@ export const CategoryList: React.FC = () => {
                     setFilterValues(vals);
                     setCurrentPage(1);
                 }}
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-md border border-blue-600 transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                    >
+                        <Plus className="w-3.5 h-3.5 text-white" />
+                        <span>Thêm danh mục</span>
+                    </button>
+                }
             />
 
-            {/* Category Data Table with Loading State */}
-            {isLoading ? (
-                <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
-                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-                    <p className="text-xs font-bold text-gray-700">Đang tải danh sách danh mục từ máy chủ...</p>
-                    <p className="text-[11px] text-gray-400 mt-1">Vui lòng chờ trong giây lát</p>
-                </div>
-            ) : (
-                <AdminTable
-                    columns={categoryTableColumns}
-                    data={categories}
-                    rowKey="id"
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20, 50]}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    onPageSizeChange={(newSize) => {
-                        setPageSize(newSize);
-                        setCurrentPage(1);
-                    }}
-                    onRowClick={(cat) => handleOpenDetailModal(cat)}
-                    itemUnitName="danh mục"
-                    emptyText="Không tìm thấy danh mục sản phẩm nào thỏa mãn điều kiện."
-                />
-            )}
+            {/* Category Data Table */}
+            <AdminTable
+                columns={categoryTableColumns}
+                data={categories}
+                loading={isLoading}
+                rowKey="id"
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20, 50]}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize);
+                    setCurrentPage(1);
+                }}
+                onRowClick={(cat) => handleOpenDetailModal(cat)}
+                itemUnitName="danh mục"
+                emptyText="Không tìm thấy danh mục sản phẩm nào thỏa mãn điều kiện."
+            />
 
             {/* MODAL 1: THÊM DANH MỤC MỚI (AdminModal với Tabs) */}
             <AdminModal
@@ -1052,10 +1074,10 @@ export const CategoryList: React.FC = () => {
                                         onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
                                         helperText="Chọn danh mục cha để tạo cấu trúc phân cấp đa tầng"
                                     >
-                                        <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
+                                        <option value="">— Không có (Danh mục gốc cấp 1) —</option>
                                         {allParentOptions.map((rc) => (
                                             <option key={rc.id} value={rc.id}>
-                                                📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
+                                                {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
                                             </option>
                                         ))}
                                     </AdminSelect>
@@ -1072,16 +1094,16 @@ export const CategoryList: React.FC = () => {
                         )}
                         {/* Tab 2: Hiển thị & Trạng thái */}
                         {activeTab === 'display' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
                                         Trạng thái hiển thị danh mục
                                     </label>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <label
-                                            className={`flex items-center gap-2.5 p-3.5 rounded-xl border cursor-pointer transition-all ${formData.status === 'ACTIVE'
-                                                ? 'border-emerald-300 bg-emerald-50/60 text-emerald-800 ring-2 ring-emerald-500/20 font-semibold'
-                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                            className={`flex items-center gap-2.5 p-3 rounded-md border cursor-pointer transition-colors ${formData.status === 'ACTIVE'
+                                                ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
                                                 }`}
                                         >
                                             <input
@@ -1091,17 +1113,17 @@ export const CategoryList: React.FC = () => {
                                                 onChange={() => setFormData({ ...formData, status: 'ACTIVE' })}
                                                 className="sr-only"
                                             />
-                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                                             <div>
-                                                <div className="text-xs font-bold">Đang hiển thị (ACTIVE)</div>
-                                                <div className="text-[10px] text-gray-500 mt-0.5">Khách hàng có thể xem và lọc sản phẩm</div>
+                                                <div className="text-xs font-semibold">Hiển thị</div>
+                                                <div className="text-[11px] text-slate-500 font-normal mt-0.5">Khách hàng có thể xem và lọc sản phẩm</div>
                                             </div>
                                         </label>
 
                                         <label
-                                            className={`flex items-center gap-2.5 p-3.5 rounded-xl border cursor-pointer transition-all ${formData.status === 'HIDDEN'
-                                                ? 'border-rose-300 bg-rose-50/60 text-rose-800 ring-2 ring-rose-500/20 font-semibold'
-                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                            className={`flex items-center gap-2.5 p-3 rounded-md border cursor-pointer transition-colors ${formData.status === 'HIDDEN'
+                                                ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
                                                 }`}
                                         >
                                             <input
@@ -1111,47 +1133,45 @@ export const CategoryList: React.FC = () => {
                                                 onChange={() => setFormData({ ...formData, status: 'HIDDEN' })}
                                                 className="sr-only"
                                             />
-                                            <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                            <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                                             <div>
-                                                <div className="text-xs font-bold">Tạm ẩn (HIDDEN)</div>
-                                                <div className="text-[10px] text-gray-500 mt-0.5">Ẩn khỏi menu và bộ lọc tìm kiếm</div>
+                                                <div className="text-xs font-semibold">Ẩn</div>
+                                                <div className="text-[11px] text-slate-500 font-normal mt-0.5">Ẩn khỏi menu và bộ lọc tìm kiếm</div>
                                             </div>
                                         </label>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 pt-2 border-t border-gray-100">
-                                    <label className="flex items-start gap-3 p-3.5 bg-gray-50/60 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                <div className="divide-y divide-slate-200 border-t border-slate-200 pt-2">
+                                    <label className="flex items-start gap-3 py-3 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={formData.isFeatured}
                                             onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-0.5"
+                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 border-slate-300 mt-0.5"
                                         />
                                         <div>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                                <span>Đánh dấu là danh mục nổi bật</span>
+                                            <span className="text-xs font-semibold text-slate-900 block">
+                                                Đánh dấu là danh mục nổi bật
                                             </span>
-                                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
                                                 Danh mục sẽ được hiển thị ưu tiên tại mục "Danh mục nổi bật" trên trang chủ Store.
                                             </p>
                                         </div>
                                     </label>
 
-                                    <label className="flex items-start gap-3 p-3.5 bg-gray-50/60 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <label className="flex items-start gap-3 py-3 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={formData.showOnMenu}
                                             onChange={(e) => setFormData({ ...formData, showOnMenu: e.target.checked })}
-                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-0.5"
+                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 border-slate-300 mt-0.5"
                                         />
                                         <div>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Layers className="w-3.5 h-3.5 text-blue-600" />
-                                                <span>Ghim danh mục lên thanh điều hướng chính</span>
+                                            <span className="text-xs font-semibold text-slate-900 block">
+                                                Ghim danh mục lên thanh điều hướng chính
                                             </span>
-                                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
                                                 Hiển thị nút truy cập nhanh trên Mega Menu thanh Header của trang web.
                                             </p>
                                         </div>
@@ -1175,8 +1195,8 @@ export const CategoryList: React.FC = () => {
                 footer={
                     detailCategory && (
                         <div className="flex items-center justify-between w-full">
-                            <div className="text-xs text-gray-500 hidden sm:block">
-                                Khởi tạo ngày: <span className="font-semibold text-gray-700">{detailCategory.createdAt}</span>
+                            <div className="text-xs text-slate-500 hidden sm:block tabular-nums">
+                                Khởi tạo ngày: <span className="font-semibold text-slate-700">{detailCategory.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-2 ml-auto">
                                 <AdminButton
@@ -1211,58 +1231,50 @@ export const CategoryList: React.FC = () => {
                         <div>
                             {/* Tab 1: Thông tin chung */}
                             {activeTab === 'info' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    {/* Category Banner Card */}
-                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-purple-50/50 border border-blue-100/80">
+                                <div className="space-y-4">
+                                    {/* Flat Category Summary */}
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 pb-4 border-b border-slate-200">
                                         <img
                                             src={detailCategory.image}
                                             alt={detailCategory.name}
-                                            className="w-20 h-20 rounded-2xl object-cover border-2 border-white shadow-md flex-shrink-0 bg-white"
+                                            className="w-16 h-16 aspect-square rounded-md object-cover border border-slate-200 shrink-0 bg-slate-50"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).src =
                                                     'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
                                             }}
                                         />
                                         <div className="flex-1 text-center sm:text-left min-w-0">
-                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                                <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                                                <h3 className="text-base font-semibold text-slate-900 tracking-tight">
                                                     {detailCategory.name}
                                                 </h3>
-                                                {detailCategory.status === 'ACTIVE' ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
-                                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đang hiển thị
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700">
-                                                        <EyeOff className="w-3 h-3 text-rose-600" /> Tạm ẩn
-                                                    </span>
-                                                )}
+                                                {renderStatusIndicator(detailCategory.status)}
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-1 flex items-center justify-center sm:justify-start gap-1.5 font-mono">
+                                            <p className="text-xs text-slate-500 mt-1 flex items-center justify-center sm:justify-start gap-1.5 font-mono tabular-nums">
                                                 <span>/{detailCategory.slug}</span>
-                                                <span>•</span>
-                                                <span>Mã ID: {detailCategory.id}</span>
+                                                <span>·</span>
+                                                <span>ID: #{detailCategory.id}</span>
                                             </p>
-                                            <p className="text-xs text-gray-600 mt-2 font-normal line-clamp-2">
+                                            <p className="text-xs text-slate-600 mt-1.5 font-normal line-clamp-2">
                                                 {detailCategory.description}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Grid of properties */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                    {/* Flat Properties Grid */}
+                                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Đường dẫn tĩnh (Slug)
-                                            </span>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-blue-600 font-mono">
+                                            </dt>
+                                            <dd className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 font-mono truncate">
                                                     /{detailCategory.slug}
                                                 </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailCategory.slug, 'slug', 'Đường dẫn slug')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors"
+                                                    className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép slug"
                                                 >
                                                     {copiedField === 'slug' ? (
@@ -1271,21 +1283,21 @@ export const CategoryList: React.FC = () => {
                                                         <Copy className="w-3.5 h-3.5" />
                                                     )}
                                                 </button>
-                                            </div>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Mã định danh (ID)
-                                            </span>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-gray-900 font-mono">
+                                            </dt>
+                                            <dd className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 font-mono tabular-nums">
                                                     {detailCategory.id}
                                                 </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailCategory.id, 'id', 'Mã danh mục')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors"
+                                                    className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép ID"
                                                 >
                                                     {copiedField === 'id' ? (
@@ -1294,58 +1306,39 @@ export const CategoryList: React.FC = () => {
                                                         <Copy className="w-3.5 h-3.5" />
                                                     )}
                                                 </button>
-                                            </div>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Nhóm danh mục cha
-                                            </span>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                                                <span>{detailCategory.parentName}</span>
-                                            </span>
+                                            </dt>
+                                            <dd className="pb-2 border-b border-slate-100 text-xs font-medium text-slate-900">
+                                                {detailCategory.parentName}
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Thời gian khởi tạo
-                                            </span>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-500" />
-                                                <span>{detailCategory.createdAt}</span>
-                                            </span>
+                                            </dt>
+                                            <dd className="pb-2 border-b border-slate-100 text-xs font-medium text-slate-900 tabular-nums">
+                                                {detailCategory.createdAt}
+                                            </dd>
                                         </div>
-                                    </div>
+                                    </dl>
                                 </div>
                             )}
 
                             {/* Tab 2: Sản phẩm thuộc nhóm */}
                             {activeTab === 'products' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div className="p-3.5 rounded-xl border border-blue-100 bg-blue-50/50">
-                                            <span className="text-[11px] font-semibold text-blue-600">Sản phẩm thuộc nhóm</span>
-                                            <p className="text-lg font-bold text-gray-900 mt-1">
-                                                {categoryProducts.length} mặt hàng
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">Dữ liệu theo danh mục ID #{detailCategory.id}</p>
-                                        </div>
-
-                                        <div className="p-3.5 rounded-xl border border-emerald-100 bg-emerald-50/50">
-                                            <span className="text-[11px] font-semibold text-emerald-600">Trạng thái danh mục</span>
-                                            <p className="text-lg font-bold text-emerald-700 mt-1">
-                                                {detailCategory.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm ẩn'}
-                                            </p>
-                                            <p className="text-[10px] text-gray-500 mt-0.5">Phân cấp: {detailCategory.parentName}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Products list from Real API */}
-                                    <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white">
-                                        <div className="px-4 py-2.5 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
-                                            <span className="text-xs font-bold text-gray-700">Sản phẩm tiêu biểu trong danh mục</span>
-                                            <span className="text-[11px] text-gray-400">
+                                <div className="space-y-4">
+                                    <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
+                                        <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-800">
+                                                Sản phẩm trong danh mục
+                                            </span>
+                                            <span className="text-xs text-slate-500 tabular-nums">
                                                 {isLoadingProducts ? 'Đang tải...' : `${categoryProducts.length} sản phẩm`}
                                             </span>
                                         </div>
@@ -1353,39 +1346,38 @@ export const CategoryList: React.FC = () => {
                                         {isLoadingProducts ? (
                                             <div className="p-8 text-center">
                                                 <Loader2 className="w-6 h-6 text-blue-600 animate-spin mx-auto mb-2" />
-                                                <p className="text-xs text-gray-500">Đang truy vấn sản phẩm thuộc danh mục...</p>
+                                                <p className="text-xs text-slate-500">Đang truy vấn sản phẩm thuộc danh mục...</p>
                                             </div>
                                         ) : categoryProducts.length === 0 ? (
-                                            <div className="p-8 text-center text-gray-400 text-xs">
-                                                <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                                            <div className="p-8 text-center text-slate-400 text-xs">
+                                                <Package className="w-7 h-7 mx-auto mb-2 text-slate-300" />
                                                 Chưa có sản phẩm nào thuộc danh mục này trong hệ thống.
                                             </div>
                                         ) : (
-                                            <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                                            <div className="divide-y divide-slate-200/80 max-h-80 overflow-y-auto">
                                                 {categoryProducts.map((prod) => (
-                                                    <div key={prod.id} className="p-3.5 hover:bg-gray-50/50 transition-colors flex items-center justify-between gap-3">
-                                                        <div className="flex items-center gap-3">
+                                                    <div key={prod.id} className="px-3.5 py-2.5 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0">
                                                             <img
                                                                 src={prod.imageUrl || getCategoryImage(prod.name, prod.slug)}
                                                                 alt={prod.name}
-                                                                className="w-10 h-10 rounded-xl object-cover border border-gray-200 bg-gray-50"
+                                                                className="w-9 h-9 aspect-square rounded-md object-cover border border-slate-200 bg-slate-50 shrink-0"
                                                                 onError={(e) => {
                                                                     (e.target as HTMLImageElement).src =
                                                                         'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=100&q=80';
                                                                 }}
                                                             />
-                                                            <div>
-                                                                <p className="text-xs font-bold text-gray-900">{prod.name}</p>
-                                                                <p className="text-[11px] text-gray-400 font-mono mt-0.5">
-                                                                    Mã: {prod.code || `PROD-${prod.id}`}
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-medium text-slate-900 truncate">{prod.name}</p>
+                                                                <p className="text-[11px] text-slate-500 font-mono tabular-nums mt-0.5">
+                                                                    {prod.code || `PROD-${prod.id}`}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                                {prod.status || 'ACTIVE'}
-                                                            </span>
-                                                        </div>
+                                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 shrink-0">
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${prod.status === 'INACTIVE' ? 'bg-slate-400' : 'bg-emerald-500'}`} />
+                                                            {prod.status || 'ACTIVE'}
+                                                        </span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -1396,59 +1388,53 @@ export const CategoryList: React.FC = () => {
 
                             {/* Tab 3: Trạng thái & Vị trí */}
                             {activeTab === 'status' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/70 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h4 className="text-xs font-bold text-gray-900">Trạng thái công khai danh mục</h4>
-                                                <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    Khi ẩn, khách hàng sẽ không thấy danh mục này trên thanh menu và bộ lọc
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleOpenToggleStatusModal(detailCategory)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${detailCategory.status === 'ACTIVE'
-                                                    ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                                    : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-                                                    }`}
-                                            >
-                                                {detailCategory.status === 'ACTIVE' ? (
-                                                    <>
-                                                        <EyeOff className="w-3.5 h-3.5" />
-                                                        <span>Tạm ẩn danh mục</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Eye className="w-3.5 h-3.5" />
-                                                        <span>Hiện danh mục</span>
-                                                    </>
-                                                )}
-                                            </button>
+                                <div className="space-y-4">
+                                    <div className="p-4 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h4 className="text-xs font-semibold text-slate-900">Trạng thái công khai danh mục</h4>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                                Khi ẩn, khách hàng sẽ không thấy danh mục này trên thanh menu và bộ lọc.
+                                            </p>
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenToggleStatusModal(detailCategory)}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${detailCategory.status === 'ACTIVE'
+                                                ? 'border-rose-200 text-rose-700 bg-white hover:bg-rose-50'
+                                                : 'border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50'
+                                                }`}
+                                        >
+                                            {detailCategory.status === 'ACTIVE' ? (
+                                                <>
+                                                    <EyeOff className="w-3.5 h-3.5" />
+                                                    <span>Tạm ẩn danh mục</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <span>Hiện danh mục</span>
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400">Ghim Menu chính</span>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className={`inline-block w-2.5 h-2.5 rounded-full ${detailCategory.showOnMenu ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-                                                <span className="text-xs font-bold text-gray-900">
-                                                    {detailCategory.showOnMenu ? 'Đang hiển thị trên Menu' : 'Không ghim trên Menu'}
-                                                </span>
-                                            </div>
+                                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-1">
+                                        <div className="space-y-1 pb-2 border-b border-slate-100">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Ghim Menu chính</dt>
+                                            <dd className="flex items-center gap-2 text-xs font-medium text-slate-800">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${detailCategory.showOnMenu ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                                <span>{detailCategory.showOnMenu ? 'Đang hiển thị trên Menu' : 'Không ghim trên Menu'}</span>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400">Trang chủ Store</span>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className={`inline-block w-2.5 h-2.5 rounded-full ${detailCategory.isFeatured ? 'bg-amber-500' : 'bg-gray-400'}`} />
-                                                <span className="text-xs font-bold text-gray-900">
-                                                    {detailCategory.isFeatured ? 'Nổi bật tại trang chủ' : 'Hiển thị bình thường'}
-                                                </span>
-                                            </div>
+                                        <div className="space-y-1 pb-2 border-b border-slate-100">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Trang chủ Store</dt>
+                                            <dd className="flex items-center gap-2 text-xs font-medium text-slate-800">
+                                                <span className={`w-1.5 h-1.5 rounded-full ${detailCategory.isFeatured ? 'bg-amber-500' : 'bg-slate-400'}`} />
+                                                <span>{detailCategory.isFeatured ? 'Nổi bật tại trang chủ' : 'Hiển thị bình thường'}</span>
+                                            </dd>
                                         </div>
-                                    </div>
+                                    </dl>
                                 </div>
                             )}
                         </div>
@@ -1507,12 +1493,12 @@ export const CategoryList: React.FC = () => {
                                         value={editFormData.parentId || ''}
                                         onChange={(e) => setEditFormData({ ...editFormData, parentId: e.target.value || null })}
                                     >
-                                        <option value="">— Không có (Là danh mục gốc cấp 1) —</option>
+                                        <option value="">— Không có (Danh mục gốc cấp 1) —</option>
                                         {allParentOptions
                                             .filter((rc) => rc.id !== editingCategory?.id)
                                             .map((rc) => (
                                                 <option key={rc.id} value={rc.id}>
-                                                    📂 {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
+                                                    {rc.name} {rc.parentName && rc.parentName !== 'Danh mục gốc' ? `(thuộc ${rc.parentName})` : ''}
                                                 </option>
                                             ))}
                                     </AdminSelect>
@@ -1527,18 +1513,18 @@ export const CategoryList: React.FC = () => {
                                 />
                             </div>
                         )}
-                        {/* Tab 3: Hiển thị & Trạng thái */}
+                        {/* Tab 2: Hiển thị & Trạng thái */}
                         {activeTab === 'display' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
                                         Trạng thái hiển thị danh mục
                                     </label>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <label
-                                            className={`flex items-center gap-2.5 p-3.5 rounded-xl border cursor-pointer transition-all ${editFormData.status === 'ACTIVE'
-                                                ? 'border-emerald-300 bg-emerald-50/60 text-emerald-800 ring-2 ring-emerald-500/20 font-semibold'
-                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                            className={`flex items-center gap-2.5 p-3 rounded-md border cursor-pointer transition-colors ${editFormData.status === 'ACTIVE'
+                                                ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
                                                 }`}
                                         >
                                             <input
@@ -1548,17 +1534,17 @@ export const CategoryList: React.FC = () => {
                                                 onChange={() => setEditFormData({ ...editFormData, status: 'ACTIVE' })}
                                                 className="sr-only"
                                             />
-                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                                             <div>
-                                                <div className="text-xs font-bold">Đang hiển thị (ACTIVE)</div>
-                                                <div className="text-[10px] text-gray-500 mt-0.5">Khách hàng có thể xem và lọc sản phẩm</div>
+                                                <div className="text-xs font-semibold">Hiển thị</div>
+                                                <div className="text-[11px] text-slate-500 font-normal mt-0.5">Khách hàng có thể xem và lọc sản phẩm</div>
                                             </div>
                                         </label>
 
                                         <label
-                                            className={`flex items-center gap-2.5 p-3.5 rounded-xl border cursor-pointer transition-all ${editFormData.status === 'HIDDEN'
-                                                ? 'border-rose-300 bg-rose-50/60 text-rose-800 ring-2 ring-rose-500/20 font-semibold'
-                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                            className={`flex items-center gap-2.5 p-3 rounded-md border cursor-pointer transition-colors ${editFormData.status === 'HIDDEN'
+                                                ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
                                                 }`}
                                         >
                                             <input
@@ -1568,47 +1554,45 @@ export const CategoryList: React.FC = () => {
                                                 onChange={() => setEditFormData({ ...editFormData, status: 'HIDDEN' })}
                                                 className="sr-only"
                                             />
-                                            <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                                            <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
                                             <div>
-                                                <div className="text-xs font-bold">Tạm ẩn (HIDDEN)</div>
-                                                <div className="text-[10px] text-gray-500 mt-0.5">Ẩn khỏi menu và bộ lọc tìm kiếm</div>
+                                                <div className="text-xs font-semibold">Ẩn</div>
+                                                <div className="text-[11px] text-slate-500 font-normal mt-0.5">Ẩn khỏi menu và bộ lọc tìm kiếm</div>
                                             </div>
                                         </label>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 pt-2 border-t border-gray-100">
-                                    <label className="flex items-start gap-3 p-3.5 bg-gray-50/60 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                <div className="divide-y divide-slate-200 border-t border-slate-200 pt-2">
+                                    <label className="flex items-start gap-3 py-3 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={editFormData.isFeatured}
                                             onChange={(e) => setEditFormData({ ...editFormData, isFeatured: e.target.checked })}
-                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-0.5"
+                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 border-slate-300 mt-0.5"
                                         />
                                         <div>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                                <span>Đánh dấu là danh mục nổi bật</span>
+                                            <span className="text-xs font-semibold text-slate-900 block">
+                                                Đánh dấu là danh mục nổi bật
                                             </span>
-                                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
                                                 Hiển thị tại khu vực danh mục nổi bật trên trang chủ Store.
                                             </p>
                                         </div>
                                     </label>
 
-                                    <label className="flex items-start gap-3 p-3.5 bg-gray-50/60 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <label className="flex items-start gap-3 py-3 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={editFormData.showOnMenu}
                                             onChange={(e) => setEditFormData({ ...editFormData, showOnMenu: e.target.checked })}
-                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 mt-0.5"
+                                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-600 border-slate-300 mt-0.5"
                                         />
                                         <div>
-                                            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                                <Layers className="w-3.5 h-3.5 text-blue-600" />
-                                                <span>Ghim danh mục lên thanh điều hướng chính</span>
+                                            <span className="text-xs font-semibold text-slate-900 block">
+                                                Ghim danh mục lên thanh điều hướng chính
                                             </span>
-                                            <p className="text-[11px] text-gray-500 mt-0.5">
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
                                                 Hiển thị nút điều hướng trên Mega Menu Header.
                                             </p>
                                         </div>

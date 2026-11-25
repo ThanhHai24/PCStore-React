@@ -113,29 +113,43 @@ function formatDateTime(isoString?: string | null): string {
 
 export const STOCK_LEVEL_CONFIG: Record<
     StockLevelStatus,
-    { label: string; badgeClass: string; icon: React.ElementType; color: string }
+    { label: string; badgeClass: string; dotColor: string; icon: React.ElementType; color: string }
 > = {
     IN_STOCK: {
-        label: 'Còn hàng dồi dào',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-emerald-500/10',
+        label: 'Còn hàng',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        dotColor: 'bg-emerald-500',
         icon: CheckCircle2,
         color: 'text-emerald-700',
     },
     LOW_STOCK: {
         label: 'Sắp hết hàng',
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 ring-amber-500/10',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+        dotColor: 'bg-amber-500',
         icon: AlertTriangle,
         color: 'text-amber-700',
     },
     OUT_OF_STOCK: {
-        label: 'Hết hàng trong kho',
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-300 ring-rose-500/10',
+        label: 'Hết hàng',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
+        dotColor: 'bg-rose-500',
         icon: XCircle,
         color: 'text-rose-700',
     },
 };
 
-const DEFAULT_IMG = 'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=400&q=80';
+const SERIAL_LIFECYCLE_LABELS: Record<string, { label: string; cls: string }> = {
+    IN_STOCK: { label: 'Sẵn sàng bán', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    GOOD_CONDITION: { label: 'Sẵn sàng bán', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    PACKING: { label: 'Đang giữ đơn', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    DELIVERING: { label: 'Đang giao hàng', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+    SOLD: { label: 'Đã bán', cls: 'bg-slate-100 text-slate-700 border-slate-200' },
+    DEFECTIVE: { label: 'Hàng lỗi', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+    PENDING_RETURN: { label: 'Chờ hoàn trả NCC', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    RETURNING: { label: 'Đang trả NCC', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    RETURNED: { label: 'Đã hoàn trả NCC', cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+    USING_BY_TECHNICAL: { label: 'Bảo hành / Kỹ thuật', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+};
 
 export default function WarehouseInventoryList() {
     const { toast } = useToast();
@@ -304,7 +318,7 @@ export default function WarehouseInventoryList() {
                         productName: p.name,
                         productCode: p.code,
                         slug: p.slug,
-                        imageUrl: p.imageUrl || DEFAULT_IMG,
+                        imageUrl: p.imageUrl || null,
                         productType: String(p.productType || 'COMPONENT'),
                         status: p.status as BackendProductStatus,
                         price,
@@ -355,7 +369,8 @@ export default function WarehouseInventoryList() {
                 String(item.productId).includes(q) ||
                 item.slug.toLowerCase().includes(q) ||
                 item.brandName.toLowerCase().includes(q) ||
-                item.categoryName.toLowerCase().includes(q);
+                item.categoryName.toLowerCase().includes(q) ||
+                item.serials.some((s) => s.serialNumber.toLowerCase().includes(q));
 
             // Stock status filter
             const matchStock =
@@ -525,59 +540,27 @@ export default function WarehouseInventoryList() {
         toast.success(`Đã xuất báo cáo ${inventoryItems.length} sản phẩm kho ra file CSV.`);
     };
 
-    // Quick Status Tabs configuration
-    const stockTabs = useMemo(
-        () => [
-            { key: 'ALL', label: 'Tất cả kho', icon: Boxes, count: inventoryItems.length },
-            {
-                key: 'IN_STOCK',
-                label: 'Còn hàng dồi dào (> 5)',
-                icon: CheckCircle2,
-                count: inventoryItems.filter((i) => i.stockStatus === 'IN_STOCK').length,
-            },
-            {
-                key: 'LOW_STOCK',
-                label: 'Sắp hết hàng (1 - 5)',
-                icon: AlertTriangle,
-                count: inventoryItems.filter((i) => i.stockStatus === 'LOW_STOCK').length,
-            },
-            {
-                key: 'OUT_OF_STOCK',
-                label: 'Hết hàng trong kho (0)',
-                icon: XCircle,
-                count: inventoryItems.filter((i) => i.stockStatus === 'OUT_OF_STOCK').length,
-            },
-            {
-                key: 'DEFECTIVE',
-                label: 'Hàng lỗi kho',
-                icon: ShieldAlert,
-                count: inventoryItems.filter((i) => i.defectiveStock > 0).length,
-            },
-        ],
-        [inventoryItems]
-    );
-
     // Filter fields configuration for AdminFilter
     const filterFields: FilterField[] = useMemo(
         () => [
             {
                 id: 'stockStatus',
                 name: 'stockStatus',
-                label: 'Tình trạng tồn kho',
+                label: 'Trạng thái tồn kho',
                 type: 'select',
                 placeholder: 'Tất cả tình trạng kho',
                 icon: Boxes,
                 options: [
-                    { label: 'Còn hàng dồi dào (> 5)', value: 'IN_STOCK' },
+                    { label: 'Còn hàng (> 5)', value: 'IN_STOCK' },
                     { label: 'Sắp hết hàng (1 - 5)', value: 'LOW_STOCK' },
-                    { label: 'Hết hàng trong kho (0)', value: 'OUT_OF_STOCK' },
+                    { label: 'Hết hàng (0)', value: 'OUT_OF_STOCK' },
                     { label: 'Có hàng lỗi chờ trả NCC', value: 'DEFECTIVE' },
                 ],
             },
             {
                 id: 'category',
                 name: 'category',
-                label: 'Danh mục sản phẩm',
+                label: 'Danh mục',
                 type: 'select',
                 placeholder: 'Tất cả danh mục',
                 icon: Layers,
@@ -606,10 +589,10 @@ export default function WarehouseInventoryList() {
                 placeholder: 'Tất cả loại sản phẩm',
                 icon: Package,
                 options: [
-                    { label: '🧩 Linh kiện (COMPONENT)', value: 'COMPONENT' },
-                    { label: '💻 Laptop xách tay (LAPTOP)', value: 'LAPTOP' },
-                    { label: '🖥️ Máy bộ / Desktop (PC)', value: 'PC' },
-                    { label: '📦 Khác (OTHER)', value: 'OTHER' },
+                    { label: 'Linh kiện (COMPONENT)', value: 'COMPONENT' },
+                    { label: 'Laptop (LAPTOP)', value: 'LAPTOP' },
+                    { label: 'Máy bộ / Desktop (PC)', value: 'PC' },
+                    { label: 'Khác (OTHER)', value: 'OTHER' },
                 ],
             },
             {
@@ -620,9 +603,9 @@ export default function WarehouseInventoryList() {
                 placeholder: 'Tất cả trạng thái',
                 icon: Tag,
                 options: [
-                    { label: '✅ Đang bán (ACTIVE)', value: 'ACTIVE' },
-                    { label: '❌ Hết hàng (OUT_OF_STOCK)', value: 'OUT_OF_STOCK' },
-                    { label: '👁️ Ngừng kinh doanh (INACTIVE)', value: 'INACTIVE' },
+                    { label: 'Đang bán (ACTIVE)', value: 'ACTIVE' },
+                    { label: 'Hết hàng (OUT_OF_STOCK)', value: 'OUT_OF_STOCK' },
+                    { label: 'Ngừng kinh doanh (INACTIVE)', value: 'INACTIVE' },
                 ],
             },
         ],
@@ -674,112 +657,140 @@ export default function WarehouseInventoryList() {
         setCurrentPage(1);
     };
 
+    const renderStockStatusIndicator = (status: StockLevelStatus) => {
+        const conf = STOCK_LEVEL_CONFIG[status];
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${conf.dotColor}`} />
+                <span className={status === 'OUT_OF_STOCK' ? 'text-slate-500' : 'text-slate-700'}>
+                    {conf.label}
+                </span>
+            </span>
+        );
+    };
+
     // Columns definition
     const columns: Column<WarehouseInventoryItemUI>[] = [
         {
             key: 'product',
-            header: 'Sản phẩm kho',
+            header: 'Sản phẩm',
             render: (item) => (
-                <div className="flex items-center gap-3">
-                    <img
-                        src={item.imageUrl || DEFAULT_IMG}
-                        alt={item.productName}
-                        className="w-11 h-11 rounded-xl object-cover border border-gray-200 shrink-0 bg-gray-50"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = DEFAULT_IMG;
-                        }}
-                    />
-                    <div>
-                        <div
-                            onClick={() => handleOpenDetail(item)}
-                            className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer line-clamp-1"
+                <div className="flex items-center gap-3 min-w-0">
+                    {item.imageUrl ? (
+                        <img
+                            src={item.imageUrl}
+                            alt={item.productName}
+                            className="w-9 h-9 rounded-md object-cover border border-slate-200 shrink-0 bg-slate-50"
+                            onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                            }}
+                        />
+                    ) : (
+                        <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                            <Package className="w-4 h-4" />
+                        </div>
+                    )}
+                    <div className="min-w-0">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDetail(item);
+                            }}
+                            className="text-sm font-medium text-slate-900 hover:text-blue-600 cursor-pointer line-clamp-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm"
+                            title={item.productName}
                         >
                             {item.productName}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 font-mono mt-0.5">
-                            <span>{item.productCode}</span>
-                            <span>•</span>
-                            <span className="text-gray-600 font-sans">{item.categoryName}</span>
+                        </button>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 truncate max-w-[260px]">
+                            <span className="font-mono tabular-nums text-slate-600">{item.productCode}</span>
+                            <span className="text-slate-300">·</span>
+                            <span className="truncate">{item.categoryName}</span>
+                            {item.brandName !== '---' && (
+                                <>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="truncate">{item.brandName}</span>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'brand',
-            header: 'Thương hiệu',
+            key: 'totalSerials',
+            header: 'Tổng tồn',
+            align: 'right',
             render: (item) => (
-                <div className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                    <Award className="w-3.5 h-3.5 text-gray-400" />
-                    <span>{item.brandName}</span>
+                <div className="text-xs font-medium text-slate-700 text-right tabular-nums whitespace-nowrap">
+                    {item.totalSerialsReceived.toLocaleString('vi-VN')}
                 </div>
             ),
         },
         {
-            key: 'price',
-            header: 'Đơn giá niêm yết',
+            key: 'availableStock',
+            header: 'Khả dụng',
             align: 'right',
             render: (item) => (
-                <div className="font-semibold text-gray-900 text-xs font-mono">{formatVND(item.price)}</div>
+                <div
+                    className={`text-sm font-semibold text-right tabular-nums whitespace-nowrap ${
+                        item.stockStatus === 'OUT_OF_STOCK'
+                            ? 'text-rose-600'
+                            : item.stockStatus === 'LOW_STOCK'
+                            ? 'text-amber-700'
+                            : 'text-slate-900'
+                    }`}
+                >
+                    {item.availableStock.toLocaleString('vi-VN')}
+                </div>
             ),
         },
         {
-            key: 'stock',
-            header: 'Tồn kho khả dụng',
+            key: 'soldStock',
+            header: 'Đã bán / Giữ',
+            align: 'right',
+            render: (item) => (
+                <div className="text-xs text-slate-600 text-right tabular-nums whitespace-nowrap">
+                    {item.soldStock.toLocaleString('vi-VN')}
+                </div>
+            ),
+        },
+        {
+            key: 'defectiveStock',
+            header: 'Lỗi / BH',
+            align: 'right',
             render: (item) => {
-                const conf = STOCK_LEVEL_CONFIG[item.stockStatus];
+                const count = item.defectiveStock + item.technicalStock;
                 return (
-                    <div className="space-y-1 w-[150px]">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className={`font-extrabold ${conf.color}`}>
-                                {item.availableStock} <span className="text-[11px] font-normal text-gray-500">cái</span>
-                            </span>
-                            {item.defectiveStock > 0 && (
-                                <span className="text-[11px] font-medium text-rose-600">
-                                    ({item.defectiveStock} lỗi)
-                                </span>
-                            )}
-                        </div>
-                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden border border-gray-200">
-                            <div
-                                className={`h-full transition-all duration-300 ${
-                                    item.availableStock > 5
-                                        ? 'bg-emerald-500'
-                                        : item.availableStock > 0
-                                        ? 'bg-amber-500'
-                                        : 'bg-rose-500'
-                                }`}
-                                style={{ width: `${Math.min(100, item.availableStock * 10)}%` }}
-                            />
-                        </div>
+                    <div
+                        className={`text-xs text-right tabular-nums whitespace-nowrap ${
+                            count > 0 ? 'font-medium text-rose-600' : 'text-slate-400'
+                        }`}
+                    >
+                        {count.toLocaleString('vi-VN')}
                     </div>
                 );
             },
         },
         {
             key: 'inventoryValue',
-            header: 'Tổng giá trị lưu kho',
+            header: 'Giá trị tồn',
             align: 'right',
             render: (item) => (
-                <div className="font-bold text-gray-900 text-xs font-mono">{formatVND(item.inventoryValue)}</div>
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div className="text-sm font-semibold text-slate-900">
+                        {formatVND(item.inventoryValue)}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                        ĐG: {formatVND(item.price)}
+                    </div>
+                </div>
             ),
         },
         {
             key: 'stockStatus',
-            header: 'Tình trạng',
-            align: 'center',
-            render: (item) => {
-                const conf = STOCK_LEVEL_CONFIG[item.stockStatus];
-                const IconComp = conf.icon;
-                return (
-                    <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-xs ${conf.badgeClass}`}
-                    >
-                        <IconComp className="w-3.5 h-3.5" />
-                        {conf.label}
-                    </span>
-                );
-            },
+            header: 'Trạng thái',
+            render: (item) => renderStockStatusIndicator(item.stockStatus),
         },
         {
             key: 'actions',
@@ -816,7 +827,7 @@ export default function WarehouseInventoryList() {
     // Detail Modal Tabs
     const detailTabs: ModalTab[] = [
         { id: 'card', label: 'Thẻ kho & Tổng quan', icon: Warehouse },
-        { id: 'serials', label: `Danh sách Serial (${selectedItem?.availableStock || 0} khả dụng)`, icon: Barcode },
+        { id: 'serials', label: `Danh sách Serial (${selectedItem?.availableStock || 0})`, icon: Barcode },
     ];
 
     // Filtered serials in modal
@@ -828,225 +839,102 @@ export default function WarehouseInventoryList() {
     }, [selectedItem, activeProductSerials, serialSearchFilter]);
 
     return (
-        <div className="space-y-6">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/20">
-                            <Warehouse className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý sản phẩm kho (Warehouse Inventory)
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                Giám sát số lượng tồn kho khả dụng, định mức an toàn, giá trị lưu kho và truy xuất mã Serial từng mặt hàng
-                            </p>
-                        </div>
-                    </div>
+        <div className="space-y-4">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý sản phẩm trong kho
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-0.5 tabular-nums">
+                        {kpiStats.totalProducts.toLocaleString('vi-VN')} mặt hàng · {kpiStats.totalAvailableStock.toLocaleString('vi-VN')} khả dụng · {kpiStats.lowOrOutCount} cần bổ sung · {kpiStats.totalDefective} lỗi
+                    </p>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2.5">
+                {/* Header Utility Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => loadInventory(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
+                        <RefreshCw className={`w-4 h-4 text-slate-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+                        <span>Làm mới</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={handleExportInventoryCSV}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                     >
-                        <Download className="w-4 h-4 text-emerald-600" />
-                        <span>Xuất báo cáo tồn kho</span>
+                        <Download className="w-4 h-4 text-slate-500" />
+                        <span>Xuất CSV</span>
                     </button>
+                </div>
+            </div>
 
+            {/* Error Banner */}
+            {error && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-md flex items-center justify-between gap-3 text-rose-800 text-sm">
+                    <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>{error}</span>
+                    </div>
                     <button
                         type="button"
-                        onClick={() => navigate('/admin/import')}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all cursor-pointer shadow-sm shadow-blue-600/30"
+                        onClick={() => loadInventory(true)}
+                        className="px-3 py-1.5 bg-rose-600 text-white rounded-md text-xs font-medium hover:bg-rose-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
                     >
-                        <Plus className="w-4 h-4" />
-                        <span>Lập đơn nhập hàng</span>
+                        Thử lại
                     </button>
                 </div>
-            </div>
+            )}
 
-            {/* KPI Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setStockFilter('ALL');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                        stockFilter === 'ALL'
-                            ? 'border-blue-400 ring-2 ring-blue-500/15 bg-blue-50/20'
-                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-                    }`}
-                >
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-                        <Boxes className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Mặt hàng lưu kho</div>
-                        <div className="text-xl font-bold text-gray-900">{kpiStats.totalProducts}</div>
-                    </div>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => {
-                        setStockFilter('IN_STOCK');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                        stockFilter === 'IN_STOCK'
-                            ? 'border-emerald-400 ring-2 ring-emerald-500/15 bg-emerald-50/20'
-                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-                    }`}
-                >
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
-                        <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Tồn kho khả dụng</div>
-                        <div className="text-xl font-bold text-emerald-700">{kpiStats.totalAvailableStock} cái</div>
-                    </div>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => {
-                        setStockFilter('LOW_STOCK');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                        stockFilter === 'LOW_STOCK'
-                            ? 'border-amber-400 ring-2 ring-amber-500/15 bg-amber-50/20'
-                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-                    }`}
-                >
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg shrink-0">
-                        <AlertTriangle className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Cần bổ sung hàng</div>
-                        <div className="text-xl font-bold text-amber-700">{kpiStats.lowOrOutCount} mã</div>
-                    </div>
-                </button>
-
-                <button
-                    type="button"
-                    onClick={() => {
-                        setStockFilter('DEFECTIVE');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border shadow-xs flex items-center gap-3.5 text-left transition-all cursor-pointer ${
-                        stockFilter === 'DEFECTIVE'
-                            ? 'border-rose-400 ring-2 ring-rose-500/15 bg-rose-50/20'
-                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-                    }`}
-                >
-                    <div className="p-3 bg-rose-50 text-rose-600 rounded-lg shrink-0">
-                        <ShieldAlert className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Hàng lỗi kho</div>
-                        <div className="text-xl font-bold text-rose-700">{kpiStats.totalDefective} cái</div>
-                    </div>
-                </button>
-
-                <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
-                        <DollarSign className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Tổng giá trị lưu kho</div>
-                        <div className="text-sm font-bold text-gray-900">{formatVND(kpiStats.totalValue)}</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Status Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                {stockTabs.map((tab) => {
-                    const isActive = stockFilter === tab.key;
-                    const IconComponent = tab.icon;
-                    return (
-                        <button
-                            key={tab.key}
-                            type="button"
-                            onClick={() => {
-                                setStockFilter(tab.key);
-                                setCurrentPage(1);
-                            }}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
-                                isActive
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-500/20'
-                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900 shadow-2xs'
-                            }`}
-                        >
-                            <IconComponent className="w-3.5 h-3.5" />
-                            <span>{tab.label}</span>
-                            <span
-                                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                    isActive
-                                        ? 'bg-white/20 text-white'
-                                        : 'bg-gray-100 text-gray-600'
-                                }`}
-                            >
-                                {tab.count}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* Filter Toolbar */}
+            {/* Single-row Toolbar: Search + Filters + Primary CTA */}
             <AdminFilter
                 searchQuery={searchQuery}
                 onSearchChange={handleSearchChange}
-                searchPlaceholder="Tìm kiếm theo tên linh kiện, mã SKU, mã SP, thương hiệu, danh mục..."
+                searchPlaceholder="Tìm theo tên sản phẩm, mã SKU, thương hiệu, danh mục hoặc mã Serial..."
                 fields={filterFields}
                 values={filterValues}
                 onFilterChange={handleFilterChange}
                 onReset={handleResetFilters}
+                actions={
+                    <button
+                        type="button"
+                        onClick={() => navigate('/admin/import')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Lập đơn nhập hàng</span>
+                    </button>
+                }
             />
 
-            {/* Main Table */}
-            <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-                <AdminTable<WarehouseInventoryItemUI>
-                    columns={columns}
-                    data={paginatedItems}
-                    rowKey="id"
-                    loading={isLoading}
-                    emptyText="Không tìm thấy sản phẩm kho nào phù hợp với bộ lọc."
-                    emptyIcon={Package}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={filteredItems.length}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 20, 30]}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={(sz) => {
-                        setPageSize(sz);
-                        setCurrentPage(1);
-                    }}
-                    showPageSizeSelector={true}
-                    itemUnitName="mặt hàng"
-                    onRowClick={(item) => handleOpenDetail(item)}
-                />
-            </div>
+            {/* Main Table (Border-first, no outer card-in-card) */}
+            <AdminTable<WarehouseInventoryItemUI>
+                columns={columns}
+                data={paginatedItems}
+                rowKey="id"
+                loading={isLoading}
+                emptyText="Không tìm thấy sản phẩm kho nào phù hợp với bộ lọc."
+                emptyIcon={Package}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredItems.length}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 20, 30]}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(sz) => {
+                    setPageSize(sz);
+                    setCurrentPage(1);
+                }}
+                showPageSizeSelector={true}
+                itemUnitName="mặt hàng"
+                onRowClick={(item) => handleOpenDetail(item)}
+            />
 
             {/* ======================================================== */}
             {/* STOCK CARD & SERIALS DETAIL MODAL                        */}
@@ -1055,122 +943,147 @@ export default function WarehouseInventoryList() {
                 <AdminModal
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
-                    title={`Thẻ kho sản phẩm: ${selectedItem.productName}`}
-                    subtitle={`Mã SKU: ${selectedItem.productCode} • ${selectedItem.categoryName} • ${selectedItem.brandName}`}
+                    title={
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="truncate">{selectedItem.productName}</span>
+                            <span className="text-xs font-mono tabular-nums px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                                {selectedItem.productCode}
+                            </span>
+                        </div>
+                    }
+                    subtitle={`${selectedItem.categoryName} • ${selectedItem.brandName}`}
                     icon={Warehouse}
                     size="2xl"
                     tabs={detailTabs}
                     activeTab={activeDetailTab}
                     onTabChange={(t) => setActiveDetailTab(t as any)}
-                    showFooter={false}
+                    showFooter={true}
+                    footer={
+                        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                            <div className="text-xs text-slate-500 tabular-nums">
+                                Giá trị lưu kho:{' '}
+                                <strong className="text-sm font-semibold text-slate-900">
+                                    {formatVND(selectedItem.inventoryValue)}
+                                </strong>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <AdminButton
+                                    type="button"
+                                    size="sm"
+                                    variant="primary"
+                                    onClick={() => {
+                                        setIsDetailModalOpen(false);
+                                        navigate('/admin/import');
+                                    }}
+                                    icon={Plus}
+                                >
+                                    Lập đơn nhập bổ sung
+                                </AdminButton>
+                                <AdminButton
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setIsDetailModalOpen(false)}
+                                >
+                                    Đóng
+                                </AdminButton>
+                            </div>
+                        </div>
+                    }
                 >
                     {/* Tab 1: Stock Card Overview */}
                     {activeDetailTab === 'card' && (
-                        <div className="space-y-6 p-2">
-                            {/* Product Header Card */}
-                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col sm:flex-row items-center gap-4">
-                                <img
-                                    src={selectedItem.imageUrl || DEFAULT_IMG}
-                                    alt={selectedItem.productName}
-                                    className="w-20 h-20 rounded-xl object-cover border border-gray-300 bg-white shrink-0"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = DEFAULT_IMG;
-                                    }}
-                                />
-                                <div className="flex-1 space-y-1 text-center sm:text-left">
-                                    <h3 className="font-bold text-gray-900 text-base">{selectedItem.productName}</h3>
-                                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-gray-500 font-mono">
-                                        <span>SKU: {selectedItem.productCode}</span>
-                                        <span>•</span>
-                                        <span>Đơn giá: {formatVND(selectedItem.price)}</span>
-                                        <span>•</span>
-                                        <span className="font-sans font-medium text-blue-600">{selectedItem.brandName}</span>
+                        <div className="space-y-4">
+                            {/* Flat Product Summary Bar */}
+                            <div className="p-3.5 bg-slate-50 rounded-md border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {selectedItem.imageUrl ? (
+                                        <img
+                                            src={selectedItem.imageUrl}
+                                            alt={selectedItem.productName}
+                                            className="w-12 h-12 rounded-md object-cover border border-slate-200 bg-white shrink-0"
+                                            onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-md bg-white border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                            <Package className="w-5 h-5" />
+                                        </div>
+                                    )}
+                                    <div className="min-w-0">
+                                        <h3 className="font-semibold text-slate-900 text-sm truncate">{selectedItem.productName}</h3>
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-0.5 tabular-nums">
+                                            <span className="font-mono text-slate-700">{selectedItem.productCode}</span>
+                                            <span className="text-slate-300">·</span>
+                                            <span>Đơn giá: <strong className="text-slate-800">{formatVND(selectedItem.price)}</strong></span>
+                                            <span className="text-slate-300">·</span>
+                                            <span>{selectedItem.brandName}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="shrink-0 flex flex-col items-center sm:items-end gap-2">
-                                    <span
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                                            STOCK_LEVEL_CONFIG[selectedItem.stockStatus].badgeClass
-                                        }`}
-                                    >
-                                        {STOCK_LEVEL_CONFIG[selectedItem.stockStatus].label}
-                                    </span>
-                                    <AdminButton
-                                        type="button"
-                                        size="sm"
-                                        variant="primary"
-                                        onClick={() => {
-                                            setIsDetailModalOpen(false);
-                                            navigate('/admin/import');
-                                        }}
-                                        icon={Plus}
-                                    >
-                                        Lập đơn nhập bổ sung
-                                    </AdminButton>
+                                <div className="shrink-0">
+                                    {renderStockStatusIndicator(selectedItem.stockStatus)}
                                 </div>
                             </div>
 
-                            {/* Stock Metrics 4-Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="p-4 bg-emerald-50/70 border border-emerald-100 rounded-xl">
-                                    <div className="text-xs text-emerald-800 font-medium">Tồn kho khả dụng</div>
-                                    <div className="text-2xl font-bold text-emerald-900 mt-1">
-                                        {selectedItem.availableStock}{' '}
-                                        <span className="text-xs font-normal text-emerald-700">cái</span>
+                            {/* Flat 4-column Stock Metrics Strip */}
+                            <div className="border border-slate-200 rounded-md bg-white grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x divide-slate-200 tabular-nums">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Tồn khả dụng</div>
+                                    <div className="text-lg font-semibold text-emerald-700 mt-0.5">
+                                        {selectedItem.availableStock.toLocaleString('vi-VN')}
                                     </div>
-                                    <div className="text-[11px] text-emerald-600 mt-1">Sẵn sàng xuất bán</div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">Sẵn sàng xuất bán</div>
                                 </div>
 
-                                <div className="p-4 bg-purple-50/70 border border-purple-100 rounded-xl">
-                                    <div className="text-xs text-purple-800 font-medium">Đã xuất bán</div>
-                                    <div className="text-2xl font-bold text-purple-900 mt-1">
-                                        {selectedItem.soldStock}{' '}
-                                        <span className="text-xs font-normal text-purple-700">cái</span>
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Đã bán / Giữ chỗ</div>
+                                    <div className="text-lg font-semibold text-slate-900 mt-0.5">
+                                        {selectedItem.soldStock.toLocaleString('vi-VN')}
                                     </div>
-                                    <div className="text-[11px] text-purple-600 mt-1">Đã giao khách hàng</div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">Đang giao hoặc đã bán</div>
                                 </div>
 
-                                <div className="p-4 bg-rose-50/70 border border-rose-100 rounded-xl">
-                                    <div className="text-xs text-rose-800 font-medium">Hàng lỗi kho</div>
-                                    <div className="text-2xl font-bold text-rose-900 mt-1">
-                                        {selectedItem.defectiveStock}{' '}
-                                        <span className="text-xs font-normal text-rose-700">cái</span>
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Hàng lỗi / Bảo hành</div>
+                                    <div className="text-lg font-semibold text-rose-700 mt-0.5">
+                                        {(selectedItem.defectiveStock + selectedItem.technicalStock).toLocaleString('vi-VN')}
                                     </div>
-                                    <div className="text-[11px] text-rose-600 mt-1">Chờ đổi trả NCC</div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">Chờ trả NCC / Kỹ thuật</div>
                                 </div>
 
-                                <div className="p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl">
-                                    <div className="text-xs text-indigo-800 font-medium">Tổng giá trị lưu kho</div>
-                                    <div className="text-lg font-bold text-indigo-900 mt-1">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Tổng giá trị tồn</div>
+                                    <div className="text-lg font-semibold text-slate-900 mt-0.5">
                                         {formatVND(selectedItem.inventoryValue)}
                                     </div>
-                                    <div className="text-[11px] text-indigo-600 mt-1">Tồn * Đơn giá</div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">Khả dụng × Đơn giá</div>
                                 </div>
                             </div>
 
-                            {/* Details Table */}
-                            <div className="p-4 bg-white rounded-xl border border-gray-200 text-xs space-y-2.5">
-                                <div className="font-semibold text-gray-900 text-sm border-b pb-1.5 flex items-center gap-1.5">
-                                    <Tag className="w-4 h-4 text-blue-600" />
-                                    <span>Thông số tồn kho an toàn & Cảnh báo</span>
+                            {/* Flat Safety Stock & Spec Table */}
+                            <div className="border border-slate-200 rounded-md bg-white divide-y divide-slate-200/80 text-xs">
+                                <div className="px-4 py-2.5 bg-slate-50 font-semibold text-slate-700">
+                                    Thông số tồn kho an toàn & Đánh giá
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-gray-100">
-                                    <span className="text-gray-500">Định mức an toàn tối thiểu (Min safety stock):</span>
-                                    <span className="font-bold text-gray-900">5 sản phẩm</span>
+                                <div className="px-4 py-2.5 flex justify-between gap-4">
+                                    <span className="text-slate-500">Định mức an toàn tối thiểu</span>
+                                    <span className="font-semibold text-slate-900 tabular-nums">5 sản phẩm</span>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-gray-100">
-                                    <span className="text-gray-500">Đánh giá tồn kho:</span>
-                                    <span className="font-semibold text-gray-800">
+                                <div className="px-4 py-2.5 flex justify-between gap-4">
+                                    <span className="text-slate-500">Tổng Serial đã ghi nhận qua các đợt nhập</span>
+                                    <span className="font-semibold text-slate-900 tabular-nums">{selectedItem.totalSerialsReceived.toLocaleString('vi-VN')} serial</span>
+                                </div>
+                                <div className="px-4 py-2.5 flex justify-between gap-4">
+                                    <span className="text-slate-500 shrink-0">Đánh giá tồn kho</span>
+                                    <span className="font-medium text-slate-800 text-right">
                                         {selectedItem.availableStock > 5
                                             ? 'Mức tồn kho ổn định, đáp ứng tốt nhu cầu bán lẻ.'
                                             : selectedItem.availableStock > 0
-                                            ? 'Tồn kho dưới ngưỡng an toàn, nên lập kế hoạch nhập bổ sung từ NCC.'
-                                            : 'Sản phẩm đã hết hàng trong kho. Cần lập đơn đặt hàng gấp!'}
+                                            ? 'Tồn kho dưới ngưỡng an toàn, nên lập kế hoạch nhập bổ sung.'
+                                            : 'Sản phẩm đã hết hàng trong kho, cần lập đơn đặt hàng.'}
                                     </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                    <span className="text-gray-500">Tổng số Serial đã ghi nhận qua các đợt nhập:</span>
-                                    <span className="font-bold text-gray-900">{selectedItem.totalSerialsReceived} serials</span>
                                 </div>
                             </div>
                         </div>
@@ -1178,8 +1091,8 @@ export default function WarehouseInventoryList() {
 
                     {/* Tab 2: Serials list for this product */}
                     {activeDetailTab === 'serials' && (
-                        <div className="space-y-4 p-2">
-                            <div className="flex flex-col sm:flex-row justify-between gap-3">
+                        <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row justify-between gap-2.5">
                                 <div className="flex-1">
                                     <AdminInput
                                         type="text"
@@ -1187,7 +1100,7 @@ export default function WarehouseInventoryList() {
                                         onChange={(e) => setSerialSearchFilter(e.target.value)}
                                         placeholder="Tra cứu số Serial của sản phẩm này..."
                                         prefixIcon={Search}
-                                        className="font-mono"
+                                        className="font-mono tabular-nums"
                                     />
                                 </div>
 
@@ -1201,70 +1114,68 @@ export default function WarehouseInventoryList() {
                                     }}
                                     icon={Barcode}
                                 >
-                                    Mở trang Quản lý Serial đầy đủ
+                                    Quản lý Serial đầy đủ
                                 </AdminButton>
                             </div>
 
-                            {/* Table of Serials */}
-                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white max-h-[380px] overflow-y-auto">
+                            {/* Compact Serials Table */}
+                            <div className="border border-slate-200 rounded-md overflow-x-auto bg-white max-h-[380px] overflow-y-auto">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200 sticky top-0 z-10">
+                                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0 z-10">
                                         <tr>
-                                            <th className="px-4 py-2.5">#</th>
-                                            <th className="px-4 py-2.5">Mã Serial</th>
-                                            <th className="px-4 py-2.5">Trạng thái vòng đời</th>
-                                            <th className="px-4 py-2.5">Ngày tiếp nhận</th>
-                                            <th className="px-4 py-2.5 text-right">Hiệu lực</th>
+                                            <th className="px-3.5 py-2.5 w-10 text-center">#</th>
+                                            <th className="px-3.5 py-2.5">Mã Serial</th>
+                                            <th className="px-3.5 py-2.5">Trạng thái vòng đời</th>
+                                            <th className="px-3.5 py-2.5 text-right">Ngày tiếp nhận</th>
+                                            <th className="px-3.5 py-2.5 text-right">Hiệu lực</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-200/80">
                                         {productSerialsLoading ? (
                                             <tr>
-                                                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                                                    <RefreshCw className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                                                    <RefreshCw className="w-4 h-4 animate-spin mx-auto text-blue-600 mb-2" />
                                                     Đang tải danh sách serial...
                                                 </td>
                                             </tr>
                                         ) : filteredModalSerials.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
                                                     Sản phẩm này chưa phát sinh Serial hoặc không khớp bộ lọc.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredModalSerials.map((ser, sIdx) => (
-                                                <tr key={ser.id || sIdx} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-2.5 text-gray-400 font-mono">{sIdx + 1}</td>
-                                                    <td className="px-4 py-2.5 font-mono font-bold text-gray-900">
-                                                        {ser.serialNumber}
-                                                    </td>
-                                                    <td className="px-4 py-2.5">
-                                                        <span
-                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                                                                ser.status === 'IN_STOCK' || ser.status === 'GOOD_CONDITION'
-                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                                    : ser.status === 'SOLD'
-                                                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
-                                                                    : ser.status === 'DEFECTIVE' || ser.status === 'PENDING_RETURN'
-                                                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                                                    : 'bg-gray-50 text-gray-700 border-gray-200'
-                                                            }`}
-                                                        >
-                                                            {ser.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-2.5 text-gray-500">
-                                                        {formatDateTime(ser.createdDate)}
-                                                    </td>
-                                                    <td className="px-4 py-2.5 text-right">
-                                                        {ser.isTerminated || ser.terminated ? (
-                                                            <span className="text-rose-600 font-medium">Đã hủy</span>
-                                                        ) : (
-                                                            <span className="text-emerald-600 font-medium">Hoạt động</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            filteredModalSerials.map((ser, sIdx) => {
+                                                const stConf = SERIAL_LIFECYCLE_LABELS[ser.status] || {
+                                                    label: ser.status,
+                                                    cls: 'bg-slate-50 text-slate-700 border-slate-200',
+                                                };
+                                                return (
+                                                    <tr key={ser.id || sIdx} className="hover:bg-slate-50">
+                                                        <td className="px-3.5 py-2.5 text-center text-slate-400 font-mono tabular-nums">{sIdx + 1}</td>
+                                                        <td className="px-3.5 py-2.5 font-mono font-medium tabular-nums text-slate-900">
+                                                            {ser.serialNumber}
+                                                        </td>
+                                                        <td className="px-3.5 py-2.5">
+                                                            <span
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${stConf.cls}`}
+                                                            >
+                                                                {stConf.label}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3.5 py-2.5 text-right text-slate-500 tabular-nums whitespace-nowrap">
+                                                            {formatDateTime(ser.createdDate)}
+                                                        </td>
+                                                        <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
+                                                            {ser.isTerminated || ser.terminated ? (
+                                                                <span className="text-rose-600 font-medium">Đã hủy</span>
+                                                            ) : (
+                                                                <span className="text-emerald-700 font-medium">Hoạt động</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>
@@ -1285,13 +1196,13 @@ export default function WarehouseInventoryList() {
                     title="Đổi trạng thái kinh doanh của sản phẩm kho"
                     message={
                         <div className="space-y-3 pt-2">
-                            <p className="text-xs text-gray-600">
-                                Chọn trạng thái kinh doanh mới cho sản phẩm: <b>{statusChangeTarget.productName}</b>
+                            <p className="text-xs text-slate-600">
+                                Chọn trạng thái kinh doanh mới cho sản phẩm: <strong className="text-slate-900">{statusChangeTarget.productName}</strong>
                             </p>
                             <select
                                 value={newStatus}
                                 onChange={(e) => setNewStatus(e.target.value as BackendProductStatus)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white font-medium"
+                                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                             >
                                 <option value="ACTIVE">Đang kinh doanh & Sẵn sàng bán (ACTIVE)</option>
                                 <option value="OUT_OF_STOCK">Tạm hết hàng (OUT_OF_STOCK)</option>

@@ -1,27 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
     ShoppingBag,
-    CheckCircle2,
     Clock,
-    XCircle,
-    Truck,
     Calendar,
-    Filter,
     RotateCcw,
     FileSpreadsheet,
     Printer,
     Download,
     Eye,
-    CreditCard,
-    Store,
-    BarChart3,
-    PieChart as PieChartIcon,
     AlertTriangle,
-    Package,
-    User,
-    Phone,
-    MapPin,
-    Info,
     Layers,
 } from 'lucide-react';
 import {
@@ -32,7 +19,6 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     PieChart,
     Pie,
     Cell,
@@ -661,10 +647,10 @@ export default function OrderStatusReportPage() {
                 sortValue: (item) => item.orderCode,
                 render: (item) => (
                     <div>
-                        <div className="font-mono font-bold text-[#2563EB] text-xs hover:underline">
+                        <div className="font-semibold text-blue-600 text-xs tabular-nums hover:underline">
                             {item.orderCode}
                         </div>
-                        <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                        <div className="text-[11px] text-slate-500 mt-0.5">
                             {item.channelLabel}
                         </div>
                     </div>
@@ -676,11 +662,11 @@ export default function OrderStatusReportPage() {
                 sortable: true,
                 sortValue: (item) => `${item.orderDate} ${item.orderTime}`,
                 render: (item) => (
-                    <div className="font-mono text-xs">
-                        <div className="font-semibold text-slate-800">
+                    <div className="text-xs tabular-nums">
+                        <div className="font-medium text-slate-800">
                             {formatDateVN(item.orderDate)}
                         </div>
-                        <div className="text-[10px] text-slate-400">{item.orderTime}</div>
+                        <div className="text-[11px] text-slate-400">{item.orderTime}</div>
                     </div>
                 ),
             },
@@ -691,11 +677,11 @@ export default function OrderStatusReportPage() {
                 sortValue: (item) => item.customerName,
                 render: (item) => (
                     <div className="max-w-xs xl:max-w-sm">
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 text-xs">
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-slate-900 text-xs">
                                 {item.customerName}
                             </span>
-                            <span className="text-[11px] text-slate-500 font-mono">
+                            <span className="text-[11px] text-slate-500 tabular-nums">
                                 ({item.customerPhone})
                             </span>
                         </div>
@@ -707,16 +693,16 @@ export default function OrderStatusReportPage() {
             },
             {
                 key: 'totalAmount',
-                header: 'Tổng tiền',
+                header: 'Tổng giá trị',
                 align: 'right',
                 sortable: true,
                 sortValue: (item) => item.totalAmount,
                 render: (item) => (
-                    <div>
-                        <div className="font-extrabold text-slate-900 font-mono text-xs">
+                    <div className="text-right tabular-nums">
+                        <div className="font-semibold text-slate-900 text-xs">
                             {formatVND(item.totalAmount)}
                         </div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[11px] text-slate-400">
                             {item.itemsCount} linh kiện
                         </div>
                     </div>
@@ -724,34 +710,30 @@ export default function OrderStatusReportPage() {
             },
             {
                 key: 'paymentMethod',
-                header: 'Phương thức thanh toán',
+                header: 'Thanh toán',
                 sortable: true,
                 sortValue: (item) => item.paymentMethodLabel,
                 render: (item) => (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-slate-700 text-xs font-medium">
-                        <CreditCard className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
-                        <span>{item.paymentMethodLabel}</span>
-                    </div>
+                    <span className="text-xs text-slate-700">
+                        {item.paymentMethodLabel}
+                    </span>
                 ),
             },
             {
                 key: 'status',
-                header: 'Trạng thái hiện tại',
-                align: 'center',
+                header: 'Trạng thái',
                 sortable: true,
                 sortValue: (item) => item.statusLabel,
                 render: (item) => {
                     const meta = ORDER_STATUS_META[item.status];
                     return (
-                        <div className="inline-flex flex-col items-center">
-                            <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}
-                            >
-                                <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
-                                {meta.label}
+                        <div className="flex flex-col items-start">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dotColor}`} />
+                                <span>{meta.label}</span>
                             </span>
                             {item.cancelReturnReasonText && (
-                                <span className="text-[10px] text-rose-500 font-medium mt-0.5 max-w-[170px] truncate">
+                                <span className="text-[11px] text-rose-600 mt-0.5 max-w-[180px] truncate">
                                     {item.cancelReturnReasonText}
                                 </span>
                             )}
@@ -761,7 +743,7 @@ export default function OrderStatusReportPage() {
             },
             {
                 key: 'processingHours',
-                header: 'Thời gian xử lý TB',
+                header: 'Xử lý TB',
                 align: 'right',
                 sortable: true,
                 sortValue: (item) => item.processingHours,
@@ -769,12 +751,12 @@ export default function OrderStatusReportPage() {
                     const isFast = item.processingHours <= 12;
                     const isWarning = item.processingHours > 18;
                     return (
-                        <div className="text-right">
-                            <div className="font-mono font-bold text-slate-800 text-xs">
+                        <div className="text-right tabular-nums">
+                            <div className="font-medium text-slate-800 text-xs">
                                 {item.processingHours.toFixed(1)} giờ
                             </div>
                             <span
-                                className={`text-[10px] font-semibold ${
+                                className={`text-[11px] ${
                                     isFast
                                         ? 'text-emerald-600'
                                         : isWarning
@@ -782,7 +764,7 @@ export default function OrderStatusReportPage() {
                                           : 'text-slate-500'
                                 }`}
                             >
-                                {isFast ? 'Nhanh (Đạt SLA)' : isWarning ? 'Cần lưu ý SLA' : 'Đúng hạn SLA'}
+                                {isFast ? 'Đạt SLA' : isWarning ? 'Vượt SLA' : 'Đúng hạn'}
                             </span>
                         </div>
                     );
@@ -799,7 +781,7 @@ export default function OrderStatusReportPage() {
                             e.stopPropagation();
                             setSelectedOrderDetail(item);
                         }}
-                        className="p-1.5 text-slate-500 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                         title="Xem chi tiết đơn hàng"
                     >
                         <Eye className="w-4 h-4" />
@@ -822,65 +804,65 @@ export default function OrderStatusReportPage() {
                 sortValue: (item) => item.sortKey,
                 render: (item) => (
                     <div>
-                        <div className="font-bold text-slate-900 text-xs">{item.name}</div>
+                        <div className="font-medium text-slate-900 text-xs">{item.name}</div>
                         <div className="text-[11px] text-slate-500">{item.subLabel}</div>
                     </div>
                 ),
             },
             {
                 key: 'totalOrders',
-                header: 'Tổng đơn phát sinh',
-                align: 'center',
+                header: 'Tổng đơn',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.totalOrders,
                 render: (item) => (
-                    <span className="font-extrabold text-slate-900 text-xs font-mono">
-                        {formatNumber(item.totalOrders)} đơn
+                    <span className="font-semibold text-slate-900 text-xs tabular-nums">
+                        {formatNumber(item.totalOrders)}
                     </span>
                 ),
             },
             {
                 key: 'deliveredOrders',
-                header: 'Giao thành công',
-                align: 'center',
+                header: 'Hoàn thành (%)',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.deliveredOrders,
                 render: (item) => (
-                    <div className="inline-flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs">
+                    <div className="text-right tabular-nums">
+                        <span className="font-medium text-slate-900 text-xs">
                             {formatNumber(item.deliveredOrders)}
                         </span>
-                        <span className="text-[11px] font-semibold text-emerald-600 font-mono">
-                            ({item.deliveredRate}%)
+                        <span className="text-[11px] text-emerald-600 ml-1.5">
+                            ({item.deliveredRate.toFixed(1)}%)
                         </span>
                     </div>
                 ),
             },
             {
                 key: 'inProgressOrders',
-                header: 'Đang xử lý / Đang giao',
-                align: 'center',
+                header: 'Đang xử lý / giao',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.inProgressOrders,
                 render: (item) => (
-                    <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-[#2563EB] border border-blue-200 font-bold text-xs">
-                        {formatNumber(item.inProgressOrders)} đơn
+                    <span className="font-medium text-slate-700 text-xs tabular-nums">
+                        {formatNumber(item.inProgressOrders)}
                     </span>
                 ),
             },
             {
                 key: 'cancelledReturnedOrders',
-                header: 'Đơn hủy & Hoàn trả',
-                align: 'center',
+                header: 'Hủy / Hoàn (%)',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.cancelledReturnedOrders,
                 render: (item) => (
-                    <div className="inline-flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 font-bold text-xs">
+                    <div className="text-right tabular-nums">
+                        <span className="font-medium text-slate-900 text-xs">
                             {formatNumber(item.cancelledReturnedOrders)}
                         </span>
-                        <span className="text-[11px] font-semibold text-rose-600 font-mono">
-                            ({item.cancelledReturnedRate}%)
+                        <span className="text-[11px] text-rose-600 ml-1.5">
+                            ({item.cancelledReturnedRate.toFixed(1)}%)
                         </span>
                     </div>
                 ),
@@ -892,20 +874,20 @@ export default function OrderStatusReportPage() {
                 sortable: true,
                 sortValue: (item) => item.totalAmount,
                 render: (item) => (
-                    <span className="font-bold text-[#2563EB] font-mono text-xs">
+                    <span className="font-semibold text-slate-900 text-xs tabular-nums">
                         {formatVND(item.totalAmount)}
                     </span>
                 ),
             },
             {
                 key: 'avgProcessingHours',
-                header: 'Thời gian xử lý TB',
+                header: 'Xử lý TB',
                 align: 'right',
                 sortable: true,
                 sortValue: (item) => item.avgProcessingHours,
                 render: (item) => (
-                    <span className="font-mono font-bold text-slate-800 text-xs">
-                        {item.avgProcessingHours.toFixed(1)} giờ / đơn
+                    <span className="text-slate-700 text-xs tabular-nums">
+                        {item.avgProcessingHours.toFixed(1)} giờ
                     </span>
                 ),
             },
@@ -918,17 +900,14 @@ export default function OrderStatusReportPage() {
         if (!active || !payload || !payload.length) return null;
         const rowData = payload[0]?.payload;
         return (
-            <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-xl p-3.5 min-w-[240px] text-xs space-y-2">
-                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
-                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
-                        {label}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#2563EB] font-bold text-[10px]">
-                        Tổng: {rowData?.total || 0} đơn
+            <div className="bg-white border border-slate-200 rounded-md shadow-sm p-3 min-w-[220px] text-xs space-y-2 tabular-nums">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="font-semibold text-slate-900">{label}</span>
+                    <span className="text-[11px] font-medium text-slate-600">
+                        Tổng: <strong className="text-slate-900">{formatNumber(rowData?.total || 0)}</strong> đơn
                     </span>
                 </div>
-                <div className="space-y-1 pt-0.5">
+                <div className="space-y-1">
                     {ORDER_STATUS_LIST.map((st) => {
                         const count = rowData?.[st.code] || 0;
                         if (count === 0) return null;
@@ -939,13 +918,13 @@ export default function OrderStatusReportPage() {
                             >
                                 <span className="text-slate-600 flex items-center gap-1.5">
                                     <span
-                                        className="w-2.5 h-2.5 rounded-sm inline-block"
+                                        className="w-2 h-2 rounded-full inline-block shrink-0"
                                         style={{ backgroundColor: st.chartColor }}
                                     />
-                                    {st.label}:
+                                    {st.label}
                                 </span>
-                                <span className="font-bold text-slate-900 font-mono">
-                                    {count} đơn
+                                <span className="font-semibold text-slate-900">
+                                    {formatNumber(count)} đơn
                                 </span>
                             </div>
                         );
@@ -956,61 +935,51 @@ export default function OrderStatusReportPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] space-y-6 pb-10">
+        <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
             {/* ==================== PAGE HEADER ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm shrink-0">
-                        <ShoppingBag className="w-6 h-6" />
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                <div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span className="font-medium text-slate-700">Báo cáo bán hàng</span>
+                        <span className="text-slate-300">/</span>
+                        <span className="tabular-nums">
+                            Kỳ theo dõi: {formatDateVN(fromDate)} — {formatDateVN(toDate)}
+                        </span>
                     </div>
-                    <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB] bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
-                                Báo cáo bán hàng
-                            </span>
-                            <span className="text-xs text-slate-400">•</span>
-                            <span className="text-xs font-medium text-slate-500">
-                                Kỳ theo dõi: {formatDateVN(fromDate)} — {formatDateVN(toDate)}
-                            </span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
-                            Báo Cáo Tình Hình Đơn Hàng
-                        </h1>
-                        <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
-                            Theo dõi toàn diện tiến độ xử lý đơn hàng qua 8 trạng thái vận hành, tỷ lệ giao
-                            hàng thành công, thời gian xử lý trung bình (SLA) và phân tích nguyên nhân hủy /
-                            hoàn trả hàng linh kiện PC.
-                        </p>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+                        Báo cáo tình hình đơn hàng
+                    </h1>
+                    <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+                        Theo dõi tiến độ xử lý qua 8 trạng thái vận hành, tỷ lệ giao thành công, thời gian xử lý trung bình (SLA) và nguyên nhân hủy / hoàn trả.
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-slate-700 text-xs font-semibold hover:bg-[#F8FAFC] transition-colors cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                        <Printer className="w-4 h-4 text-slate-500" />
+                        <Printer className="w-3.5 h-3.5 text-slate-500" />
                         <span>In báo cáo</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleExportCSV}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors cursor-pointer"
                     >
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <FileSpreadsheet className="w-3.5 h-3.5" />
                         <span>Xuất Excel / CSV</span>
                     </button>
                 </div>
             </div>
 
             {/* ==================== 1. FILTER BAR ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-200 rounded-md p-4 space-y-3.5">
                 {/* Top Quick Presets & Time Axis Grouping */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3.5 border-b border-[#E2E8F0]">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mr-1">
-                            <Filter className="w-4 h-4 text-[#2563EB]" />
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-600 mr-1">
                             Khoảng thời gian:
                         </span>
                         {[
@@ -1023,10 +992,10 @@ export default function OrderStatusReportPage() {
                                 key={preset.id}
                                 type="button"
                                 onClick={() => handleApplyDatePreset(preset.id)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                                     activeDatePreset === preset.id
-                                        ? 'bg-blue-50 text-[#2563EB] border-blue-200 shadow-2xs'
-                                        : 'bg-[#F8FAFC] text-slate-600 border-[#E2E8F0] hover:bg-slate-100'
+                                        ? 'bg-slate-900 text-white border-slate-900'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                 }`}
                             >
                                 {preset.label}
@@ -1035,40 +1004,39 @@ export default function OrderStatusReportPage() {
                     </div>
 
                     <div className="flex items-center gap-2 self-start xl:self-auto">
-                        <span className="text-xs font-semibold text-slate-500">Đơn vị trục biểu đồ:</span>
-                        <div className="inline-flex p-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                        <span className="text-xs text-slate-500">Nhóm theo:</span>
+                        <div className="inline-flex p-0.5 rounded-md bg-slate-100 border border-slate-200">
                             <button
                                 type="button"
                                 onClick={() => setTimeGrouping('DAY')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                     timeGrouping === 'DAY'
-                                        ? 'bg-[#2563EB] text-white shadow-xs'
-                                        : 'text-slate-600 hover:text-slate-900'
+                                        ? 'bg-white text-slate-900 border border-slate-200'
+                                        : 'text-slate-600 hover:text-slate-900 border border-transparent'
                                 }`}
                             >
-                                Theo Ngày
+                                Ngày
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setTimeGrouping('MONTH')}
-                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                     timeGrouping === 'MONTH'
-                                        ? 'bg-[#2563EB] text-white shadow-xs'
-                                        : 'text-slate-600 hover:text-slate-900'
+                                        ? 'bg-white text-slate-900 border border-slate-200'
+                                        : 'text-slate-600 hover:text-slate-900 border border-transparent'
                                 }`}
                             >
-                                Theo Tháng
+                                Tháng
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Main Filter Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     {/* Từ ngày */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">
                             Từ ngày
                         </label>
                         <input
@@ -1080,14 +1048,13 @@ export default function OrderStatusReportPage() {
                                 setActiveDatePreset('CUSTOM');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all"
+                            className="w-full h-9 px-2.5 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 tabular-nums focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
                         />
                     </div>
 
                     {/* Đến ngày */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">
                             Đến ngày
                         </label>
                         <input
@@ -1099,14 +1066,13 @@ export default function OrderStatusReportPage() {
                                 setActiveDatePreset('CUSTOM');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all"
+                            className="w-full h-9 px-2.5 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 tabular-nums focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
                         />
                     </div>
 
                     {/* Trạng thái đơn hàng (8 trạng thái chuẩn) */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Package className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">
                             Trạng thái đơn hàng
                         </label>
                         <SelectDropdown
@@ -1121,15 +1087,14 @@ export default function OrderStatusReportPage() {
                             ]}
                             size="sm"
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="h-9 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
 
                     {/* Kênh bán hàng */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Store className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Kênh bán hàng
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">
+                            Kênh đặt hàng
                         </label>
                         <SelectDropdown
                             value={selectedChannel}
@@ -1146,14 +1111,13 @@ export default function OrderStatusReportPage() {
                             ]}
                             size="sm"
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="h-9 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
 
                     {/* Phương thức thanh toán */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <CreditCard className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">
                             Phương thức thanh toán
                         </label>
                         <SelectDropdown
@@ -1171,12 +1135,12 @@ export default function OrderStatusReportPage() {
                             ]}
                             size="sm"
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="h-9 bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
                 </div>
 
-                {/* Quick Status Pills (8 trạng thái) */}
+                {/* Quick Status Filters (8 trạng thái) */}
                 <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                         <button
@@ -1185,13 +1149,13 @@ export default function OrderStatusReportPage() {
                                 setSelectedStatus('ALL');
                                 setCurrentPage(1);
                             }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border tabular-nums ${
                                 selectedStatus === 'ALL'
-                                    ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-2xs'
-                                    : 'bg-[#F8FAFC] text-slate-600 border-[#E2E8F0] hover:bg-slate-100'
+                                    ? 'bg-slate-900 text-white border-slate-900'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                             }`}
                         >
-                            Tất cả ({baseFilteredRecords.length})
+                            Tất cả ({formatNumber(baseFilteredRecords.length)})
                         </button>
                         {ORDER_STATUS_LIST.map((st) => {
                             const count = baseFilteredRecords.filter((r) => r.status === st.code).length;
@@ -1204,16 +1168,16 @@ export default function OrderStatusReportPage() {
                                         setSelectedStatus(isActive ? 'ALL' : st.code);
                                         setCurrentPage(1);
                                     }}
-                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer border tabular-nums ${
                                         isActive
-                                            ? `${st.badgeBg} ${st.badgeText} ${st.badgeBorder} ring-2 ring-[#2563EB]/15 font-bold`
-                                            : 'bg-white text-slate-600 border-[#E2E8F0] hover:bg-[#F8FAFC]'
+                                            ? 'bg-slate-100 text-slate-900 border-slate-400 font-semibold'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }`}
                                 >
-                                    <span className={`w-2 h-2 rounded-full ${st.dotColor}`} />
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dotColor}`} />
                                     <span>{st.label}</span>
-                                    <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">
-                                        {count}
+                                    <span className="text-[11px] text-slate-400">
+                                        {formatNumber(count)}
                                     </span>
                                 </button>
                             );
@@ -1223,7 +1187,7 @@ export default function OrderStatusReportPage() {
                     <button
                         type="button"
                         onClick={handleResetFilters}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer shrink-0"
                     >
                         <RotateCcw className="w-3.5 h-3.5" />
                         <span>Đặt lại</span>
@@ -1231,119 +1195,88 @@ export default function OrderStatusReportPage() {
                 </div>
             </div>
 
-            {/* ==================== 2. 4 KPI CARDS ==================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* ==================== 2. FLAT 4-COLUMN KPI STRIP ==================== */}
+            <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
                 {/* KPI 1: Tổng đơn phát sinh */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                1. Tổng đơn phát sinh
-                            </p>
-                            <div className="flex items-baseline gap-2 mt-1.5">
-                                <h3 className="text-2xl font-extrabold text-slate-900 font-mono">
-                                    {formatNumber(kpiMetrics.totalOrders)}
-                                </h3>
-                                <span className="text-xs font-semibold text-slate-500">đơn hàng</span>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-100">
-                            <ShoppingBag className="w-5 h-5" />
+                <div className="p-4 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <p className="text-xs font-medium text-slate-500">Tổng đơn phát sinh</p>
+                        <div className="flex items-baseline gap-1.5 mt-1 tabular-nums">
+                            <span className="text-2xl font-semibold text-slate-900 tracking-tight">
+                                {formatNumber(kpiMetrics.totalOrders)}
+                            </span>
+                            <span className="text-xs text-slate-500">đơn</span>
                         </div>
                     </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Tổng giá trị phát sinh:</span>
-                        <span className="font-bold text-slate-800 font-mono">
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs tabular-nums">
+                        <span className="text-slate-500">Tổng giá trị</span>
+                        <span className="font-medium text-slate-800">
                             {formatVND(kpiMetrics.totalValue)}
                         </span>
                     </div>
                 </div>
 
-                {/* KPI 2: Đơn giao thành công (kèm tỷ lệ %) */}
-                <div className="bg-white border-2 border-[#2563EB] rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-3 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-bold rounded-bl-xl">
-                        HOÀN TẤT GIAO
-                    </div>
-                    <div className="flex items-start justify-between gap-3 pt-1">
-                        <div>
-                            <p className="text-xs font-bold text-[#2563EB] uppercase tracking-wider">
-                                2. Đơn giao thành công
-                            </p>
-                            <div className="flex items-baseline gap-2.5 mt-1.5">
-                                <h3 className="text-2xl font-black text-emerald-600 font-mono">
-                                    {formatNumber(kpiMetrics.deliveredCount)}
-                                </h3>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-extrabold font-mono">
-                                    {kpiMetrics.deliveredRate.toFixed(1)}%
-                                </span>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
-                            <CheckCircle2 className="w-5 h-5" />
+                {/* KPI 2: Đơn giao thành công */}
+                <div className="p-4 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <p className="text-xs font-medium text-slate-500">Hoàn thành giao hàng</p>
+                        <div className="flex items-baseline gap-2 mt-1 tabular-nums">
+                            <span className="text-2xl font-semibold text-slate-900 tracking-tight">
+                                {formatNumber(kpiMetrics.deliveredCount)}
+                            </span>
+                            <span className="text-xs font-medium text-emerald-600">
+                                {kpiMetrics.deliveredRate.toFixed(1)}%
+                            </span>
                         </div>
                     </div>
-                    <div className="pt-2.5 border-t border-blue-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Doanh thu thực thu:</span>
-                        <span className="font-bold text-[#2563EB] font-mono">
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs tabular-nums">
+                        <span className="text-slate-500">Doanh thu thực thu</span>
+                        <span className="font-medium text-slate-800">
                             {formatVND(kpiMetrics.deliveredValue)}
                         </span>
                     </div>
                 </div>
 
                 {/* KPI 3: Đơn đang xử lý / đang giao */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                3. Đơn đang xử lý / đang giao
-                            </p>
-                            <div className="flex items-baseline gap-2.5 mt-1.5">
-                                <h3 className="text-2xl font-extrabold text-[#2563EB] font-mono">
-                                    {formatNumber(kpiMetrics.inProgressCount)}
-                                </h3>
-                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#2563EB] border border-blue-200 text-xs font-bold font-mono">
-                                    {kpiMetrics.inProgressRate.toFixed(1)}%
-                                </span>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
-                            <Truck className="w-5 h-5" />
+                <div className="p-4 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <p className="text-xs font-medium text-slate-500">Đang xử lý / Đang giao</p>
+                        <div className="flex items-baseline gap-2 mt-1 tabular-nums">
+                            <span className="text-2xl font-semibold text-slate-900 tracking-tight">
+                                {formatNumber(kpiMetrics.inProgressCount)}
+                            </span>
+                            <span className="text-xs font-medium text-blue-600">
+                                {kpiMetrics.inProgressRate.toFixed(1)}%
+                            </span>
                         </div>
                     </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Thời gian xử lý TB:</span>
-                        <span className="font-bold text-slate-800 font-mono">
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs tabular-nums">
+                        <span className="text-slate-500">Xử lý trung bình</span>
+                        <span className="font-medium text-slate-800">
                             {kpiMetrics.avgProcessingHours} giờ / đơn
                         </span>
                     </div>
                 </div>
 
-                {/* KPI 4: Đơn hủy & Hoàn trả (kèm tỷ lệ %) */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                4. Đơn hủy & Hoàn trả
-                            </p>
-                            <div className="flex items-baseline gap-2.5 mt-1.5">
-                                <h3 className="text-2xl font-extrabold text-rose-600 font-mono">
-                                    {formatNumber(kpiMetrics.cancelledReturnedCount)}
-                                </h3>
-                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-extrabold font-mono">
-                                    {kpiMetrics.cancelledReturnedRate.toFixed(1)}%
-                                </span>
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-                            <XCircle className="w-5 h-5" />
+                {/* KPI 4: Đơn hủy & Hoàn trả */}
+                <div className="p-4 flex flex-col justify-between gap-2.5">
+                    <div>
+                        <p className="text-xs font-medium text-slate-500">Đơn hủy &amp; Hoàn trả</p>
+                        <div className="flex items-baseline gap-2 mt-1 tabular-nums">
+                            <span className="text-2xl font-semibold text-slate-900 tracking-tight">
+                                {formatNumber(kpiMetrics.cancelledReturnedCount)}
+                            </span>
+                            <span className="text-xs font-medium text-rose-600">
+                                {kpiMetrics.cancelledReturnedRate.toFixed(1)}%
+                            </span>
                         </div>
                     </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                            Đã hủy: <strong className="text-rose-600">{kpiMetrics.cancelledCount}</strong> • Hoàn trả:{' '}
-                            <strong className="text-orange-600">{kpiMetrics.returnedCount}</strong>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs tabular-nums">
+                        <span className="text-slate-500 truncate">
+                            Hủy: <strong className="font-medium text-slate-700">{kpiMetrics.cancelledCount}</strong> • Hoàn:{' '}
+                            <strong className="font-medium text-slate-700">{kpiMetrics.returnedCount}</strong>
                         </span>
-                        <span className="font-semibold text-rose-600 font-mono">
+                        <span className="font-medium text-rose-600 shrink-0">
                             {formatVND(kpiMetrics.cancelledReturnedValue)}
                         </span>
                     </div>
@@ -1351,143 +1284,143 @@ export default function OrderStatusReportPage() {
             </div>
 
             {/* ==================== 3. CHARTS GRID (2 COLUMNS) ==================== */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 {/* Cột 1 (7/12): Biểu đồ cột chồng (Stacked Bar Chart) số lượng đơn theo trạng thái */}
-                <div className="lg:col-span-7 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs flex flex-col justify-between space-y-4">
-                    <div className="pb-3 border-b border-[#E2E8F0]">
-                        <div className="flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-[#2563EB]" />
-                            <h2 className="text-base font-bold text-slate-900">
-                                Số Lượng Đơn Hàng Theo Trạng Thái Qua Các{' '}
-                                {timeGrouping === 'DAY' ? 'Ngày' : 'Tháng'}
-                            </h2>
-                        </div>
+                <div className="lg:col-span-7 bg-white border border-slate-200 rounded-md p-5 flex flex-col justify-between space-y-4">
+                    <div className="pb-3 border-b border-slate-100">
+                        <h2 className="text-sm font-semibold text-slate-900">
+                            Diễn biến đơn hàng theo trạng thái ({timeGrouping === 'DAY' ? 'theo ngày' : 'theo tháng'})
+                        </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Biểu đồ cột chồng (Stacked Bar Chart) phản ánh cơ cấu trạng thái vận hành đơn
-                            hàng theo từng kỳ
+                            Cơ cấu 8 trạng thái vận hành đơn hàng qua từng kỳ
                         </p>
                     </div>
 
                     {stackedBarData.length === 0 ? (
-                        <div className="h-[340px] flex items-center justify-center text-xs text-slate-400">
+                        <div className="h-[300px] flex items-center justify-center text-xs text-slate-400">
                             Không có dữ liệu biểu đồ trong kỳ đã chọn
                         </div>
                     ) : (
-                        <div className="h-[340px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={stackedBarData}
-                                    margin={{ top: 10, right: 15, left: 0, bottom: 5 }}
-                                >
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="#E2E8F0"
-                                        vertical={false}
-                                    />
-                                    <XAxis
-                                        dataKey="periodLabel"
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
-                                        axisLine={{ stroke: '#E2E8F0' }}
-                                        tickLine={false}
-                                    />
-                                    <YAxis
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
-                                        axisLine={false}
-                                        tickLine={false}
-                                        allowDecimals={false}
-                                    />
-                                    <Tooltip content={renderStackedBarTooltip} />
-                                    <Legend
-                                        wrapperStyle={{
-                                            fontSize: '11px',
-                                            paddingTop: '10px',
-                                            fontWeight: 600,
-                                        }}
-                                    />
-                                    <Bar
-                                        dataKey="DELIVERED"
-                                        name="Giao thành công"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.DELIVERED.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="SHIPPING"
-                                        name="Đang giao hàng"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.SHIPPING.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="PACKING"
-                                        name="Đang đóng gói"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.PACKING.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="CONFIRMED"
-                                        name="Đã xác nhận"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.CONFIRMED.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="PAID"
-                                        name="Đã thanh toán"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.PAID.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="PENDING"
-                                        name="Chờ xử lý"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.PENDING.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="CANCELLED"
-                                        name="Đã hủy"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.CANCELLED.chartColor}
-                                        maxBarSize={38}
-                                    />
-                                    <Bar
-                                        dataKey="RETURNED"
-                                        name="Hoàn trả"
-                                        stackId="orders"
-                                        fill={ORDER_STATUS_META.RETURNED.chartColor}
-                                        radius={[5, 5, 0, 0]}
-                                        maxBarSize={38}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
+                        <div className="space-y-3">
+                            <div className="h-[280px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart
+                                        data={stackedBarData}
+                                        margin={{ top: 8, right: 12, left: -12, bottom: 0 }}
+                                    >
+                                        <CartesianGrid
+                                            strokeDasharray="3 3"
+                                            stroke="#E2E8F0"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="periodLabel"
+                                            tick={{ fontSize: 11, fill: '#64748B' }}
+                                            axisLine={{ stroke: '#E2E8F0' }}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 11, fill: '#64748B' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            allowDecimals={false}
+                                        />
+                                        <Tooltip content={renderStackedBarTooltip} />
+                                        <Bar
+                                            dataKey="DELIVERED"
+                                            name="Giao thành công"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.DELIVERED.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="SHIPPING"
+                                            name="Đang giao hàng"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.SHIPPING.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="PACKING"
+                                            name="Đang đóng gói"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.PACKING.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="CONFIRMED"
+                                            name="Đã xác nhận"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.CONFIRMED.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="PAID"
+                                            name="Đã thanh toán"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.PAID.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="PENDING"
+                                            name="Chờ xử lý"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.PENDING.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="CANCELLED"
+                                            name="Đã hủy"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.CANCELLED.chartColor}
+                                            maxBarSize={34}
+                                        />
+                                        <Bar
+                                            dataKey="RETURNED"
+                                            name="Hoàn trả"
+                                            stackId="orders"
+                                            fill={ORDER_STATUS_META.RETURNED.chartColor}
+                                            radius={[3, 3, 0, 0]}
+                                            maxBarSize={34}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Custom responsive legend (never overlaps chart at 768px) */}
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
+                                {ORDER_STATUS_LIST.map((st) => (
+                                    <span key={st.code} className="inline-flex items-center gap-1.5">
+                                        <span
+                                            className="w-2 h-2 rounded-full shrink-0"
+                                            style={{ backgroundColor: st.chartColor }}
+                                        />
+                                        <span>{st.label}</span>
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
 
                 {/* Cột 2 (5/12): Biểu đồ tròn (Donut Chart) phân bổ lý do hủy đơn / hoàn trả hàng */}
-                <div className="lg:col-span-5 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs flex flex-col justify-between space-y-4">
-                    <div className="pb-3 border-b border-[#E2E8F0]">
-                        <div className="flex items-center gap-2">
-                            <PieChartIcon className="w-5 h-5 text-[#2563EB]" />
-                            <h2 className="text-base font-bold text-slate-900">
-                                Phân Bổ Lý Do Hủy Đơn & Hoàn Trả Hàng
-                            </h2>
-                        </div>
+                <div className="lg:col-span-5 bg-white border border-slate-200 rounded-md p-5 flex flex-col justify-between space-y-4">
+                    <div className="pb-3 border-b border-slate-100">
+                        <h2 className="text-sm font-semibold text-slate-900">
+                            Phân bổ lý do hủy đơn &amp; hoàn trả
+                        </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Thống kê nguyên nhân khách hủy đơn hoặc yêu cầu đổi trả linh kiện PC
+                            Tỷ trọng nguyên nhân khách hủy hoặc yêu cầu đổi trả
                         </p>
                     </div>
 
                     {cancelReturnDonutData.length === 0 ? (
-                        <div className="h-[340px] flex items-center justify-center text-xs text-slate-400">
+                        <div className="h-[300px] flex items-center justify-center text-xs text-slate-400">
                             Không có đơn hủy hoặc hoàn trả trong kỳ
                         </div>
                     ) : (
                         <div className="flex flex-col justify-between flex-1 space-y-3">
-                            <div className="h-[200px] w-full">
+                            <div className="h-[185px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
@@ -1496,9 +1429,9 @@ export default function OrderStatusReportPage() {
                                             nameKey="name"
                                             cx="50%"
                                             cy="50%"
-                                            innerRadius={52}
-                                            outerRadius={82}
-                                            paddingAngle={3}
+                                            innerRadius={50}
+                                            outerRadius={78}
+                                            paddingAngle={2}
                                         >
                                             {cancelReturnDonutData.map((entry) => (
                                                 <Cell key={entry.id} fill={entry.color} />
@@ -1510,9 +1443,10 @@ export default function OrderStatusReportPage() {
                                                 props?.payload?.name || '',
                                             ]}
                                             contentStyle={{
-                                                borderRadius: '12px',
+                                                borderRadius: '6px',
                                                 borderColor: '#E2E8F0',
                                                 fontSize: '12px',
+                                                fontVariantNumeric: 'tabular-nums',
                                             }}
                                         />
                                     </PieChart>
@@ -1520,26 +1454,26 @@ export default function OrderStatusReportPage() {
                             </div>
 
                             {/* Bảng chú giải chi tiết tỷ trọng từng lý do */}
-                            <div className="space-y-2 pt-2 border-t border-slate-100 max-h-[155px] overflow-y-auto pr-1">
+                            <div className="space-y-1 pt-2 border-t border-slate-100 max-h-[155px] overflow-y-auto pr-1">
                                 {cancelReturnDonutData.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="flex items-center justify-between gap-2 text-xs py-1 px-2 rounded-lg hover:bg-[#F8FAFC]"
+                                        className="flex items-center justify-between gap-2 text-xs py-1 px-1.5 rounded-md hover:bg-slate-50"
                                     >
                                         <div className="flex items-center gap-2 min-w-0">
                                             <span
-                                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                                className="w-2 h-2 rounded-full shrink-0"
                                                 style={{ backgroundColor: item.color }}
                                             />
-                                            <span className="text-slate-700 font-medium truncate">
+                                            <span className="text-slate-700 truncate">
                                                 {item.name}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0 font-mono">
-                                            <span className="font-bold text-slate-900">
-                                                {item.value} đơn
+                                        <div className="flex items-center gap-2 shrink-0 tabular-nums">
+                                            <span className="font-medium text-slate-900">
+                                                {formatNumber(item.value)} đơn
                                             </span>
-                                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
+                                            <span className="text-[11px] text-slate-500 w-10 text-right">
                                                 {item.percent}%
                                             </span>
                                         </div>
@@ -1552,44 +1486,43 @@ export default function OrderStatusReportPage() {
             </div>
 
             {/* ==================== 4. SUMMARY & DETAILED DATATABLE ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-xs overflow-hidden">
-                <div className="p-5 pb-0 border-b border-[#E2E8F0] bg-white space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="bg-white border border-slate-200 rounded-md overflow-hidden">
+                <div className="px-5 pt-4 pb-0 border-b border-slate-200 bg-white space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                            <h2 className="text-base font-bold text-slate-900">
-                                Bảng Danh Sách Tổng Hợp & Chi Tiết Tình Hình Đơn Hàng
+                            <h2 className="text-sm font-semibold text-slate-900">
+                                Bảng thống kê &amp; danh sách chi tiết đơn hàng
                             </h2>
                             <p className="text-xs text-slate-500 mt-0.5">
-                                Tra cứu danh sách đơn hàng chi tiết, đối soát theo ngày/tháng hoặc theo kênh bán
-                                hàng kèm thời gian xử lý trung bình
+                                Tra cứu đơn hàng chi tiết hoặc đối soát tổng hợp theo kỳ và kênh bán
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 bg-[#F8FAFC] px-3 py-1.5 rounded-xl border border-[#E2E8F0]">
-                            <Clock className="w-4 h-4 text-[#2563EB] shrink-0" />
+                        <div className="inline-flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 tabular-nums shrink-0">
+                            <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                             <span>
-                                SLA chuẩn xử lý đơn PCStore: <strong className="text-slate-800">&le; 18.0 giờ</strong>
+                                SLA chuẩn: <strong className="font-semibold text-slate-900">&le; 18.0 giờ</strong>
                             </span>
                         </div>
                     </div>
 
                     {/* Tabs chuyển chế độ bảng */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mb-px">
                         {[
                             {
                                 id: 'DETAIL_ORDERS' as TableViewTab,
-                                label: 'Danh sách đơn hàng chi tiết',
+                                label: 'Danh sách đơn chi tiết',
                                 icon: ShoppingBag,
                                 count: searchedDetailOrders.length,
                             },
                             {
                                 id: 'SUMMARY_BY_DATE' as TableViewTab,
-                                label: `Thống kê tổng hợp theo ${timeGrouping === 'DAY' ? 'Ngày' : 'Tháng'}`,
+                                label: `Tổng hợp theo ${timeGrouping === 'DAY' ? 'Ngày' : 'Tháng'}`,
                                 icon: Calendar,
                                 count: stackedBarData.length,
                             },
                             {
                                 id: 'SUMMARY_BY_CHANNEL' as TableViewTab,
-                                label: 'Thống kê tổng hợp theo Kênh bán',
+                                label: 'Tổng hợp theo Kênh bán',
                                 icon: Layers,
                                 count: Object.keys(SALES_CHANNEL_LABELS).length,
                             },
@@ -1605,22 +1538,22 @@ export default function OrderStatusReportPage() {
                                         setTableSearchQuery('');
                                         setCurrentPage(1);
                                     }}
-                                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                                    className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                                         isActive
-                                            ? 'border-[#2563EB] text-[#2563EB] bg-blue-50/50 rounded-t-xl'
-                                            : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'
+                                            ? 'border-blue-600 text-blue-600'
+                                            : 'border-transparent text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
-                                    <IconComp className="w-4 h-4" />
+                                    <IconComp className="w-3.5 h-3.5" />
                                     <span>{tab.label}</span>
                                     <span
-                                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-medium tabular-nums ${
                                             isActive
-                                                ? 'bg-[#2563EB] text-white'
+                                                ? 'bg-blue-50 text-blue-700'
                                                 : 'bg-slate-100 text-slate-600'
                                         }`}
                                     >
-                                        {tab.count}
+                                        {formatNumber(tab.count)}
                                     </span>
                                 </button>
                             );
@@ -1639,7 +1572,7 @@ export default function OrderStatusReportPage() {
                             setTableSearchQuery(val);
                             setCurrentPage(1);
                         }}
-                        searchPlaceholder="Tìm theo mã đơn, tên khách, SĐT, sản phẩm, phương thức thanh toán..."
+                        searchPlaceholder="Tìm theo mã đơn, tên khách, SĐT, sản phẩm, thanh toán..."
                         defaultSortKey="orderDate"
                         defaultSortDirection="desc"
                         currentPage={currentPage}
@@ -1659,10 +1592,10 @@ export default function OrderStatusReportPage() {
                             <button
                                 type="button"
                                 onClick={handleExportCSV}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-blue-50 text-slate-700 hover:text-[#2563EB] border border-[#E2E8F0] text-xs font-semibold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
                             >
                                 <Download className="w-3.5 h-3.5" />
-                                <span>Tải CSV danh sách đơn</span>
+                                <span>Tải CSV</span>
                             </button>
                         }
                     />
@@ -1696,10 +1629,10 @@ export default function OrderStatusReportPage() {
                             <button
                                 type="button"
                                 onClick={handleExportCSV}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-blue-50 text-slate-700 hover:text-[#2563EB] border border-[#E2E8F0] text-xs font-semibold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
                             >
                                 <Download className="w-3.5 h-3.5" />
-                                <span>Tải CSV bảng tổng hợp</span>
+                                <span>Tải CSV</span>
                             </button>
                         }
                     />
@@ -1725,116 +1658,103 @@ export default function OrderStatusReportPage() {
                 }
             >
                 {selectedOrderDetail && (
-                    <div className="space-y-5">
-                        {/* Top status & customer info */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
-                                <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-                                    <User className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <div className="space-y-4">
+                        {/* Top status & customer info (flat 3-column divide-x strip) */}
+                        <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                            <div className="p-3.5 space-y-1">
+                                <div className="text-[11px] font-medium text-slate-500">
                                     Thông tin khách hàng
                                 </div>
-                                <div className="font-bold text-slate-900 text-sm">
+                                <div className="font-semibold text-slate-900 text-sm">
                                     {selectedOrderDetail.customerName}
                                 </div>
-                                <div className="text-xs text-slate-600 flex items-center gap-1.5">
-                                    <Phone className="w-3.5 h-3.5 text-slate-400" />
-                                    {selectedOrderDetail.customerPhone}
-                                </div>
-                                <div className="text-xs text-slate-600 flex items-center gap-1.5">
-                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                    {selectedOrderDetail.customerCity}
+                                <div className="text-xs text-slate-600 tabular-nums">
+                                    {selectedOrderDetail.customerPhone} • {selectedOrderDetail.customerCity}
                                 </div>
                             </div>
 
-                            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
-                                <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-                                    <CreditCard className="w-3.5 h-3.5 text-[#2563EB]" />
-                                    Thanh toán & Giá trị
+                            <div className="p-3.5 space-y-1 tabular-nums">
+                                <div className="text-[11px] font-medium text-slate-500">
+                                    Thanh toán &amp; Giá trị
                                 </div>
-                                <div className="font-extrabold text-[#2563EB] text-base font-mono">
+                                <div className="font-semibold text-slate-900 text-base">
                                     {formatVND(selectedOrderDetail.totalAmount)}
                                 </div>
-                                <div className="text-xs text-slate-700 font-medium">
-                                    {selectedOrderDetail.paymentMethodLabel}
-                                </div>
-                                <div className="text-[11px] text-slate-500">
-                                    Tổng số lượng: {selectedOrderDetail.itemsCount} sản phẩm
+                                <div className="text-xs text-slate-600">
+                                    {selectedOrderDetail.paymentMethodLabel} • {selectedOrderDetail.itemsCount} sản phẩm
                                 </div>
                             </div>
 
-                            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
-                                <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-[#2563EB]" />
-                                    Trạng thái & SLA xử lý
+                            <div className="p-3.5 space-y-1">
+                                <div className="text-[11px] font-medium text-slate-500">
+                                    Trạng thái &amp; SLA xử lý
                                 </div>
                                 <div>
                                     {(() => {
                                         const meta = ORDER_STATUS_META[selectedOrderDetail.status];
                                         return (
-                                            <span
-                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${meta.badgeBg} ${meta.badgeText} ${meta.badgeBorder}`}
-                                            >
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-900">
                                                 <span className={`w-1.5 h-1.5 rounded-full ${meta.dotColor}`} />
                                                 {meta.label}
                                             </span>
                                         );
                                     })()}
                                 </div>
-                                <div className="text-xs text-slate-700 font-mono">
-                                    Thời gian xử lý: <strong>{selectedOrderDetail.processingHours} giờ</strong>
+                                <div className="text-xs text-slate-600 tabular-nums">
+                                    Thời gian xử lý: <strong className="font-medium text-slate-900">{selectedOrderDetail.processingHours} giờ</strong>
                                 </div>
                                 {selectedOrderDetail.cancelReturnReasonText && (
-                                    <div className="text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                    <div className="text-xs text-rose-600 flex items-center gap-1 pt-0.5">
                                         <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                                        {selectedOrderDetail.cancelReturnReasonText}
+                                        <span>{selectedOrderDetail.cancelReturnReasonText}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Items Table */}
-                        <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
-                            <div className="px-4 py-3 bg-[#F8FAFC] border-b border-[#E2E8F0] font-bold text-xs text-slate-800 uppercase">
+                        <div className="border border-slate-200 rounded-md overflow-hidden">
+                            <div className="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 font-semibold text-xs text-slate-700">
                                 Danh mục linh kiện PC trong đơn hàng
                             </div>
-                            <table className="w-full text-left text-xs">
-                                <thead className="bg-white text-slate-500 font-semibold uppercase border-b border-[#E2E8F0]">
-                                    <tr>
-                                        <th className="px-4 py-3">Mã SKU</th>
-                                        <th className="px-4 py-3">Tên linh kiện / Sản phẩm</th>
-                                        <th className="px-4 py-3 text-center">Nhóm</th>
-                                        <th className="px-4 py-3 text-center">Số lượng</th>
-                                        <th className="px-4 py-3 text-right">Đơn giá</th>
-                                        <th className="px-4 py-3 text-right">Thành tiền</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#E2E8F0]">
-                                    {selectedOrderDetail.items.map((it, i) => (
-                                        <tr key={i} className="hover:bg-[#F8FAFC]">
-                                            <td className="px-4 py-3 font-mono font-bold text-[#2563EB]">
-                                                {it.sku}
-                                            </td>
-                                            <td className="px-4 py-3 font-semibold text-slate-900">
-                                                {it.name}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-medium">
-                                                    {it.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-center font-bold text-slate-800">
-                                                {it.quantity}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono text-slate-700">
-                                                {formatVND(it.unitPrice)}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-mono font-bold text-slate-900">
-                                                {formatVND(it.unitPrice * it.quantity)}
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-white text-slate-500 font-medium border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-3.5 py-2.5">Mã SKU</th>
+                                            <th className="px-3.5 py-2.5">Tên linh kiện / Sản phẩm</th>
+                                            <th className="px-3.5 py-2.5">Nhóm</th>
+                                            <th className="px-3.5 py-2.5 text-right">SL</th>
+                                            <th className="px-3.5 py-2.5 text-right">Đơn giá</th>
+                                            <th className="px-3.5 py-2.5 text-right">Thành tiền</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 tabular-nums">
+                                        {selectedOrderDetail.items.map((it, i) => (
+                                            <tr key={i} className="hover:bg-slate-50">
+                                                <td className="px-3.5 py-2.5 font-medium text-blue-600 whitespace-nowrap">
+                                                    {it.sku}
+                                                </td>
+                                                <td className="px-3.5 py-2.5 font-medium text-slate-900">
+                                                    {it.name}
+                                                </td>
+                                                <td className="px-3.5 py-2.5 text-slate-600 whitespace-nowrap">
+                                                    {it.category}
+                                                </td>
+                                                <td className="px-3.5 py-2.5 text-right font-medium text-slate-800">
+                                                    {it.quantity}
+                                                </td>
+                                                <td className="px-3.5 py-2.5 text-right text-slate-700 whitespace-nowrap">
+                                                    {formatVND(it.unitPrice)}
+                                                </td>
+                                                <td className="px-3.5 py-2.5 text-right font-semibold text-slate-900 whitespace-nowrap">
+                                                    {formatVND(it.unitPrice * it.quantity)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}

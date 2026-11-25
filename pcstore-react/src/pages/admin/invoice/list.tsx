@@ -610,28 +610,28 @@ export default function InvoiceList() {
         },
     ];
 
-    // Badge Renderers
+    // Badge Renderers (restrained 6px dot + neutral text / 1px rounded-md border)
     const renderStatusBadge = (status: InvoiceStatus) => {
         switch (status) {
             case 'PAID':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Đã thanh toán
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                        <span>Đã thanh toán</span>
                     </span>
                 );
             case 'PENDING':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        Chờ thanh toán
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        <span>Chờ thanh toán</span>
                     </span>
                 );
             case 'CANCELED':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                        Đã hủy
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        <span>Đã hủy</span>
                     </span>
                 );
         }
@@ -639,12 +639,8 @@ export default function InvoiceList() {
 
     const renderPaymentBadge = (method: InvoicePaymentMethod) => {
         const meta = PAYMENT_METHOD_META[method] || PAYMENT_METHOD_META.BANK_TRANSFER;
-        const Icon = meta.icon;
         return (
-            <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border ${meta.color}`}
-            >
-                <Icon className="w-3 h-3" />
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 whitespace-nowrap">
                 {meta.label}
             </span>
         );
@@ -654,47 +650,29 @@ export default function InvoiceList() {
     const columns: Column<AdminInvoice>[] = [
         {
             key: 'invoiceCode',
-            header: 'Số hóa đơn & Ngày lập',
+            header: 'Mã hóa đơn',
             sortable: true,
             sortValue: (item) => new Date(item.invoiceDate).getTime(),
             render: (inv) => (
-                <div className="space-y-1">
+                <div className="space-y-0.5 min-w-[140px]">
                     <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        <span className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
                             {inv.invoiceCode}
                         </span>
+                        {inv.invoiceType === 'VAT_COMPANY' && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                                VAT
+                            </span>
+                        )}
                         {inv.source === 'MANUAL' && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200">
                                 Thủ công
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span>{formatDateTime(inv.invoiceDate)}</span>
+                    <div className="font-mono text-[11px] text-slate-500 tabular-nums">
+                        Đơn: {inv.orderCode}
                     </div>
-                </div>
-            ),
-        },
-        {
-            key: 'orderCode',
-            header: 'Đơn hàng & Loại HĐ',
-            render: (inv) => (
-                <div className="space-y-1">
-                    <div className="font-mono text-xs font-semibold text-gray-800">
-                        {inv.orderCode}
-                    </div>
-                    {inv.invoiceType === 'VAT_COMPANY' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            <Building2 className="w-3 h-3" />
-                            Hóa đơn GTGT (VAT)
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                            <Receipt className="w-3 h-3" />
-                            Hóa đơn bán lẻ
-                        </span>
-                    )}
                 </div>
             ),
         },
@@ -702,37 +680,25 @@ export default function InvoiceList() {
             key: 'customer',
             header: 'Khách hàng / Đơn vị',
             render: (inv) => (
-                <div className="space-y-0.5 max-w-[230px]">
-                    <p className="text-xs font-bold text-gray-900 truncate">{inv.customerName}</p>
-                    <p className="text-[11px] text-gray-500 flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        <span>{inv.customerPhone}</span>
-                    </p>
+                <div className="space-y-0.5 max-w-[240px]">
+                    <p className="text-xs font-medium text-slate-900 truncate">{inv.customerName}</p>
+                    <p className="text-xs text-slate-500 font-mono tabular-nums">{inv.customerPhone}</p>
                     {inv.invoiceType === 'VAT_COMPANY' && inv.companyName && (
-                        <div className="text-[10px] text-indigo-700 font-medium truncate" title={inv.companyName}>
-                            {inv.companyName} {inv.taxCode ? `• MST: ${inv.taxCode}` : ''}
+                        <div
+                            className="text-[11px] text-slate-600 truncate tabular-nums"
+                            title={inv.companyName}
+                        >
+                            {inv.companyName}
+                            {inv.taxCode ? ` · MST: ${inv.taxCode}` : ''}
                         </div>
                     )}
                 </div>
             ),
         },
         {
-            key: 'breakdown',
-            header: 'Tiền hàng / Thuế GTGT',
-            align: 'right',
-            render: (inv) => (
-                <div className="space-y-0.5 text-xs">
-                    <div className="text-gray-700 font-medium">{formatVND(inv.totalAmount)}</div>
-                    {inv.discountAmount > 0 && (
-                        <div className="text-[11px] text-rose-500">
-                            Giảm: -{formatVND(inv.discountAmount)}
-                        </div>
-                    )}
-                    <div className="text-[10px] text-gray-400">
-                        VAT ({inv.taxRate}%): {formatVND(inv.taxAmount)}
-                    </div>
-                </div>
-            ),
+            key: 'paymentMethod',
+            header: 'Thanh toán',
+            render: (inv) => renderPaymentBadge(inv.paymentMethod),
         },
         {
             key: 'amount',
@@ -741,37 +707,46 @@ export default function InvoiceList() {
             sortable: true,
             sortValue: (item) => item.amount,
             render: (inv) => (
-                <div className="space-y-1 flex flex-col items-end">
-                    <span
-                        className={`text-sm font-extrabold ${
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div
+                        className={`font-mono text-xs font-semibold ${
                             inv.status === 'CANCELED'
-                                ? 'text-gray-400 line-through'
-                                : 'text-emerald-600'
+                                ? 'text-slate-400 line-through'
+                                : 'text-slate-900'
                         }`}
                     >
                         {formatVND(inv.amount)}
-                    </span>
-                    {renderPaymentBadge(inv.paymentMethod)}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                        VAT {inv.taxRate}%: {formatVND(inv.taxAmount)}
+                    </div>
                 </div>
+            ),
+        },
+        {
+            key: 'invoiceDate',
+            header: 'Thời gian xuất',
+            align: 'right',
+            render: (inv) => (
+                <span className="text-xs text-slate-600 tabular-nums whitespace-nowrap">
+                    {formatDateTime(inv.invoiceDate)}
+                </span>
             ),
         },
         {
             key: 'status',
             header: 'Trạng thái',
             render: (inv) => (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                     <div>{renderStatusBadge(inv.status)}</div>
-                    <div className="text-[10px] text-gray-400 flex items-center gap-1">
-                        <FileCheck className="w-3 h-3 text-blue-500" />
-                        <span>
-                            HĐĐT:{' '}
-                            <strong className="text-gray-600">
-                                {inv.eInvoiceStatus === 'ISSUED'
-                                    ? 'Đã phát hành'
-                                    : inv.eInvoiceStatus === 'CANCELLED'
-                                    ? 'Đã hủy bỏ'
-                                    : 'Bản nháp'}
-                            </strong>
+                    <div className="text-[11px] text-slate-500">
+                        HĐĐT:{' '}
+                        <span className="text-slate-700">
+                            {inv.eInvoiceStatus === 'ISSUED'
+                                ? 'Đã phát hành'
+                                : inv.eInvoiceStatus === 'CANCELLED'
+                                ? 'Đã hủy bỏ'
+                                : 'Bản nháp'}
                         </span>
                     </div>
                 </div>
@@ -851,153 +826,61 @@ export default function InvoiceList() {
     );
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-5">
             {/* Page Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-1">
-                        <span>Quản lý bán hàng</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                        <span className="text-blue-600 font-semibold">Quản lý hóa đơn</span>
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
-                        <Receipt className="w-7 h-7 text-blue-600" />
-                        <span>Quản Lý Hóa Đơn (Invoices & E-Invoice)</span>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý hóa đơn
                     </h1>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <p className="text-xs text-gray-500">
-                            Theo dõi hóa đơn bán hàng, phát hành hóa đơn giá trị gia tăng (VAT), kiểm soát trạng thái thanh toán và in chứng từ tài chính.
-                        </p>
-                        <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                fromBackend
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : 'bg-blue-50 text-blue-700 border-blue-200'
-                            }`}
-                        >
-                            <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                    fromBackend ? 'bg-emerald-500' : 'bg-blue-500'
-                                }`}
-                            />
-                            {fromBackend ? 'Đồng bộ dữ liệu Backend' : 'Chế độ dữ liệu mẫu / Cục bộ'}
-                        </span>
-                    </div>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.totalCount.toLocaleString('vi-VN')} hóa đơn · {stats.paidCount} đã thanh toán · {stats.pendingCount} chờ thanh toán
+                        {!fromBackend && ' · Dữ liệu cục bộ'}
+                    </p>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2">
                     <button
                         type="button"
                         onClick={() => loadInvoices()}
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-sm rounded-md border border-slate-200 transition-colors disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin text-blue-600' : ''}`} />
                         <span>Làm mới</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={handleExportCsv}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-sm rounded-md border border-slate-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
-                        <Download className="w-3.5 h-3.5 text-blue-600" />
+                        <Download className="w-4 h-4 text-slate-500" />
                         <span>Xuất CSV</span>
                     </button>
 
                     <button
                         type="button"
                         onClick={handleOpenCreateModal}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all hover:shadow cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                     >
-                        <Plus className="w-4 h-4 text-white" />
+                        <Plus className="w-4 h-4" />
                         <span>Phát hành hóa đơn</span>
                     </button>
                 </div>
             </div>
 
-            {/* KPI Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2 hover:border-blue-200 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Tổng Số Hóa Đơn</span>
-                        <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-                            <Receipt className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalCount.toLocaleString()}</p>
-                    <p className="text-[11px] text-gray-500">
-                        Hôm nay: <strong className="text-blue-600">{stats.todayCount}</strong> hóa đơn mới
-                    </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2 hover:border-emerald-200 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Doanh Thu Đã Thu</span>
-                        <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-                            <DollarSign className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <p className="text-xl font-extrabold text-emerald-600 truncate" title={formatVND(stats.totalPaidAmount)}>
-                        {formatVND(stats.totalPaidAmount)}
-                    </p>
-                    <p className="text-[11px] text-emerald-600 font-medium">
-                        {stats.paidCount} hóa đơn đã thanh toán
-                    </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2 hover:border-amber-200 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Chờ Thanh Toán</span>
-                        <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                            <Clock className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-amber-600">{stats.pendingCount}</p>
-                    <p className="text-[11px] text-amber-700 font-medium truncate">
-                        Giá trị: {formatVND(stats.totalPendingAmount)}
-                    </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2 hover:border-indigo-200 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Hóa Đơn GTGT (VAT)</span>
-                        <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-                            <Building2 className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-indigo-600">{stats.vatInvoiceCount}</p>
-                    <p className="text-[11px] text-gray-500 truncate">
-                        Thuế GTGT: <strong className="text-indigo-700">{formatVND(stats.totalTaxAmount)}</strong>
-                    </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-2 hover:border-rose-200 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Hóa Đơn Đã Hủy</span>
-                        <div className="p-2 rounded-xl bg-rose-50 text-rose-600">
-                            <XCircle className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-rose-600">{stats.canceledCount}</p>
-                    <p className="text-[11px] text-gray-500 truncate">
-                        Chiết khấu: <strong className="text-gray-700">{formatVND(stats.totalDiscountAmount)}</strong>
-                    </p>
-                </div>
-            </div>
-
             {/* Quick Status Filter Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-gray-200">
+            <div className="flex items-center gap-5 overflow-x-auto border-b border-slate-200">
                 {[
-                    { id: 'ALL', label: 'Tất cả hóa đơn', count: stats.totalCount, icon: Receipt },
-                    { id: 'PAID', label: 'Đã thanh toán', count: stats.paidCount, icon: CheckCircle2 },
-                    { id: 'PENDING', label: 'Chờ thanh toán', count: stats.pendingCount, icon: Clock },
-                    { id: 'VAT', label: 'Hóa đơn GTGT (VAT)', count: stats.vatInvoiceCount, icon: Building2 },
-                    { id: 'CANCELED', label: 'Đã hủy', count: stats.canceledCount, icon: XCircle },
+                    { id: 'ALL', label: 'Tất cả hóa đơn', count: stats.totalCount },
+                    { id: 'PAID', label: 'Đã thanh toán', count: stats.paidCount },
+                    { id: 'PENDING', label: 'Chờ thanh toán', count: stats.pendingCount },
+                    { id: 'VAT', label: 'Hóa đơn GTGT (VAT)', count: stats.vatInvoiceCount },
+                    { id: 'CANCELED', label: 'Đã hủy', count: stats.canceledCount },
                 ].map((tab) => {
                     const isActive = quickTab === tab.id;
-                    const Icon = tab.icon;
                     return (
                         <button
                             key={tab.id}
@@ -1006,17 +889,16 @@ export default function InvoiceList() {
                                 setQuickTab(tab.id);
                                 setCurrentPage(1);
                             }}
-                            className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all cursor-pointer ${
+                            className={`flex items-center gap-2 pb-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
                                 isActive
-                                    ? 'border-blue-600 text-blue-600 bg-blue-50/50 rounded-t-lg'
-                                    : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-900'
                             }`}
                         >
-                            <Icon className="w-3.5 h-3.5" />
                             <span>{tab.label}</span>
                             <span
-                                className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                                    isActive ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                                className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
+                                    isActive ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
                                 }`}
                             >
                                 {tab.count}
@@ -1026,102 +908,104 @@ export default function InvoiceList() {
                 })}
             </div>
 
-            {/* Filter Toolbar */}
-            <AdminFilter
-                searchQuery={searchQuery}
-                onSearchChange={(q) => {
-                    setSearchQuery(q);
-                    setCurrentPage(1);
-                }}
-                searchPlaceholder="Tìm số hóa đơn (HD-...), mã đơn hàng (ORD-...), tên khách hàng, SĐT, công ty, MST..."
-                fields={filterFields}
-                values={filterValues}
-                onChange={(vals) => {
-                    setFilterValues(vals);
-                    setCurrentPage(1);
-                }}
-                onReset={() => {
-                    setSearchQuery('');
-                    setFilterValues({
-                        status: '',
-                        invoiceType: '',
-                        paymentMethod: '',
-                        dateRange: '',
-                        startDate: '',
-                        endDate: '',
-                    });
-                    setQuickTab('ALL');
-                    setCurrentPage(1);
-                }}
-            />
+            {/* Filter & Table */}
+            <div className="space-y-4">
+                <AdminFilter
+                    searchQuery={searchQuery}
+                    onSearchChange={(q) => {
+                        setSearchQuery(q);
+                        setCurrentPage(1);
+                    }}
+                    searchPlaceholder="Tìm số hóa đơn (HD-...), mã đơn hàng (ORD-...), tên khách hàng, SĐT, công ty, MST..."
+                    fields={filterFields}
+                    values={filterValues}
+                    onChange={(vals) => {
+                        setFilterValues(vals);
+                        setCurrentPage(1);
+                    }}
+                    onReset={() => {
+                        setSearchQuery('');
+                        setFilterValues({
+                            status: '',
+                            invoiceType: '',
+                            paymentMethod: '',
+                            dateRange: '',
+                            startDate: '',
+                            endDate: '',
+                        });
+                        setQuickTab('ALL');
+                        setCurrentPage(1);
+                    }}
+                />
 
-            {/* Batch Selection Banner */}
-            {selectedIds.length > 0 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs text-blue-900 animate-in fade-in duration-150">
-                    <div className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-blue-600" />
-                        <span>
-                            Đang chọn <strong>{selectedIds.length}</strong> hóa đơn.
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={handleExportCsv}
-                            className="px-2.5 py-1 bg-white hover:bg-gray-50 text-blue-700 font-semibold border border-blue-200 rounded-lg shadow-sm cursor-pointer"
-                        >
-                            Xuất CSV đã chọn
-                        </button>
-                        {pendingSelectedCount > 0 && (
+                {/* Batch Selection Banner */}
+                {selectedIds.length > 0 && (
+                    <div className="px-3.5 py-2.5 bg-blue-50 border border-blue-200 rounded-md flex flex-wrap items-center justify-between gap-2 text-xs text-blue-900">
+                        <div className="flex items-center gap-2 tabular-nums">
+                            <Check className="w-4 h-4 text-blue-600" />
+                            <span>
+                                Đang chọn <strong>{selectedIds.length}</strong> hóa đơn.
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
                             <button
                                 type="button"
-                                onClick={() => setConfirmAction({ type: 'BATCH_PAID' })}
-                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm cursor-pointer"
+                                onClick={handleExportCsv}
+                                className="px-2.5 py-1 bg-white hover:bg-slate-50 text-blue-700 font-medium border border-blue-200 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             >
-                                Xác nhận thanh toán ({pendingSelectedCount})
+                                Xuất CSV đã chọn
                             </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => setSelectedIds([])}
-                            className="px-2 py-1 text-gray-500 hover:text-gray-800 cursor-pointer"
-                        >
-                            Bỏ chọn
-                        </button>
+                            {pendingSelectedCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmAction({ type: 'BATCH_PAID' })}
+                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md cursor-pointer tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                >
+                                    Xác nhận thanh toán ({pendingSelectedCount})
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setSelectedIds([])}
+                                className="px-2 py-1 text-slate-600 hover:text-slate-900 cursor-pointer"
+                            >
+                                Bỏ chọn
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Invoices Table */}
-            <AdminTable
-                columns={columns}
-                data={paginatedInvoices}
-                rowKey="id"
-                loading={loading}
-                selectable
-                selectedKeys={selectedIds}
-                onSelectionChange={setSelectedIds}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                pageSize={pageSize}
-                pageSizeOptions={[10, 15, 25, 50]}
-                onPageChange={(p) => setCurrentPage(p)}
-                onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setCurrentPage(1);
-                }}
-                onRowClick={(inv) => handleOpenDetail(inv)}
-                itemUnitName="hóa đơn"
-                emptyText="Không tìm thấy hóa đơn nào phù hợp với điều kiện lọc."
-            />
+                {/* Invoices Table */}
+                <AdminTable
+                    columns={columns}
+                    data={paginatedInvoices}
+                    rowKey="id"
+                    loading={loading}
+                    selectable
+                    selectedKeys={selectedIds}
+                    onSelectionChange={setSelectedIds}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    pageSize={pageSize}
+                    pageSizeOptions={[10, 15, 25, 50]}
+                    onPageChange={(p) => setCurrentPage(p)}
+                    onPageSizeChange={(size) => {
+                        setPageSize(size);
+                        setCurrentPage(1);
+                    }}
+                    onRowClick={(inv) => handleOpenDetail(inv)}
+                    itemUnitName="hóa đơn"
+                    emptyText="Không tìm thấy hóa đơn nào phù hợp với điều kiện lọc."
+                />
+            </div>
 
             {/* MODAL 1: CHI TIẾT HÓA ĐƠN & XEM TRƯỚC BẢN IN */}
             <AdminModal
                 isOpen={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
                 title={`Hóa đơn ${detailInvoice?.invoiceCode || ''}`}
-                subtitle={`Liên kết đơn hàng: ${detailInvoice?.orderCode || '—'} • Lập lúc ${formatDateTime(detailInvoice?.invoiceDate)}`}
+                subtitle={`Liên kết đơn hàng: ${detailInvoice?.orderCode || '—'} · Lập lúc ${formatDateTime(detailInvoice?.invoiceDate)}`}
                 icon={Receipt}
                 size="xl"
                 tabs={detailTabs}
@@ -1132,13 +1016,14 @@ export default function InvoiceList() {
                     return (
                         <div className="space-y-4">
                             {/* Quick Action Bar */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200/80">
-                                <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-50 rounded-md border border-slate-200">
+                                <div className="flex flex-wrap items-center gap-2.5">
                                     {renderStatusBadge(detailInvoice.status)}
+                                    <span className="text-slate-300">·</span>
                                     {renderPaymentBadge(detailInvoice.paymentMethod)}
                                     {detailInvoice.invoiceType === 'VAT_COMPANY' && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            <Building2 className="w-3 h-3" /> VAT Doanh nghiệp
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white text-slate-700 border border-slate-200">
+                                            VAT Doanh nghiệp
                                         </span>
                                     )}
                                 </div>
@@ -1147,7 +1032,7 @@ export default function InvoiceList() {
                                     <button
                                         type="button"
                                         onClick={() => handlePrintInvoice(detailInvoice)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                     >
                                         <Printer className="w-3.5 h-3.5" />
                                         <span>In hóa đơn / PDF</span>
@@ -1161,7 +1046,7 @@ export default function InvoiceList() {
                                                     invoice: detailInvoice,
                                                 })
                                             }
-                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                                         >
                                             <CheckCircle2 className="w-3.5 h-3.5" />
                                             <span>Xác nhận TT</span>
@@ -1176,7 +1061,7 @@ export default function InvoiceList() {
                                                     invoice: detailInvoice,
                                                 })
                                             }
-                                            className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-lg cursor-pointer"
+                                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 text-xs font-medium rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                                         >
                                             <Ban className="w-3.5 h-3.5" />
                                             <span>Hủy hóa đơn</span>
@@ -1187,85 +1072,80 @@ export default function InvoiceList() {
 
                             {/* TAB 1: TỔNG QUAN & CHI TIẾT MẶT HÀNG */}
                             {activeTab === 'overview' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-5">
+                                    {/* Flat 2-column info grid (no card-in-card) */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
                                         {/* Buyer Info */}
-                                        <div className="p-4 rounded-xl border border-gray-200 bg-white space-y-2.5">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-800 uppercase tracking-wider border-b pb-2">
-                                                <User className="w-4 h-4 text-blue-600" />
-                                                <span>Thông tin người mua hàng</span>
+                                        <div className="space-y-2.5">
+                                            <div className="text-xs font-semibold text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-1.5">
+                                                Thông tin người mua hàng
                                             </div>
-                                            <div className="space-y-1.5 text-xs">
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-gray-500">Họ tên:</span>
-                                                    <strong className="text-gray-900 text-right">{detailInvoice.customerName}</strong>
+                                            <dl className="space-y-2 text-xs">
+                                                <div className="flex justify-between gap-4">
+                                                    <dt className="text-slate-500 shrink-0">Họ tên</dt>
+                                                    <dd className="font-medium text-slate-900 text-right">{detailInvoice.customerName}</dd>
                                                 </div>
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-gray-500">Số điện thoại:</span>
-                                                    <span className="font-mono font-semibold text-gray-800">{detailInvoice.customerPhone}</span>
+                                                <div className="flex justify-between gap-4">
+                                                    <dt className="text-slate-500 shrink-0">Số điện thoại</dt>
+                                                    <dd className="font-mono font-medium text-slate-900 tabular-nums">{detailInvoice.customerPhone}</dd>
                                                 </div>
                                                 {detailInvoice.customerEmail && (
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-gray-500 flex items-center gap-1">
-                                                            <Mail className="w-3 h-3" /> Email:
-                                                        </span>
-                                                        <span className="text-gray-700 truncate">{detailInvoice.customerEmail}</span>
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt className="text-slate-500 shrink-0">Email</dt>
+                                                        <dd className="text-slate-700 truncate text-right">{detailInvoice.customerEmail}</dd>
                                                     </div>
                                                 )}
-                                                <div className="flex justify-between gap-2">
-                                                    <span className="text-gray-500 flex items-center gap-1 shrink-0">
-                                                        <MapPin className="w-3 h-3" /> Địa chỉ:
-                                                    </span>
-                                                    <span className="text-gray-700 text-right">
+                                                <div className="flex justify-between gap-4">
+                                                    <dt className="text-slate-500 shrink-0">Địa chỉ</dt>
+                                                    <dd className="text-slate-700 text-right">
                                                         {detailInvoice.customerAddress || 'Mua tại showroom PCStore'}
-                                                    </span>
+                                                    </dd>
                                                 </div>
-                                            </div>
+                                            </dl>
                                         </div>
 
                                         {/* VAT / Tax Info */}
-                                        <div className="p-4 rounded-xl border border-gray-200 bg-white space-y-2.5">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-800 uppercase tracking-wider border-b pb-2">
-                                                <Building2 className="w-4 h-4 text-indigo-600" />
-                                                <span>Thông tin xuất hóa đơn GTGT (VAT)</span>
+                                        <div className="space-y-2.5">
+                                            <div className="text-xs font-semibold text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-1.5">
+                                                Thông tin xuất hóa đơn GTGT (VAT)
                                             </div>
                                             {detailInvoice.invoiceType === 'VAT_COMPANY' ? (
-                                                <div className="space-y-1.5 text-xs">
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-gray-500 shrink-0">Đơn vị:</span>
-                                                        <strong className="text-indigo-700 text-right">
+                                                <dl className="space-y-2 text-xs">
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt className="text-slate-500 shrink-0">Đơn vị</dt>
+                                                        <dd className="font-medium text-slate-900 text-right">
                                                             {detailInvoice.companyName || 'Chưa cập nhật'}
-                                                        </strong>
+                                                        </dd>
                                                     </div>
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-gray-500">Mã số thuế:</span>
-                                                        <span className="font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt className="text-slate-500 shrink-0">Mã số thuế</dt>
+                                                        <dd className="font-mono font-semibold text-slate-900 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-200 tabular-nums">
                                                             {detailInvoice.taxCode || 'Chưa cập nhật'}
-                                                        </span>
+                                                        </dd>
                                                     </div>
-                                                    <div className="flex justify-between gap-2">
-                                                        <span className="text-gray-500 shrink-0">Địa chỉ công ty:</span>
-                                                        <span className="text-gray-700 text-right">
+                                                    <div className="flex justify-between gap-4">
+                                                        <dt className="text-slate-500 shrink-0">Địa chỉ công ty</dt>
+                                                        <dd className="text-slate-700 text-right">
                                                             {detailInvoice.companyAddress || '—'}
-                                                        </span>
+                                                        </dd>
                                                     </div>
-                                                </div>
+                                                </dl>
                                             ) : (
-                                                <div className="text-xs text-gray-500 py-3">
-                                                    Hóa đơn bán lẻ cá nhân (không yêu cầu xuất VAT doanh nghiệp). Bạn có thể chuyển sang tab <strong>Thông tin VAT & Ghi chú</strong> để bổ sung MST nếu khách yêu cầu xuất hóa đơn đỏ.
-                                                </div>
+                                                <p className="text-xs text-slate-500 py-1">
+                                                    Hóa đơn bán lẻ cá nhân. Chuyển sang tab <strong className="text-slate-700">Thông tin VAT & Ghi chú</strong> để bổ sung MST nếu khách yêu cầu xuất hóa đơn đỏ.
+                                                </p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Line Items Table */}
-                                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                                        <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                                            <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                    <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
+                                        <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
                                                 Chi tiết hàng hóa / dịch vụ
                                             </span>
                                             {hydratingDetail && (
-                                                <span className="flex items-center gap-1.5 text-[11px] text-blue-600 font-medium">
+                                                <span className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
                                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                     Đang nạp chi tiết từ đơn hàng...
                                                 </span>
@@ -1273,64 +1153,64 @@ export default function InvoiceList() {
                                         </div>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-xs border-collapse">
-                                                <thead className="bg-gray-50/70 text-gray-500 font-semibold border-b border-gray-200">
+                                                <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
                                                     <tr>
-                                                        <th className="p-3 w-10 text-center">#</th>
-                                                        <th className="p-3">Sản phẩm</th>
-                                                        <th className="p-3 text-center">SL</th>
-                                                        <th className="p-3 text-right">Đơn giá</th>
-                                                        <th className="p-3 text-right">Giảm giá</th>
-                                                        <th className="p-3 text-right">Thành tiền</th>
+                                                        <th className="px-3 py-2 w-10 text-center">#</th>
+                                                        <th className="px-3 py-2">Sản phẩm</th>
+                                                        <th className="px-3 py-2 text-right">SL</th>
+                                                        <th className="px-3 py-2 text-right">Đơn giá</th>
+                                                        <th className="px-3 py-2 text-right">Giảm giá</th>
+                                                        <th className="px-3 py-2 text-right">Thành tiền</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-100">
+                                                <tbody className="divide-y divide-slate-200">
                                                     {detailInvoice.items && detailInvoice.items.length > 0 ? (
                                                         detailInvoice.items.map((item, idx) => (
-                                                            <tr key={item.id || idx} className="hover:bg-gray-50/50">
-                                                                <td className="p-3 text-center text-gray-400 font-mono">
+                                                            <tr key={item.id || idx} className="hover:bg-slate-50/70">
+                                                                <td className="px-3 py-2.5 text-center text-slate-500 font-mono tabular-nums">
                                                                     {idx + 1}
                                                                 </td>
-                                                                <td className="p-3">
-                                                                    <p className="font-bold text-gray-900">{item.productName}</p>
-                                                                    <span className="font-mono text-[10px] text-gray-400">
+                                                                <td className="px-3 py-2.5">
+                                                                    <p className="font-medium text-slate-900">{item.productName}</p>
+                                                                    <span className="font-mono text-[11px] text-slate-500 tabular-nums">
                                                                         Mã SP: {item.productCode}
                                                                     </span>
                                                                 </td>
-                                                                <td className="p-3 text-center font-bold text-gray-800">
+                                                                <td className="px-3 py-2.5 text-right font-semibold text-slate-900 font-mono tabular-nums">
                                                                     {item.quantity}
                                                                 </td>
-                                                                <td className="p-3 text-right text-gray-700">
+                                                                <td className="px-3 py-2.5 text-right text-slate-700 font-mono tabular-nums whitespace-nowrap">
                                                                     {formatVND(item.unitPrice)}
                                                                 </td>
-                                                                <td className="p-3 text-right text-rose-500">
+                                                                <td className="px-3 py-2.5 text-right text-rose-600 font-mono tabular-nums whitespace-nowrap">
                                                                     {item.discountAmount > 0
                                                                         ? `-${formatVND(item.discountAmount)}`
                                                                         : '0 ₫'}
                                                                 </td>
-                                                                <td className="p-3 text-right font-bold text-gray-900">
+                                                                <td className="px-3 py-2.5 text-right font-semibold text-slate-900 font-mono tabular-nums whitespace-nowrap">
                                                                     {formatVND(item.subtotal)}
                                                                 </td>
                                                             </tr>
                                                         ))
                                                     ) : (
                                                         <tr>
-                                                            <td className="p-3 text-center text-gray-400">1</td>
-                                                            <td className="p-3">
-                                                                <p className="font-semibold text-gray-800">
+                                                            <td className="px-3 py-2.5 text-center text-slate-500 tabular-nums">1</td>
+                                                            <td className="px-3 py-2.5">
+                                                                <p className="font-medium text-slate-900">
                                                                     Giá trị đơn hàng {detailInvoice.orderCode}
                                                                 </p>
-                                                                <span className="text-[11px] text-gray-400">
+                                                                <span className="text-[11px] text-slate-500">
                                                                     Hóa đơn tổng hợp theo mã đơn hàng
                                                                 </span>
                                                             </td>
-                                                            <td className="p-3 text-center font-bold">1</td>
-                                                            <td className="p-3 text-right">{formatVND(detailInvoice.totalAmount)}</td>
-                                                            <td className="p-3 text-right text-rose-500">
+                                                            <td className="px-3 py-2.5 text-right font-semibold font-mono tabular-nums">1</td>
+                                                            <td className="px-3 py-2.5 text-right font-mono tabular-nums whitespace-nowrap">{formatVND(detailInvoice.totalAmount)}</td>
+                                                            <td className="px-3 py-2.5 text-right text-rose-600 font-mono tabular-nums whitespace-nowrap">
                                                                 {detailInvoice.discountAmount > 0
                                                                     ? `-${formatVND(detailInvoice.discountAmount)}`
                                                                     : '0 ₫'}
                                                             </td>
-                                                            <td className="p-3 text-right font-bold">{formatVND(detailInvoice.amount)}</td>
+                                                            <td className="px-3 py-2.5 text-right font-semibold text-slate-900 font-mono tabular-nums whitespace-nowrap">{formatVND(detailInvoice.amount)}</td>
                                                         </tr>
                                                     )}
                                                 </tbody>
@@ -1338,37 +1218,37 @@ export default function InvoiceList() {
                                         </div>
 
                                         {/* Totals Footer */}
-                                        <div className="p-4 bg-gray-50/70 border-t border-gray-200 flex flex-col md:flex-row justify-between gap-4">
-                                            <div className="text-xs text-gray-500 space-y-1 max-w-md">
+                                        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row justify-between gap-4">
+                                            <div className="text-xs text-slate-600 space-y-1 max-w-md">
                                                 <p>
-                                                    <strong>Số tiền bằng chữ:</strong>{' '}
-                                                    <span className="italic text-gray-700">
+                                                    <strong className="text-slate-900">Số tiền bằng chữ:</strong>{' '}
+                                                    <span className="italic text-slate-700">
                                                         {numberToVietnameseWords(detailInvoice.amount)}
                                                     </span>
                                                 </p>
                                                 {detailInvoice.note && (
                                                     <p>
-                                                        <strong>Ghi chú:</strong> {detailInvoice.note}
+                                                        <strong className="text-slate-900">Ghi chú:</strong> {detailInvoice.note}
                                                     </p>
                                                 )}
                                             </div>
 
-                                            <div className="w-full md:w-72 space-y-1.5 text-xs">
-                                                <div className="flex justify-between text-gray-600">
-                                                    <span>Cộng tiền hàng:</span>
-                                                    <span className="font-semibold">{formatVND(detailInvoice.totalAmount)}</span>
+                                            <div className="w-full md:w-72 space-y-1.5 text-xs tabular-nums">
+                                                <div className="flex justify-between text-slate-600">
+                                                    <span>Cộng tiền hàng</span>
+                                                    <span className="font-mono font-medium text-slate-900">{formatVND(detailInvoice.totalAmount)}</span>
                                                 </div>
                                                 <div className="flex justify-between text-rose-600">
-                                                    <span>Chiết khấu / Giảm giá:</span>
-                                                    <span className="font-semibold">-{formatVND(detailInvoice.discountAmount)}</span>
+                                                    <span>Chiết khấu / Giảm giá</span>
+                                                    <span className="font-mono font-medium">-{formatVND(detailInvoice.discountAmount)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-gray-500">
-                                                    <span>Thuế GTGT ({detailInvoice.taxRate}%):</span>
-                                                    <span className="font-semibold">{formatVND(detailInvoice.taxAmount)}</span>
+                                                <div className="flex justify-between text-slate-600">
+                                                    <span>Thuế GTGT ({detailInvoice.taxRate}%)</span>
+                                                    <span className="font-mono font-medium text-slate-900">{formatVND(detailInvoice.taxAmount)}</span>
                                                 </div>
-                                                <div className="flex justify-between text-sm font-extrabold text-blue-700 pt-2 border-t border-gray-300">
-                                                    <span>TỔNG THANH TOÁN:</span>
-                                                    <span>{formatVND(detailInvoice.amount)}</span>
+                                                <div className="flex justify-between text-sm font-semibold text-slate-900 pt-2 border-t border-slate-200">
+                                                    <span>Tổng thanh toán</span>
+                                                    <span className="font-mono">{formatVND(detailInvoice.amount)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1378,85 +1258,89 @@ export default function InvoiceList() {
 
                             {/* TAB 2: XEM TRƯỚC BẢN IN A4 */}
                             {activeTab === 'preview' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="bg-white border-2 border-gray-200 rounded-xl p-6 md:p-8 shadow-inner space-y-5 text-xs">
+                                <div className="space-y-4">
+                                    <div className="bg-white border border-slate-200 rounded-md p-6 space-y-5 text-xs">
                                         {/* Header */}
-                                        <div className="flex flex-col sm:flex-row justify-between gap-4 border-b-2 border-blue-600 pb-4">
+                                        <div className="flex flex-col sm:flex-row justify-between gap-4 border-b border-slate-300 pb-4">
                                             <div>
-                                                <h3 className="text-base font-black text-blue-700">
+                                                <h3 className="text-sm font-semibold text-slate-900 uppercase">
                                                     CÔNG TY TNHH CÔNG NGHỆ PC STORE
                                                 </h3>
-                                                <p className="text-gray-600 mt-0.5">MST: <strong>0109876543</strong></p>
-                                                <p className="text-gray-500">128 Thái Hà, Đống Đa, TP. Hà Nội • Hotline: 1900 1903</p>
+                                                <p className="text-slate-600 mt-0.5 tabular-nums">
+                                                    MST: <strong className="font-mono text-slate-900">0109876543</strong>
+                                                </p>
+                                                <p className="text-slate-500">128 Thái Hà, Đống Đa, TP. Hà Nội · Hotline: 1900 1903</p>
                                             </div>
-                                            <div className="sm:text-right space-y-0.5">
-                                                <p className="text-gray-500">Mẫu số: <strong>1C26TPC</strong></p>
+                                            <div className="sm:text-right space-y-0.5 tabular-nums">
+                                                <p className="text-slate-500">Mẫu số: <strong className="text-slate-900">1C26TPC</strong></p>
                                                 <p>
                                                     Số HĐ:{' '}
-                                                    <span className="font-mono font-bold text-blue-700">
+                                                    <span className="font-mono font-semibold text-slate-900">
                                                         {detailInvoice.invoiceCode}
                                                     </span>
                                                 </p>
-                                                <p className="text-gray-500">Ngày lập: {formatDateTime(detailInvoice.invoiceDate)}</p>
+                                                <p className="text-slate-500">Ngày lập: {formatDateTime(detailInvoice.invoiceDate)}</p>
                                             </div>
                                         </div>
 
                                         <div className="text-center">
-                                            <h2 className="text-lg font-extrabold text-gray-900 uppercase">
+                                            <h2 className="text-base font-semibold text-slate-900 uppercase tracking-tight">
                                                 {detailInvoice.invoiceType === 'VAT_COMPANY'
                                                     ? 'HÓA ĐƠN GIÁ TRỊ GIA TĂNG'
                                                     : 'HÓA ĐƠN BÁN HÀNG'}
                                             </h2>
-                                            <p className="text-[11px] text-gray-400">
-                                                (Bản thể hiện của hóa đơn điện tử • Mã đơn hàng: {detailInvoice.orderCode})
+                                            <p className="text-[11px] text-slate-500 font-mono tabular-nums mt-0.5">
+                                                Bản thể hiện của hóa đơn điện tử · Mã đơn hàng: {detailInvoice.orderCode}
                                             </p>
                                         </div>
 
-                                        <div className="bg-gray-50 rounded-lg p-3.5 border border-gray-200 space-y-1">
-                                            <p>
-                                                <span className="text-gray-500">Người mua hàng:</span>{' '}
-                                                <strong>{detailInvoice.customerName}</strong> ({detailInvoice.customerPhone})
+                                        <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200 space-y-1.5">
+                                            <p className="tabular-nums">
+                                                <span className="text-slate-500">Người mua hàng:</span>{' '}
+                                                <strong className="text-slate-900">{detailInvoice.customerName}</strong> ({detailInvoice.customerPhone})
                                             </p>
                                             {detailInvoice.invoiceType === 'VAT_COMPANY' && detailInvoice.companyName && (
-                                                <p>
-                                                    <span className="text-gray-500">Đơn vị:</span>{' '}
-                                                    <strong>{detailInvoice.companyName}</strong> — MST:{' '}
-                                                    <strong className="font-mono">{detailInvoice.taxCode}</strong>
+                                                <p className="tabular-nums">
+                                                    <span className="text-slate-500">Đơn vị:</span>{' '}
+                                                    <strong className="text-slate-900">{detailInvoice.companyName}</strong> — MST:{' '}
+                                                    <strong className="font-mono text-slate-900">{detailInvoice.taxCode}</strong>
                                                 </p>
                                             )}
                                             <p>
-                                                <span className="text-gray-500">Địa chỉ:</span>{' '}
-                                                {detailInvoice.companyAddress || detailInvoice.customerAddress || 'Showroom PCStore'}
+                                                <span className="text-slate-500">Địa chỉ:</span>{' '}
+                                                <span className="text-slate-900">
+                                                    {detailInvoice.companyAddress || detailInvoice.customerAddress || 'Showroom PCStore'}
+                                                </span>
                                             </p>
                                             <p>
-                                                <span className="text-gray-500">Hình thức thanh toán:</span>{' '}
-                                                <strong>
+                                                <span className="text-slate-500">Hình thức thanh toán:</span>{' '}
+                                                <strong className="text-slate-900">
                                                     {PAYMENT_METHOD_META[detailInvoice.paymentMethod]?.label ||
                                                         detailInvoice.paymentMethod}
                                                 </strong>
                                             </p>
                                         </div>
 
-                                        <div className="flex justify-between items-center bg-blue-50/70 p-3.5 rounded-lg border border-blue-200">
+                                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-50 p-3.5 rounded-md border border-slate-200">
                                             <div>
-                                                <p className="text-[11px] text-gray-500">Số tiền bằng chữ:</p>
-                                                <p className="font-bold italic text-gray-800">
+                                                <p className="text-[11px] text-slate-500">Số tiền bằng chữ</p>
+                                                <p className="font-medium italic text-slate-800">
                                                     {numberToVietnameseWords(detailInvoice.amount)}
                                                 </p>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-[11px] text-gray-500">Tổng cộng thanh toán:</p>
-                                                <p className="text-lg font-black text-blue-700">
+                                            <div className="sm:text-right tabular-nums">
+                                                <p className="text-[11px] text-slate-500">Tổng cộng thanh toán</p>
+                                                <p className="text-lg font-mono font-semibold text-slate-900">
                                                     {formatVND(detailInvoice.amount)}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-end pt-2">
+                                        <div className="flex justify-end pt-1">
                                             <button
                                                 type="button"
                                                 onClick={() => handlePrintInvoice(detailInvoice)}
-                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm cursor-pointer"
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                             >
                                                 <Printer className="w-4 h-4" />
                                                 <span>Mở cửa sổ In A4 / Lưu PDF</span>
@@ -1468,7 +1352,7 @@ export default function InvoiceList() {
 
                             {/* TAB 3: CHỈNH SỬA THÔNG TIN VAT & GHI CHÚ */}
                             {activeTab === 'edit' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
+                                <div className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <AdminSelect
                                             label="Loại hóa đơn"
@@ -1504,10 +1388,9 @@ export default function InvoiceList() {
                                     </div>
 
                                     {editForm.invoiceType === 'VAT_COMPANY' && (
-                                        <div className="p-4 bg-indigo-50/50 border border-indigo-200 rounded-xl space-y-3">
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
-                                                <Sparkles className="w-4 h-4 text-indigo-600" />
-                                                <span>Thông tin doanh nghiệp nhận hóa đơn GTGT</span>
+                                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-md space-y-3">
+                                            <div className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                                                Thông tin doanh nghiệp nhận hóa đơn GTGT
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <AdminInput
@@ -1527,6 +1410,7 @@ export default function InvoiceList() {
                                                     onChange={(e) =>
                                                         setEditForm({ ...editForm, taxCode: e.target.value })
                                                     }
+                                                    className="font-mono tabular-nums"
                                                 />
                                             </div>
                                             <AdminInput
@@ -1567,11 +1451,11 @@ export default function InvoiceList() {
                                         onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
                                     />
 
-                                    <div className="flex justify-end pt-2 border-t border-gray-100">
+                                    <div className="flex justify-end pt-3 border-t border-slate-200">
                                         <button
                                             type="button"
                                             onClick={handleSaveInvoiceEdit}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                         >
                                             <Save className="w-4 h-4" />
                                             <span>Lưu thay đổi hóa đơn</span>
@@ -1600,10 +1484,9 @@ export default function InvoiceList() {
                     <div className="space-y-4">
                         {/* Quick Pick from existing BE orders */}
                         {recentOrders.length > 0 && (
-                            <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
-                                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-800">
-                                    <ShieldCheck className="w-4 h-4 text-blue-600" />
-                                    <span>Chọn nhanh từ Đơn hàng hệ thống (tự động điền thông tin)</span>
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md space-y-2">
+                                <div className="text-xs font-semibold text-slate-900">
+                                    Chọn nhanh từ đơn hàng hệ thống (tự động điền thông tin)
                                 </div>
                                 <AdminSelect
                                     value={selectedOrderCode}
@@ -1611,7 +1494,7 @@ export default function InvoiceList() {
                                     options={[
                                         { label: '-- Nhập thủ công / Không liên kết đơn --', value: '' },
                                         ...recentOrders.map((o) => ({
-                                            label: `${o.code} • ${o.recipientName || o.customerName || 'Khách lẻ'} (${formatVND(o.finalAmount)})`,
+                                            label: `${o.code} · ${o.recipientName || o.customerName || 'Khách lẻ'} (${formatVND(o.finalAmount)})`,
                                             value: o.code,
                                         })),
                                     ]}
@@ -1642,6 +1525,7 @@ export default function InvoiceList() {
                                 onChange={(e) =>
                                     setCreateForm({ ...createForm, orderCode: e.target.value })
                                 }
+                                className="font-mono tabular-nums"
                             />
                         </div>
 
@@ -1663,6 +1547,7 @@ export default function InvoiceList() {
                                 onChange={(e) =>
                                     setCreateForm({ ...createForm, customerPhone: e.target.value })
                                 }
+                                className="font-mono tabular-nums"
                             />
                         </div>
 
@@ -1687,8 +1572,8 @@ export default function InvoiceList() {
                         </div>
 
                         {createForm.invoiceType === 'VAT_COMPANY' && (
-                            <div className="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3">
-                                <p className="text-xs font-bold text-indigo-800">
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md space-y-3">
+                                <p className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
                                     Thông tin xuất hóa đơn đỏ (GTGT)
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1709,6 +1594,7 @@ export default function InvoiceList() {
                                         onChange={(e) =>
                                             setCreateForm({ ...createForm, taxCode: e.target.value })
                                         }
+                                        className="font-mono tabular-nums"
                                     />
                                 </div>
                                 <AdminInput
@@ -1732,6 +1618,7 @@ export default function InvoiceList() {
                                 onChange={(e) =>
                                     setCreateForm({ ...createForm, totalAmount: e.target.value })
                                 }
+                                className="font-mono tabular-nums"
                             />
                             <AdminInput
                                 label="Chiết khấu / Giảm giá (VND)"
@@ -1741,6 +1628,7 @@ export default function InvoiceList() {
                                 onChange={(e) =>
                                     setCreateForm({ ...createForm, discountAmount: e.target.value })
                                 }
+                                className="font-mono tabular-nums"
                             />
                             <AdminSelect
                                 label="Thuế suất GTGT (%)"
@@ -1791,19 +1679,19 @@ export default function InvoiceList() {
                         </div>
 
                         {/* Live summary bar */}
-                        <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <div className="space-y-0.5 text-gray-600">
+                        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md flex flex-wrap items-center justify-between gap-2 text-xs tabular-nums">
+                            <div className="space-y-0.5 text-slate-600">
                                 <div>
                                     Thuế GTGT ({createForm.taxRate}%):{' '}
-                                    <strong>{formatVND(createPreviewCalc.taxAmount)}</strong>
+                                    <strong className="font-mono text-slate-900">{formatVND(createPreviewCalc.taxAmount)}</strong>
                                 </div>
-                                <div className="text-[11px] italic text-gray-500">
+                                <div className="text-[11px] italic text-slate-500">
                                     {numberToVietnameseWords(createPreviewCalc.finalAmount)}
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-[11px] text-gray-500 block">Tổng thanh toán:</span>
-                                <span className="text-base font-extrabold text-blue-700">
+                                <span className="text-[11px] text-slate-500 block">Tổng thanh toán</span>
+                                <span className="text-base font-mono font-semibold text-slate-900">
                                     {formatVND(createPreviewCalc.finalAmount)}
                                 </span>
                             </div>

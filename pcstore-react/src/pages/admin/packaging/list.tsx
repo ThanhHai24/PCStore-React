@@ -717,89 +717,110 @@ export default function PackagingList() {
         toast.success(`Đã sao chép: ${text}`);
     };
 
+    const renderFulfillmentStatusIndicator = (status: OrderFulfillmentStatus) => {
+        const conf = FULFILLMENT_STATUS_MAP[status];
+        const dotColor =
+            status === 'READY_TO_PACK'
+                ? 'bg-amber-500'
+                : status === 'PACKING_IN_PROGRESS'
+                ? 'bg-blue-500'
+                : status === 'PACKED_WAITING_HANDOVER'
+                ? 'bg-emerald-500'
+                : status === 'HANDED_OVER_TO_CARRIER'
+                ? 'bg-sky-500'
+                : 'bg-slate-400';
+
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+                <span>{conf?.label || status}</span>
+            </span>
+        );
+    };
+
     // Columns cho AdminTable
     const columns: Column<OrderFulfillmentRecord>[] = [
         {
             key: 'orderCode',
             header: 'Mã đơn hàng',
             render: (rec) => (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-gray-900 font-mono">
-                        <Package className="w-4 h-4 text-blue-600" />
-                        <span>{rec.orderCode}</span>
+                <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="font-mono text-xs font-semibold tabular-nums text-slate-900">
+                            {rec.orderCode}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(rec.orderCode);
+                            }}
+                            className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                            title="Sao chép mã đơn"
+                        >
+                            {copiedSerial === rec.orderCode ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                                <Copy className="w-3 h-3" />
+                            )}
+                        </button>
                     </div>
-                    <div className="text-[11px] text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span>{formatDateTime(rec.createdAt)}</span>
+                    <div className="text-[11px] text-slate-500 truncate max-w-[200px]" title={rec.packingNotes || ''}>
+                        {rec.orderType === 'IN_STORE' ? 'Tại quầy' : 'Trực tuyến'}
+                        {rec.packingNotes ? ` · ${rec.packingNotes}` : ''}
                     </div>
                 </div>
             ),
         },
         {
             key: 'customer',
-            header: 'Thông tin nhận hàng',
+            header: 'Khách hàng',
             render: (rec) => (
-                <div className="space-y-1 max-w-xs">
-                    <div className="font-semibold text-gray-800 flex items-center gap-1.5 text-xs">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{rec.customerName}</span>
-                        <span className="text-gray-400">({rec.customerPhone})</span>
+                <div className="space-y-0.5 min-w-0 max-w-[220px]">
+                    <div className="text-sm font-medium text-slate-900 truncate" title={rec.customerName}>
+                        {rec.customerName}
                     </div>
-                    <div className="text-[11px] text-gray-500 line-clamp-1 flex items-start gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
-                        <span>{rec.address}</span>
+                    <div className="text-xs text-slate-500 font-mono tabular-nums truncate">
+                        {rec.customerPhone}
+                    </div>
+                    <div className="text-[11px] text-slate-400 line-clamp-1" title={rec.address}>
+                        {rec.address}
                     </div>
                 </div>
             ),
         },
         {
+            key: 'staff',
+            header: 'Nhân viên kho',
+            render: (rec) => (
+                <div className="text-xs text-slate-700 whitespace-nowrap">
+                    {rec.warehouseStaffName || <span className="text-slate-400">Chưa phân công</span>}
+                </div>
+            ),
+        },
+        {
             key: 'assignedSerials',
-            header: 'Mã Serial:',
+            header: 'Tiến độ Serial',
+            align: 'right',
             render: (rec) => {
-                if (!rec.assignedSerials || rec.assignedSerials.length === 0) {
+                const count = rec.assignedSerials?.length || 0;
+                if (count === 0) {
                     return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                            <Clock className="w-3 h-3" />
-                            <span>Chờ chọn sản phẩm</span>
-                        </span>
+                        <div className="text-xs text-slate-500 text-right tabular-nums whitespace-nowrap">
+                            Chờ gán Serial
+                        </div>
                     );
                 }
                 return (
-                    <div className="space-y-1">
-                        <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Đã gán {rec.assignedSerials.length} serial</span>
+                    <div className="space-y-0.5 text-right tabular-nums">
+                        <div className="text-xs font-medium text-emerald-700 whitespace-nowrap">
+                            Đã gán {count} Serial
                         </div>
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                            {rec.assignedSerials.map((s) => (
-                                <span
-                                    key={s.serialNumber}
-                                    className="font-mono text-[10px] bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded border border-slate-200"
-                                    title={`Ngày nhập: ${s.receiptDate} | Phiếu: ${s.goodsReceiptCode || 'GR'}`}
-                                >
-                                    {s.serialNumber}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                );
-            },
-        },
-        {
-            key: 'status',
-            header: 'Trạng thái',
-            render: (rec) => {
-                const conf = FULFILLMENT_STATUS_MAP[rec.fulfillmentStatus];
-                return (
-                    <div className="space-y-1">
-                        <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${conf.badgeClass}`}
+                        <div
+                            className="font-mono text-[11px] text-slate-500 truncate max-w-[160px] ml-auto"
+                            title={rec.assignedSerials.map((s) => s.serialNumber).join(', ')}
                         >
-                            <Box className="w-3 h-3" />
-                            <span>{conf.label}</span>
-                        </span>
-                        <div className="text-[11px] text-gray-500 italic">
-                            Phụ trách: {conf.responsibleRole}
+                            {rec.assignedSerials.map((s) => s.serialNumber).join(', ')}
                         </div>
                     </div>
                 );
@@ -808,9 +829,30 @@ export default function PackagingList() {
         {
             key: 'finalAmount',
             header: 'Giá trị đơn',
+            align: 'right',
             render: (rec) => (
-                <div className="font-bold text-gray-900 font-mono text-xs">
+                <div className="text-sm font-semibold text-slate-900 text-right tabular-nums whitespace-nowrap">
                     {formatVND(rec.finalAmount)}
+                </div>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Trạng thái',
+            render: (rec) => renderFulfillmentStatusIndicator(rec.fulfillmentStatus),
+        },
+        {
+            key: 'time',
+            header: 'Thời gian',
+            align: 'right',
+            render: (rec) => (
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div className="text-xs text-slate-700">
+                        {formatDateTime(rec.packedAt || rec.createdAt)}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                        {rec.packedAt ? 'Hoàn tất đóng gói' : 'Thời gian đặt'}
+                    </div>
                 </div>
             ),
         },
@@ -868,148 +910,70 @@ export default function PackagingList() {
         },
     ];
 
+    const totalRequiredPackingQty = targetOrder
+        ? targetOrder.items.reduce((sum, it) => sum + (it.quantity || 0), 0)
+        : 0;
+
     return (
-        <div className="space-y-6">
-            {/* ======================================================== */}
-            {/* HEADER                                                   */}
-            {/* ======================================================== */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-md shadow-indigo-500/20">
-                            <Box className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý đóng gói hàng
-                            </h1>
-                        </div>
-                    </div>
+        <div className="space-y-4">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý đóng gói hàng
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-0.5 tabular-nums">
+                        {stats.totalPackaging} đơn · {stats.readyToPack} chờ đóng gói · {stats.packingInProgress} đang xử lý · {stats.packedWaitingHandover} đã đóng gói
+                    </p>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Header Utility Action */}
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => loadData(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
+                        <RefreshCw className={`w-4 h-4 text-slate-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+                        <span>Làm mới</span>
                     </button>
                 </div>
             </div>
 
-            {/* ======================================================== */}
-            {/* STAT CARDS (CLICK TO FILTER)                             */}
-            {/* ======================================================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div
-                    onClick={() => {
-                        setStatusFilter(statusFilter === 'READY_TO_PACK' ? 'ALL' : 'READY_TO_PACK');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${statusFilter === 'READY_TO_PACK'
-                        ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/20'
-                        : 'border-gray-100 hover:border-amber-200'
-                        } flex items-center justify-between`}
-                    title="Bấm để lọc đơn chờ đóng gói"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Chờ đóng gói</p>
-                        <p className="text-2xl font-bold text-amber-600">{stats.readyToPack}</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                </div>
+            {/* Single-row Toolbar: Search + Filters */}
+            <AdminFilter
+                searchQuery={searchQuery}
+                onSearchChange={(q) => {
+                    setSearchQuery(q);
+                    setCurrentPage(1);
+                }}
+                searchPlaceholder="Tìm theo mã đơn hàng, tên/SĐT khách hàng, mã Serial..."
+                fields={filterFields}
+                values={filterValues}
+                onFilterChange={handleFilterChange}
+                onReset={handleResetFilters}
+            />
 
-                <div
-                    onClick={() => {
-                        setStatusFilter(statusFilter === 'PACKING_IN_PROGRESS' ? 'ALL' : 'PACKING_IN_PROGRESS');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${statusFilter === 'PACKING_IN_PROGRESS'
-                        ? 'border-indigo-400 ring-2 ring-indigo-400/20 bg-indigo-50/20'
-                        : 'border-gray-100 hover:border-indigo-200'
-                        } flex items-center justify-between`}
-                    title="Bấm để lọc đơn đang soạn hàng"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang xử lý</p>
-                        <p className="text-2xl font-bold text-indigo-600">{stats.packingInProgress}</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100">
-                        <Barcode className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter(statusFilter === 'PACKED_WAITING_HANDOVER' ? 'ALL' : 'PACKED_WAITING_HANDOVER');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${statusFilter === 'PACKED_WAITING_HANDOVER'
-                        ? 'border-purple-400 ring-2 ring-purple-400/20 bg-purple-50/20'
-                        : 'border-gray-100 hover:border-purple-200'
-                        } flex items-center justify-between`}
-                    title="Bấm để lọc đơn đã đóng gói xong"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đã đóng gói</p>
-                        <p className="text-2xl font-bold text-purple-600">{stats.packedWaitingHandover}</p>
-                    </div>
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-xl border border-purple-100">
-                        <Package className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setSerialFilter(serialFilter === 'ASSIGNED' ? 'ALL' : 'ASSIGNED');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-5 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${serialFilter === 'ASSIGNED'
-                        ? 'border-emerald-400 ring-2 ring-emerald-400/20 bg-emerald-50/20'
-                        : 'border-gray-100 hover:border-emerald-200'
-                        } flex items-center justify-between`}
-                    title="Bấm để lọc đơn đã gán mã Serial"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Serial đã gán</p>
-                        <p className="text-2xl font-bold text-emerald-600">{stats.totalAssignedSerials}</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
-
-            {/* ======================================================== */}
-            {/* MAIN PACKAGING TABLE                                     */}
-            {/* ======================================================== */}
-            <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-                <AdminTable
-                    columns={columns}
-                    data={paginatedRecords}
-                    loading={isLoading}
-                    rowKey="orderId"
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20, 50]}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    onPageSizeChange={(size) => {
-                        setPageSize(size);
-                        setCurrentPage(1);
-                    }}
-                    emptyText="Không có đơn hàng nào cần đóng gói phù hợp với bộ lọc"
-                />
-            </div>
+            {/* Main Packaging Table (Border-first, no outer card-in-card) */}
+            <AdminTable
+                columns={columns}
+                data={paginatedRecords}
+                loading={isLoading}
+                rowKey="orderId"
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20, 50]}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                }}
+                emptyText="Không có đơn hàng nào cần đóng gói phù hợp với bộ lọc"
+            />
 
             {/* ======================================================== */}
             {/* MODAL LẤY HÀNG TRONG KHO & ĐÓNG GÓI SẢN PHẨM (GIAI ĐOẠN 3) */}
@@ -1019,262 +983,252 @@ export default function PackagingList() {
                     isOpen={isPackingModalOpen}
                     onClose={() => setIsPackingModalOpen(false)}
                     title={
-                        <div className="flex items-center gap-2">
-                            <span>Đóng gói đơn hàng: </span>
-                            <span className="font-mono text-indigo-600 font-bold">{targetRecord.orderCode}</span>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <span>Đóng gói đơn hàng</span>
+                            <span className="font-mono tabular-nums text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
+                                {targetRecord.orderCode}
+                            </span>
                         </div>
                     }
-                    subtitle={``}
+                    subtitle={`${targetRecord.recipientName} • ${targetRecord.recipientPhone}`}
                     icon={Package2}
                     size="xl"
                     footer={
-                        <div className="flex items-center justify-end gap-3 w-full">
-                            <AdminButton
-                                type="button"
-                                variant="secondary"
-                                onClick={() => setIsPackingModalOpen(false)}
-                            >
-                                Đóng
-                            </AdminButton>
-                            <AdminButton
-                                type="button"
-                                variant="primary"
-                                onClick={handleConfirmPackaging}
-                                isLoading={isSubmitting}
-                                disabled={isSubmitting}
-                                icon={<CheckCircle2 className="w-4 h-4" />}
-                                className="!bg-indigo-600 hover:!bg-indigo-700"
-                            >
-                                Hoàn tất đóng gói
-                            </AdminButton>
+                        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                            <div className="text-xs text-slate-600 tabular-nums">
+                                Tiến độ gán Serial:{' '}
+                                <strong className="text-slate-900">
+                                    {activeSerials.length} / {totalRequiredPackingQty} SP
+                                </strong>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <AdminButton
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setIsPackingModalOpen(false)}
+                                >
+                                    Đóng
+                                </AdminButton>
+                                <AdminButton
+                                    type="button"
+                                    variant="primary"
+                                    onClick={handleConfirmPackaging}
+                                    isLoading={isSubmitting}
+                                    disabled={isSubmitting}
+                                    icon={<CheckCircle2 className="w-4 h-4" />}
+                                >
+                                    Hoàn tất đóng gói
+                                </AdminButton>
+                            </div>
                         </div>
                     }
                 >
-                    <div className="space-y-6 text-xs">
-                        {/* 1. KHỐI LẤY HÀNG VẬT LÝ & GÁN MÃ SERIAL VÀO ĐƠN */}
-                        <div className="space-y-4">
-                            {/* DUY NHẤT 1 Ô NHẬP / QUÉT MÃ SERIAL */}
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
-                                <div className="flex items-center justify-between text-xs font-bold text-gray-800">
-                                    <span className="flex items-center gap-1.5">
-                                        <Barcode className="w-4 h-4 text-indigo-600" />
-                                        Nhập / Quét mã Serial sản phẩm:
-                                    </span>
-                                    <span className="text-xs font-semibold text-indigo-700">
-                                        Tiến độ: {activeSerials.length} / {targetOrder.items.reduce((sum, it) => sum + (it.quantity || 0), 0)} Sản phẩm
-                                    </span>
+                    <div className="space-y-4 text-xs">
+                        {/* Flat Order Info Strip */}
+                        <div className="p-3.5 bg-slate-50 rounded-md border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <div className="text-[11px] text-slate-500">Người nhận</div>
+                                <div className="font-medium text-slate-900 mt-0.5">
+                                    {targetRecord.recipientName} · <span className="font-mono tabular-nums">{targetRecord.recipientPhone}</span>
                                 </div>
-                                <div className="flex gap-2">
-                                    <AdminInput
-                                        type="text"
-                                        value={inputBarcode}
-                                        onChange={(e) => setInputBarcode(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleScanSingleSerial();
-                                            }
-                                        }}
-                                        placeholder="Quét mã vạch Barcode hoặc nhập Serial trên vỏ hộp (VD: ASUS-ROG-Z790-FIFO-001)..."
-                                        className="flex-1 font-mono uppercase bg-white text-sm"
-                                        autoFocus
-                                    />
-                                    <AdminButton
-                                        type="button"
-                                        onClick={() => handleScanSingleSerial()}
-                                        variant="primary"
-                                        className="shrink-0 !bg-blue-600 hover:!bg-indigo-700 font-semibold"
-                                    >
-                                        Xác nhận
-                                    </AdminButton>
-                                </div>
-                                <p className="text-[11px] text-gray-500 italic">
-                                    * Dùng máy quét Barcode quét mã hoặc gõ số serial rồi nhấn Enter. Hệ thống sẽ tự động đối soát và cập nhật vào đúng loại sản phẩm bên dưới.
-                                </p>
                             </div>
+                            <div>
+                                <div className="text-[11px] text-slate-500">Địa chỉ giao hàng</div>
+                                <div className="text-slate-700 mt-0.5 line-clamp-1" title={targetRecord.address}>
+                                    {targetRecord.address}
+                                </div>
+                            </div>
+                            <div className="sm:text-right tabular-nums">
+                                <div className="text-[11px] text-slate-500">Giá trị đơn hàng</div>
+                                <div className="font-semibold text-slate-900 mt-0.5">
+                                    {formatVND(targetRecord.finalAmount)}
+                                </div>
+                            </div>
+                        </div>
 
-                            {/* Danh sách từng sản phẩm trong đơn - Tự động cập nhật serial */}
-                            <div className="space-y-3">
-                                {targetOrder.items.map((prod) => {
-                                    const assignedForThis = activeSerials.filter((s) => s.productId === prod.productId);
-                                    const isDone = assignedForThis.length >= prod.quantity;
+                        {/* Barcode Scan Bar */}
+                        <div className="p-3.5 bg-white rounded-md border border-slate-200 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-medium text-slate-800 tabular-nums">
+                                <span className="flex items-center gap-1.5">
+                                    <Barcode className="w-4 h-4 text-slate-500" />
+                                    Nhập / Quét mã Serial sản phẩm
+                                </span>
+                                <span className="text-slate-600">
+                                    Đã quét: <strong className="text-slate-900">{activeSerials.length} / {totalRequiredPackingQty}</strong>
+                                </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <AdminInput
+                                    type="text"
+                                    value={inputBarcode}
+                                    onChange={(e) => setInputBarcode(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleScanSingleSerial();
+                                        }
+                                    }}
+                                    placeholder="Quét mã vạch Barcode hoặc nhập Serial rồi nhấn Enter..."
+                                    className="flex-1 font-mono tabular-nums uppercase bg-white text-xs"
+                                    autoFocus
+                                />
+                                <AdminButton
+                                    type="button"
+                                    onClick={() => handleScanSingleSerial()}
+                                    variant="primary"
+                                    className="shrink-0"
+                                >
+                                    Gán Serial
+                                </AdminButton>
+                            </div>
+                        </div>
 
-                                    return (
-                                        <div
-                                            key={prod.id}
-                                            className={`p-4 rounded-xl border transition-all ${isDone
-                                                ? 'bg-emerald-50/40 border-emerald-300'
-                                                : 'bg-white border-slate-200 shadow-xs'
-                                                }`}
-                                        >
-                                            {/* Tiêu đề sản phẩm & Trạng thái đã gán */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-bold text-gray-900 text-sm">
+                        {/* Flat divide-y Product & Serial Assignment List */}
+                        <div className="border border-slate-200 rounded-md bg-white divide-y divide-slate-200/80">
+                            {targetOrder.items.map((prod) => {
+                                const assignedForThis = activeSerials.filter((s) => s.productId === prod.productId);
+                                const isDone = assignedForThis.length >= prod.quantity;
+                                const availableFifo = fifoSuggestions.filter(
+                                    (f) =>
+                                        f.productId === prod.productId &&
+                                        !activeSerials.some((a) => a.serialNumber === f.serialNumber)
+                                );
+
+                                return (
+                                    <div key={prod.id} className={`p-3.5 space-y-2.5 ${isDone ? 'bg-emerald-50/30' : 'bg-white'}`}>
+                                        {/* Product Row Header */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                {(prod as any).productImage ? (
+                                                    <img
+                                                        src={(prod as any).productImage}
+                                                        alt={prod.productName}
+                                                        className="w-9 h-9 rounded-md object-cover border border-slate-200 shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                                        <Package className="w-4 h-4" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-medium text-slate-900 text-sm truncate">
                                                             {prod.productName}
                                                         </span>
-                                                        <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border">
+                                                        <span className="font-mono text-[11px] tabular-nums bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md border border-slate-200">
                                                             {prod.productCode}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-gray-500 mt-0.5">
-                                                        Số lượng: <strong className="text-gray-900">{prod.quantity} chiếc</strong> • Đơn giá: {formatVND(prod.unitPrice)}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center gap-2">
-                                                    <span
-                                                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${isDone
-                                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                                            : 'bg-amber-100 text-amber-800 border-amber-300'
-                                                            }`}
-                                                    >
-                                                        {isDone
-                                                            ? `✓ Đã đủ (${assignedForThis.length}/${prod.quantity})`
-                                                            : `Chọn: ${assignedForThis.length} / ${prod.quantity} sản phẩm`}
-                                                    </span>
+                                                    <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                                        SL: <strong className="text-slate-800">{prod.quantity}</strong> · Đơn giá: {formatVND(prod.unitPrice)}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* Danh sách các mã serial đã gán */}
-                                            {assignedForThis.length > 0 ? (
-                                                <div className="space-y-1.5 pt-2 border-t border-slate-200">
-                                                    <div className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
-                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                                        <span>Mã Serial đã chọn ({assignedForThis.length}/{prod.quantity}):</span>
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {assignedForThis.map((s) => (
-                                                            <div
-                                                                key={s.serialNumber}
-                                                                className="flex items-center gap-1.5 bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md text-xs font-mono font-bold border border-emerald-300"
-                                                            >
-                                                                <span>{s.serialNumber}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleRemoveAssignedSerial(s.serialNumber)}
-                                                                    className="text-emerald-700 hover:text-rose-600 font-bold ml-1 cursor-pointer"
-                                                                    title="Gỡ serial này"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="text-gray-400 italic text-[11px] pt-1">
-                                                    Chưa chọn sản phẩm nào cho mặt hàng này.
-                                                </div>
-                                            )}
-
-                                            {/* Gợi ý mã serial khả dụng trong kho (bấm vào sẽ tự động nhận diện và gán) */}
-                                            {fifoSuggestions.filter((f) => f.productId === prod.productId).length > 0 && !isDone && (
-                                                <div className="mt-3 pt-2.5 border-t border-dashed border-slate-200">
-                                                    <div className="text-[11px] text-gray-500 mb-1.5 flex items-center justify-between">
-                                                        <span>Sản phẩm khả dụng:</span>
-                                                        {isLoadingFifo && (
-                                                            <span className="text-blue-600 flex items-center gap-1">
-                                                                <RefreshCw className="w-3 h-3 animate-spin" /> Đang tra cứu kho...
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {fifoSuggestions
-                                                            .filter(
-                                                                (f) =>
-                                                                    f.productId === prod.productId &&
-                                                                    !activeSerials.some((a) => a.serialNumber === f.serialNumber)
-                                                            )
-                                                            .slice(0, 6)
-                                                            .map((f) => (
-                                                                <button
-                                                                    key={f.serialNumber}
-                                                                    type="button"
-                                                                    onClick={() => handleScanSingleSerial(f.serialNumber)}
-                                                                    className="px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 border border-slate-200 transition-all cursor-pointer"
-                                                                    title={`Mã Serial: ${f.serialNumber}`}
-                                                                >
-                                                                    + {f.serialNumber}
-                                                                </button>
-                                                            ))}
-                                                    </div>
-                                                </div>
-                                            )}
+                                            <div className="shrink-0 tabular-nums">
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                                    <span
+                                                        className={`w-1.5 h-1.5 rounded-full ${isDone ? 'bg-emerald-500' : 'bg-amber-500'
+                                                            }`}
+                                                    />
+                                                    {isDone
+                                                        ? `Đã đủ ${assignedForThis.length}/${prod.quantity}`
+                                                        : `Đã gán ${assignedForThis.length}/${prod.quantity}`}
+                                                </span>
+                                            </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
 
-                            {/* Banner khi đã gán đủ tất cả serial */}
-                            {targetOrder.items.every(
-                                (it) => activeSerials.filter((s) => s.productId === it.productId).length >= it.quantity
-                            ) && (
-                                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-2 text-emerald-800">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                                        <span className="font-semibold">
-                                            Đã gán đủ mã Serial cho tất cả sản phẩm trong đơn hàng. Bạn có thể tiến hành đóng gói kiện hàng bên dưới.
-                                        </span>
+                                        {/* Assigned Serial Chips */}
+                                        {assignedForThis.length > 0 ? (
+                                            <div className="flex flex-wrap gap-1.5 pl-12">
+                                                {assignedForThis.map((s) => (
+                                                    <span
+                                                        key={s.serialNumber}
+                                                        className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md text-xs font-mono tabular-nums font-medium border border-emerald-200"
+                                                    >
+                                                        <span>{s.serialNumber}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveAssignedSerial(s.serialNumber)}
+                                                            className="text-emerald-700 hover:text-rose-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40 rounded-sm"
+                                                            title="Gỡ serial này"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-slate-400 text-[11px] pl-12">
+                                                Chưa gán mã Serial cho sản phẩm này.
+                                            </div>
+                                        )}
+
+                                        {/* FIFO Suggestions */}
+                                        {availableFifo.length > 0 && !isDone && (
+                                            <div className="pl-12 pt-1.5 flex flex-wrap items-center gap-1.5">
+                                                <span className="text-[11px] text-slate-500 mr-1">
+                                                    {isLoadingFifo ? 'Đang tra cứu...' : 'Gợi ý FIFO:'}
+                                                </span>
+                                                {availableFifo.slice(0, 6).map((f) => (
+                                                    <button
+                                                        key={f.serialNumber}
+                                                        type="button"
+                                                        onClick={() => handleScanSingleSerial(f.serialNumber)}
+                                                        className="px-2 py-0.5 rounded-md text-[11px] font-mono tabular-nums font-medium bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 border border-slate-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                                                        title={`Gán Serial: ${f.serialNumber}`}
+                                                    >
+                                                        + {f.serialNumber}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                );
+                            })}
                         </div>
 
-                        {/* 2. KHỐI QUY CÁCH ĐÓNG GÓI & THÔNG TIN KIỆN HÀNG */}
-                        <div className="space-y-4 border-t pt-4">
-                            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                <span>Thông tin đóng gói</span>
-                            </h3>
-
-                            <div className=" gap-4 text-xs">
-
-
-                                <div className="space-y-3">
-                                    {/* 3. NHÂN VIÊN THỰC HIỆN TỰ ĐỘNG CẬP NHẬT THEO TÀI KHOẢN */}
-                                    <div>
-                                        <AdminLabel>Nhân viên thực hiện đóng gói:</AdminLabel>
-                                        <AdminInput
-                                            type="text"
-                                            value={warehouseStaff}
-                                            disabled
-                                            readOnly
-                                            className="bg-gray-100 text-gray-800 cursor-not-allowed font-medium"
-                                        />
-                                        <p className="text-[11px] text-gray-400 mt-1">
-                                            * Tự động cập nhật theo tài khoản nhân viên đang đăng nhập ({user?.username || 'user'})
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <AdminLabel>Kích thước thùng (D x R x C):</AdminLabel>
-                                            <AdminInput
-                                                type="text"
-                                                value={boxDimensions}
-                                                onChange={(e) => setBoxDimensions(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <AdminLabel>Khối lượng kiện (kg):</AdminLabel>
-                                            <AdminInput
-                                                type="number"
-                                                step="0.1"
-                                                value={boxWeight}
-                                                onChange={(e) => setBoxWeight(Number(e.target.value))}
-                                                className="font-bold"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <AdminLabel>Ghi chú quy cách đóng gói:</AdminLabel>
-                                        <AdminTextarea
-                                            rows={2}
-                                            value={packingNotes}
-                                            onChange={(e) => setPackingNotes(e.target.value)}
-                                        />
-                                    </div>
+                        {/* Packing Specs Form */}
+                        <div className="border-t border-slate-200 pt-4 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <AdminLabel>Nhân viên đóng gói</AdminLabel>
+                                    <AdminInput
+                                        type="text"
+                                        value={warehouseStaff}
+                                        disabled
+                                        readOnly
+                                        className="bg-slate-50 text-slate-700 cursor-not-allowed"
+                                    />
                                 </div>
+                                <div>
+                                    <AdminLabel>Kích thước thùng (D × R × C)</AdminLabel>
+                                    <AdminInput
+                                        type="text"
+                                        value={boxDimensions}
+                                        onChange={(e) => setBoxDimensions(e.target.value)}
+                                        className="tabular-nums"
+                                    />
+                                </div>
+                                <div>
+                                    <AdminLabel>Khối lượng kiện (kg)</AdminLabel>
+                                    <AdminInput
+                                        type="number"
+                                        step="0.1"
+                                        value={boxWeight}
+                                        onChange={(e) => setBoxWeight(Number(e.target.value))}
+                                        className="font-medium tabular-nums"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <AdminLabel>Ghi chú quy cách đóng gói</AdminLabel>
+                                <AdminTextarea
+                                    rows={2}
+                                    value={packingNotes}
+                                    onChange={(e) => setPackingNotes(e.target.value)}
+                                />
                             </div>
                         </div>
                     </div>
@@ -1285,8 +1239,8 @@ export default function PackagingList() {
             {/* MODAL IN PHIẾU ĐÓNG GÓI & TEM NIÊM PHONG (PACKING SLIP)   */}
             {/* ======================================================== */}
             {isPrintModalOpen && printRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-3xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
                             title={`Phiếu đóng gói: ${printRecord.orderCode}`}
                             icon={Printer}
@@ -1294,117 +1248,120 @@ export default function PackagingList() {
                         />
 
                         {/* Nội dung mẫu in ấn */}
-                        <div className="p-6 bg-white space-y-5 text-gray-900 border-2 border-dashed border-gray-300 m-4 rounded-xl print:m-0 print:border-none overflow-y-auto flex-1">
+                        <div className="p-6 bg-white space-y-4 text-slate-900 border border-dashed border-slate-300 m-4 rounded-md print:m-0 print:border-none overflow-y-auto flex-1">
                             {/* Tiêu đề phiếu */}
-                            <div className="flex items-start justify-between border-b pb-4">
+                            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
                                 <div>
-                                    <h2 className="text-xl font-black text-indigo-900 tracking-wide">
+                                    <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                                         PCSTORE VIỆT NAM
                                     </h2>
-                                    <p className="text-xs text-gray-500">
-                                        Hệ thống bán lẻ & Phân phối máy tính cao cấp
+                                    <p className="text-xs text-slate-500">
+                                        Hệ thống bán lẻ & Phân phối máy tính
                                     </p>
-                                    <p className="text-xs text-gray-500">
-                                        Địa chỉ: ABC • Hotline: 1900 8888
+                                    <p className="text-xs text-slate-500 tabular-nums">
+                                        Hotline: 1900 8888
                                     </p>
                                 </div>
-                                <div className="text-right">
-                                    <div className="inline-block bg-slate-900 text-white font-mono font-bold px-3 py-1 rounded text-sm">
+                                <div className="text-right tabular-nums">
+                                    <div className="inline-block bg-slate-900 text-white font-mono font-semibold px-2.5 py-1 rounded-md text-xs">
                                         {printRecord.orderCode}
                                     </div>
-                                    <p className="text-[11px] text-gray-500 mt-1">
+                                    <p className="text-[11px] text-slate-500 mt-1">
                                         Ngày đóng gói: {formatDateTime(printRecord.packedAt || new Date().toISOString())}
                                     </p>
                                 </div>
                             </div>
 
                             {/* Thông tin giao hàng */}
-                            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3.5 rounded-lg border">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-3.5 rounded-md border border-slate-200">
                                 <div>
-                                    <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">
-                                        Người gửi (Kho hàng):
+                                    <div className="text-[10px] uppercase font-semibold text-slate-400 mb-1">
+                                        Người gửi (Kho hàng)
                                     </div>
-                                    <div className="font-bold text-gray-900">Tổng kho PCStore Center</div>
-                                    <div className="text-gray-600">Thủ kho đóng gói: {printRecord.warehouseStaffName}</div>
-                                    <div className="text-gray-600">Hotline điều phối: 1900 8888 (Nhánh 2)</div>
+                                    <div className="font-semibold text-slate-900">Tổng kho PCStore Center</div>
+                                    <div className="text-slate-600">Thủ kho: {printRecord.warehouseStaffName}</div>
+                                    <div className="text-slate-600 tabular-nums">Hotline điều phối: 1900 8888 (Nhánh 2)</div>
                                 </div>
                                 <div>
-                                    <div className="text-[10px] uppercase font-bold text-gray-400 mb-1">
-                                        Người nhận (Khách hàng):
+                                    <div className="text-[10px] uppercase font-semibold text-slate-400 mb-1">
+                                        Người nhận (Khách hàng)
                                     </div>
-                                    <div className="font-bold text-gray-900">{printRecord.recipientName}</div>
-                                    <div className="font-bold text-blue-700">{printRecord.recipientPhone}</div>
-                                    <div className="text-gray-600 line-clamp-2">{printRecord.address}</div>
+                                    <div className="font-semibold text-slate-900">{printRecord.recipientName}</div>
+                                    <div className="font-mono font-medium tabular-nums text-slate-800">{printRecord.recipientPhone}</div>
+                                    <div className="text-slate-600 line-clamp-2">{printRecord.address}</div>
                                 </div>
                             </div>
 
-                            {/* Danh sách cá thể Serial đã gán (FIFO) */}
+                            {/* Danh sách cá thể Serial đã gán */}
                             <div className="space-y-2">
-                                <div className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center justify-between">
-                                    <span>Danh sách cá thể sản phẩm & Mã Serial gán:</span>
-                                    <span className="text-[11px] font-normal text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                        Đã quét {printRecord.assignedSerials.length} serial
+                                <div className="text-xs font-semibold text-slate-800 flex items-center justify-between tabular-nums">
+                                    <span>Danh sách sản phẩm & Mã Serial xuất kho</span>
+                                    <span className="text-slate-500 font-normal">
+                                        {printRecord.assignedSerials.length} serial
                                     </span>
                                 </div>
-                                <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
-                                    <thead className="bg-gray-100 text-gray-700 font-semibold">
-                                        <tr>
-                                            <th className="p-2 text-left border-b">#</th>
-                                            <th className="p-2 text-left border-b">Tên sản phẩm</th>
-                                            <th className="p-2 text-left border-b">Mã Serial</th>
-                                            <th className="p-2 text-left border-b">Ngày nhập</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 font-mono text-[11px]">
-                                        {printRecord.assignedSerials.map((s, idx) => (
-                                            <tr key={s.serialNumber} className="hover:bg-gray-50">
-                                                <td className="p-2 font-sans">{idx + 1}</td>
-                                                <td className="p-2 font-sans font-medium text-gray-900">{s.productName}</td>
-                                                <td className="p-2 font-bold text-indigo-700">{s.serialNumber}</td>
-                                                <td className="p-2 text-gray-600">{s.receiptDate || 'FIFO'}</td>
+                                <div className="border border-slate-200 rounded-md overflow-x-auto">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-3 py-2 text-center w-10">#</th>
+                                                <th className="px-3 py-2 text-left">Tên sản phẩm</th>
+                                                <th className="px-3 py-2 text-left">Mã Serial</th>
+                                                <th className="px-3 py-2 text-right">Ngày nhập</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200/80 text-xs">
+                                            {printRecord.assignedSerials.map((s, idx) => (
+                                                <tr key={s.serialNumber} className="hover:bg-slate-50">
+                                                    <td className="px-3 py-2 text-center text-slate-400 font-mono tabular-nums">{idx + 1}</td>
+                                                    <td className="px-3 py-2 font-medium text-slate-900">{s.productName}</td>
+                                                    <td className="px-3 py-2 font-mono font-semibold tabular-nums text-slate-900">{s.serialNumber}</td>
+                                                    <td className="px-3 py-2 text-right text-slate-600 tabular-nums whitespace-nowrap">{s.receiptDate || 'FIFO'}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
-                            {/* Thông số kiện hàng & Tem cảnh báo */}
-                            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                <div className="p-2 bg-slate-50 border rounded-lg">
-                                    <div className="text-[10px] text-gray-400">Kích thước</div>
-                                    <div className="font-bold text-gray-800">{printRecord.boxDimensionsCm || '45x35x25 cm'}</div>
+                            {/* Thông số kiện hàng */}
+                            <div className="border border-slate-200 rounded-md bg-slate-50 grid grid-cols-3 divide-x divide-slate-200 text-center text-xs tabular-nums">
+                                <div className="p-2.5">
+                                    <div className="text-[10px] text-slate-500">Kích thước</div>
+                                    <div className="font-semibold text-slate-900 mt-0.5">{printRecord.boxDimensionsCm || '45x35x25 cm'}</div>
                                 </div>
-                                <div className="p-2 bg-slate-50 border rounded-lg">
-                                    <div className="text-[10px] text-gray-400">Trọng lượng</div>
-                                    <div className="font-bold text-gray-800">{printRecord.boxWeightKg || 3.2} kg</div>
+                                <div className="p-2.5">
+                                    <div className="text-[10px] text-slate-500">Trọng lượng</div>
+                                    <div className="font-semibold text-slate-900 mt-0.5">{printRecord.boxWeightKg || 3.2} kg</div>
                                 </div>
-                                <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                                    <div className="text-[10px] uppercase font-bold">Cảnh báo</div>
-                                    <div className="font-bold">HÀNG DỄ VỠ - KHÔNG ĐÈ LÊN</div>
+                                <div className="p-2.5 bg-rose-50/70 text-rose-700">
+                                    <div className="text-[10px] uppercase font-semibold">Cảnh báo</div>
+                                    <div className="font-semibold mt-0.5">HÀNG DỄ VỠ</div>
                                 </div>
                             </div>
 
                             {/* Chữ ký hai bên */}
-                            <div className="grid grid-cols-2 gap-8 pt-4 border-t text-xs text-center">
+                            <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs text-center">
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Thủ kho đóng gói</p>
-                                    <p className="font-bold text-gray-900">{printRecord.warehouseStaffName}</p>
+                                    <p className="font-semibold text-slate-700">Thủ kho đóng gói</p>
+                                    <p className="font-semibold text-slate-900">{printRecord.warehouseStaffName}</p>
                                 </div>
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Đơn vị vận chuyển (Ký nhận)</p>
-                                    <p className="text-gray-400 italic">(Ký và ghi rõ họ tên)</p>
+                                    <p className="font-semibold text-slate-700">Đơn vị vận chuyển (Ký nhận)</p>
+                                    <p className="text-slate-400 italic">(Ký và ghi rõ họ tên)</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Nút in */}
-                        <div className="p-4 bg-gray-50 border-t flex items-center justify-between">
-                            <span className="text-xs text-gray-500">Mẫu tem nhãn phiếu đóng gói chuẩn ISO Logistics</span>
+                        {/* Chân modal in */}
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-xs text-slate-500">Phiếu đóng gói xuất kho</span>
                             <div className="flex gap-2">
                                 <AdminButton
                                     type="button"
                                     onClick={() => window.print()}
                                     variant="primary"
+                                    size="sm"
                                     icon={Printer}
                                 >
                                     In phiếu ngay
@@ -1416,8 +1373,8 @@ export default function PackagingList() {
                                         navigate('/admin/warehouse/handover');
                                     }}
                                     variant="secondary"
+                                    size="sm"
                                     icon={Truck}
-                                    className="!text-purple-700 !bg-purple-50 hover:!bg-purple-100 !border-purple-200"
                                 >
                                     Chuyển sang Bàn giao ĐVVC
                                 </AdminButton>

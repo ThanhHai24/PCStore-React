@@ -1,13 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  UserCheck,
-  Award,
-  Crown,
-  DollarSign,
-  Calendar,
   RefreshCw,
   Search,
-  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -29,19 +23,6 @@ function formatVND(amount: number): string {
     currency: 'VND',
     maximumFractionDigits: 0,
   }).format(amount || 0);
-}
-
-function formatCompactVND(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2).replace(/\.00$/, '')} tỷ`;
-  }
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')} tr`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(0)}k`;
-  }
-  return String(value || 0);
 }
 
 function formatNumber(num: number): string {
@@ -145,161 +126,215 @@ export default function SpendingMetricsReportPage() {
   );
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Báo Cáo Chỉ Số Chi Tiêu & Phân Hạng Khách Hàng (CLV)
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              <Sparkles className="w-3 h-3 text-indigo-600" /> Customer Lifetime Value
-            </span>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Phân tích khách hàng</span>
+            <span className="text-slate-300">/</span>
+            <span>Chỉ số chi tiêu &amp; phân hạng CLV</span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Theo dõi tổng chi tiêu luỹ kế, xếp hạng hội viên và chính sách chăm sóc tệp khách hàng VIP
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Chỉ số chi tiêu &amp; phân hạng khách hàng (CLV)
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Theo dõi tổng chi tiêu lũy kế, giá trị đơn trung bình (AOV) và phân khúc hội viên khách hàng.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={loadData}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 self-start md:self-auto"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Làm mới</span>
         </button>
       </div>
 
-      {/* 4 Tier Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Hội Viên VIP (&gt; 50 triệu)</span>
-            <p className="text-2xl font-black text-amber-600 mt-1">{vipCount}</p>
-            <span className="text-[11px] text-gray-400">Khách hàng chi tiêu cao</span>
-          </div>
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600">
-            <Crown className="w-6 h-6" />
-          </div>
+      {/* ==================== FLAT 4-COLUMN TIER STRIP ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span>Hội viên VIP (&gt; 50 triệu)</span>
+          </span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatNumber(vipCount)}
+          </p>
+          <span className="text-xs text-slate-500">Khách hàng chi tiêu cao</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Khách Hàng Thân Thiết (20 - 50tr)</span>
-            <p className="text-2xl font-black text-blue-600 mt-1">{loyalCount}</p>
-            <span className="text-[11px] text-gray-400">Tái mua thường xuyên</span>
-          </div>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-            <Award className="w-6 h-6" />
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+            <span>Thân thiết (20 – 50 triệu)</span>
+          </span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatNumber(loyalCount)}
+          </p>
+          <span className="text-xs text-slate-500">Tái mua thường xuyên</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Khách Tiềm Năng (&lt; 20tr)</span>
-            <p className="text-2xl font-black text-emerald-600 mt-1">{potentialCount}</p>
-            <span className="text-[11px] text-gray-400">Đã phát sinh đơn mua</span>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <UserCheck className="w-6 h-6" />
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span>Tiềm năng (&lt; 20 triệu)</span>
+          </span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatNumber(potentialCount)}
+          </p>
+          <span className="text-xs text-slate-500">Đã phát sinh đơn mua</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Khách Hàng Mới (0 đơn)</span>
-            <p className="text-2xl font-black text-gray-500 mt-1">{newCount}</p>
-            <span className="text-[11px] text-gray-400">Cần remarketing</span>
-          </div>
-          <div className="p-3 rounded-xl bg-gray-50 text-gray-500">
-            <DollarSign className="w-6 h-6" />
-          </div>
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+            <span>Khách hàng mới (0 đơn)</span>
+          </span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatNumber(newCount)}
+          </p>
+          <span className="text-xs text-slate-500">Cần chăm sóc / remarketing</span>
         </div>
       </div>
 
-      {/* Tier Distribution Chart */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <h2 className="text-base font-bold text-gray-900 border-b pb-3 border-gray-100">
-          Phân Bổ Số Lượng Hội Viên Theo Phân Khúc Chi Tiêu
-        </h2>
+      {/* ==================== TIER DISTRIBUTION CHART ==================== */}
+      <div className="bg-white p-5 rounded-md border border-slate-200 space-y-4">
+        <div className="border-b pb-3 border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Phân bổ số lượng hội viên theo phân khúc chi tiêu
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Cơ cấu số lượng khách hàng ở 4 mức chi tiêu lũy kế
+          </p>
+        </div>
 
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={tierChartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip formatter={(val: any) => [formatNumber(Number(val) || 0) + ' khách hàng', 'Số lượng'] as any} />
-              <Bar dataKey="count" fill="#4F46E5" radius={[4, 4, 0, 0]} maxBarSize={45} />
+            <BarChart data={tierChartData} margin={{ top: 8, right: 12, left: -12, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 11, fill: '#64748B' }}
+                axisLine={{ stroke: '#E2E8F0' }}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: '#64748B' }}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                formatter={(val: any) => [formatNumber(Number(val || 0)) + ' khách hàng', 'Số lượng'] as any}
+                contentStyle={{
+                  borderRadius: '6px',
+                  borderColor: '#E2E8F0',
+                  fontSize: '12px',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              />
+              <Bar dataKey="count" name="Số lượng" fill="#2563EB" radius={[3, 3, 0, 0]} maxBarSize={42} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Customer Lifetime Value Table */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">
-            Bảng Kê Chi Tiết Chi Tiêu Luỹ Kế Từng Khách Hàng
-          </h2>
+      {/* ==================== CUSTOMER LIFETIME VALUE TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Bảng kê chi tiết chi tiêu lũy kế từng khách hàng
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Hiển thị <strong className="font-medium text-slate-900 tabular-nums">{formatNumber(filteredList.length)}</strong> khách hàng
+            </p>
+          </div>
 
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" />
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Tìm theo họ tên, sđt, email..."
+              placeholder="Tìm theo họ tên, SĐT, email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 border border-gray-200 rounded-xl text-xs w-64 focus:outline-blue-500"
+              className="w-full h-8 pl-8 pr-3 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-3">#</th>
-                <th className="py-2.5 px-3">Họ Tên Khách Hàng</th>
-                <th className="py-2.5 px-3">Số Điện Thoại</th>
-                <th className="py-2.5 px-3">Email</th>
-                <th className="py-2.5 px-3 text-right">Số Đơn Mua</th>
-                <th className="py-2.5 px-3 text-right">Tổng Chi Tiêu</th>
-                <th className="py-2.5 px-3 text-center">Phân Hạng</th>
+                <th className="py-2.5 px-4 w-12">#</th>
+                <th className="py-2.5 px-4 min-w-[220px]">Khách hàng</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tổng đơn hàng</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Giá trị đơn TB (AOV)</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tổng chi tiêu (CLV)</th>
+                <th className="py-2.5 px-4 whitespace-nowrap">Phân hạng</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredList.length > 0 ? (
-                filteredList.map((c, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3 font-bold text-gray-400">{idx + 1}</td>
-                    <td className="py-3 px-3 font-semibold text-gray-900">{c.fullName}</td>
-                    <td className="py-3 px-3 font-mono text-gray-600">{c.phone}</td>
-                    <td className="py-3 px-3 text-gray-500">{c.email}</td>
-                    <td className="py-3 px-3 text-right font-bold text-blue-600">{formatNumber(c.orderCount)} đơn</td>
-                    <td className="py-3 px-3 text-right font-black text-emerald-600">{formatVND(c.totalSpent)}</td>
-                    <td className="py-3 px-3 text-center">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          c.tier === 'VIP'
-                            ? 'bg-amber-100 text-amber-900'
-                            : c.tier === 'LOYAL'
-                            ? 'bg-blue-100 text-blue-900'
-                            : c.tier === 'POTENTIAL'
-                            ? 'bg-emerald-100 text-emerald-900'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {c.tier === 'VIP' ? 'VIP' : c.tier === 'LOYAL' ? 'Thân Thiết' : c.tier === 'POTENTIAL' ? 'Tiềm Năng' : 'Mới'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                filteredList.map((c, idx) => {
+                  const aovValue = c.orderCount > 0 ? Math.round(c.totalSpent / c.orderCount) : 0;
+                  const tierDot =
+                    c.tier === 'VIP'
+                      ? 'bg-amber-500'
+                      : c.tier === 'LOYAL'
+                        ? 'bg-blue-500'
+                        : c.tier === 'POTENTIAL'
+                          ? 'bg-emerald-500'
+                          : 'bg-slate-400';
+                  const tierLabel =
+                    c.tier === 'VIP'
+                      ? 'VIP'
+                      : c.tier === 'LOYAL'
+                        ? 'Thân thiết'
+                        : c.tier === 'POTENTIAL'
+                          ? 'Tiềm năng'
+                          : 'Mới';
+                  return (
+                    <tr key={c.userId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 font-medium text-slate-400 tabular-nums">{idx + 1}</td>
+                      <td className="py-3 px-4">
+                        <div className="font-medium text-slate-900">{c.fullName}</div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate max-w-[280px]">
+                          <span className="tabular-nums shrink-0">{c.phone}</span>
+                          {c.email && c.email !== 'N/A' && (
+                            <>
+                              <span className="text-slate-300">•</span>
+                              <span className="truncate">{c.email}</span>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatNumber(c.orderCount)} đơn
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                        {formatVND(aovValue)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatVND(c.totalSpent)}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${tierDot}`} />
+                          <span>{tierLabel}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-400">
+                  <td colSpan={6} className="py-10 text-center text-slate-400">
                     Không tìm thấy khách hàng nào phù hợp
                   </td>
                 </tr>

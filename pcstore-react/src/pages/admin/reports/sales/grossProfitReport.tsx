@@ -1,29 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  TrendingUp,
-  DollarSign,
   Package,
-  Layers,
   Calendar,
   RefreshCw,
   Download,
-  Percent,
-  Coins,
-  ShieldCheck,
-  Sparkles,
+  Search,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
   ComposedChart,
-  Area,
   Bar,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  BarChart,
 } from 'recharts';
 import { adminAnalyticsService } from '../../../../services/adminAnalyticsService';
 import type {
@@ -166,280 +157,413 @@ export default function GrossProfitReportPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Báo Cáo Phân Tích Lợi Nhuận Gộp & Giá Vốn</h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Sparkles className="w-3 h-3 text-emerald-600" /> Profitability
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Báo cáo bán hàng</span>
+            <span className="text-slate-300">/</span>
+            <span className="tabular-nums">
+              Kỳ đối soát: {startDate} — {endDate}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Theo dõi Doanh thu thuần, Giá vốn hàng bán (COGS), Lợi nhuận gộp và Tỷ suất lợi nhuận từng SKU
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Báo cáo lợi nhuận gộp &amp; giá vốn
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Đối soát doanh thu thuần, giá vốn hàng bán (COGS), lợi nhuận gộp và tỷ suất biên lợi nhuận từng SKU.
           </p>
         </div>
 
-        {/* Date Presets */}
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Xuất CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ==================== COMPACT FILTER BAR ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl bg-gray-100 p-1">
+          <div className="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200">
             <button
+              type="button"
               onClick={() => handleSelectPreset('30D')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === '30D' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === '30D'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               30 ngày
             </button>
             <button
+              type="button"
               onClick={() => handleSelectPreset('THIS_QUARTER')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_QUARTER' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === 'THIS_QUARTER'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               Quý này
             </button>
             <button
+              type="button"
               onClick={() => handleSelectPreset('THIS_YEAR')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                activePreset === 'THIS_YEAR' ? 'bg-white text-blue-600 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                activePreset === 'THIS_YEAR'
+                  ? 'bg-white text-slate-900 border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
             >
               Năm nay
             </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs">
-            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-md px-2.5 h-8 text-xs tabular-nums">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
-            <span className="text-gray-400">-</span>
+            <span className="text-slate-300">—</span>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="bg-transparent border-none text-xs text-gray-700 focus:outline-none"
+              className="bg-transparent border-none text-xs font-medium text-slate-700 focus:outline-none"
             />
           </div>
+        </div>
 
-          <button
-            onClick={loadData}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50"
+        <div className="relative w-full lg:w-72">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Tìm theo SKU, tên sản phẩm, danh mục, hãng..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-8 pl-8 pr-3 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
+          />
+        </div>
+      </div>
+
+      {/* ==================== FLAT 4-COLUMN FINANCIAL KPI STRIP ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Doanh thu thuần</span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatVND(totalRevenue)}
+          </p>
+          <span className="text-xs text-slate-500">Doanh số thực tế ghi nhận</span>
+        </div>
+
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Giá vốn hàng bán (COGS)</span>
+          <p className="text-2xl font-semibold text-slate-900 tracking-tight">
+            {formatVND(cogs)}
+          </p>
+          <span className="text-xs text-slate-500">Chi phí vốn các serial đã xuất</span>
+        </div>
+
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Lợi nhuận gộp</span>
+          <p
+            className={`text-2xl font-semibold tracking-tight ${
+              grossProfit < 0 ? 'text-rose-600' : 'text-emerald-700'
+            }`}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Lọc</span>
-          </button>
+            {formatVND(grossProfit)}
+          </p>
+          <span className="text-xs text-slate-500">Doanh thu thuần trừ giá vốn</span>
+        </div>
+
+        <div className="p-4 flex flex-col justify-between gap-1.5 tabular-nums">
+          <span className="text-xs font-medium text-slate-500">Tỷ suất lợi nhuận gộp</span>
+          <p
+            className={`text-2xl font-semibold tracking-tight ${
+              marginPct < 0
+                ? 'text-rose-600'
+                : marginPct < 10
+                  ? 'text-amber-600'
+                  : 'text-slate-900'
+            }`}
+          >
+            {marginPct}%
+          </p>
+          <span className="text-xs text-slate-500">Biên sinh lời trên doanh thu</span>
         </div>
       </div>
 
-      {/* 4 Financial Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Doanh Thu Thuần</span>
-            <p className="text-xl font-black text-blue-600 mt-1">{formatVND(totalRevenue)}</p>
-            <span className="text-[11px] text-gray-400 font-medium">Doanh số thực tế ghi nhận</span>
-          </div>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Giá Vốn Hàng Bán (COGS)</span>
-            <p className="text-xl font-black text-rose-600 mt-1">{formatVND(cogs)}</p>
-            <span className="text-[11px] text-gray-400 font-medium">Chi phí vốn các serial đã xuất</span>
-          </div>
-          <div className="p-3 rounded-xl bg-rose-50 text-rose-600">
-            <Coins className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Lợi Nhuận Gộp</span>
-            <p className="text-xl font-black text-emerald-600 mt-1">{formatVND(grossProfit)}</p>
-            <span className="text-[11px] text-emerald-700 font-medium">Doanh thu trừ Giá vốn</span>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-gray-500">Biên Lợi Nhuận Gộp</span>
-            <p className="text-xl font-black text-purple-600 mt-1">{marginPct}%</p>
-            <span className="text-[11px] text-purple-700 font-medium">Tỷ suất sinh lời doanh thu</span>
-          </div>
-          <div className="p-3 rounded-xl bg-purple-50 text-purple-600">
-            <Percent className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Trend Area/Bar Chart */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-              <span>Biến Động Doanh Thu Thuần vs Giá Vốn vs Lợi Nhuận Gộp</span>
+      {/* ==================== CHARTS ROW ==================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Trend Composed Chart (8/12) */}
+        <div className="lg:col-span-8 bg-white p-5 rounded-md border border-slate-200 flex flex-col justify-between space-y-4">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Đối chiếu Doanh thu thuần – Giá vốn (COGS) – Lợi nhuận gộp
             </h2>
-            <p className="text-xs text-gray-500">Đối chiếu cấu thành dòng tiền theo các kỳ kinh doanh</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Biến động cấu thành lợi nhuận gộp qua các kỳ kinh doanh
+            </p>
           </div>
 
-          <div className="h-[320px]">
-            {trendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => formatCompactVND(v)} tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    formatter={(val: any, name: any) => [
-                      formatVND(Number(val || 0)),
-                      name || '',
-                    ] as any}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
-                  <Bar dataKey="revenue" name="Doanh thu thuần" fill="#3B82F6" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                  <Bar dataKey="cogs" name="Giá vốn (COGS)" fill="#EF4444" radius={[4, 4, 0, 0]} maxBarSize={30} />
-                  <Line
-                    type="monotone"
-                    dataKey="grossProfit"
-                    name="Lợi nhuận gộp"
-                    stroke="#10B981"
-                    strokeWidth={3}
-                    dot={{ r: 4 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-xs text-gray-400 pt-28">Chưa có dữ liệu biến động lợi nhuận</p>
-            )}
-          </div>
+          {trendData.length > 0 ? (
+            <div className="space-y-3">
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={trendData} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      axisLine={{ stroke: '#E2E8F0' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={(v) => formatCompactVND(v)}
+                      tick={{ fontSize: 11, fill: '#64748B' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      formatter={(val: any, name: any) => [
+                        formatVND(Number(val || 0)),
+                        name || '',
+                      ] as any}
+                      contentStyle={{
+                        borderRadius: '6px',
+                        borderColor: '#E2E8F0',
+                        fontSize: '12px',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    />
+                    <Bar
+                      dataKey="revenue"
+                      name="Doanh thu thuần"
+                      fill="#2563EB"
+                      radius={[3, 3, 0, 0]}
+                      maxBarSize={28}
+                    />
+                    <Bar
+                      dataKey="cogs"
+                      name="Giá vốn (COGS)"
+                      fill="#94A3B8"
+                      radius={[3, 3, 0, 0]}
+                      maxBarSize={28}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="grossProfit"
+                      name="Lợi nhuận gộp"
+                      stroke="#059669"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: '#059669' }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Custom clean legend below chart */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-2 border-t border-slate-100 text-[11px] text-slate-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#2563EB] shrink-0" />
+                  <span>Doanh thu thuần</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#94A3B8] shrink-0" />
+                  <span>Giá vốn (COGS)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-0.5 bg-[#059669] shrink-0" />
+                  <span>Lợi nhuận gộp</span>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-xs text-slate-400">
+              Chưa có dữ liệu biến động lợi nhuận
+            </div>
+          )}
         </div>
 
-        {/* Top 8 Gross Profit Products */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-          <div className="border-b pb-3 border-gray-100">
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Package className="w-4 h-4 text-purple-600" />
-              <span>Top Sản Phẩm Sinh Lời Cao Nhất</span>
+        {/* Top 8 Gross Profit Products (4/12) */}
+        <div className="lg:col-span-4 bg-white p-5 rounded-md border border-slate-200 flex flex-col space-y-3">
+          <div className="border-b pb-3 border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Top sản phẩm sinh lời cao nhất
             </h2>
-            <p className="text-xs text-gray-500">Mặt hàng mang lại giá trị thặng dư tốt nhất</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Các SKU tạo ra giá trị lợi nhuận gộp lớn nhất
+            </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[330px] pr-1">
             {topProfitProducts.length > 0 ? (
               topProfitProducts.map((p, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                  <div className="min-w-0 pr-2">
-                    <p className="text-xs font-semibold text-gray-900 truncate" title={p.productName}>
-                      {idx + 1}. {p.productName}
-                    </p>
-                    <span className="text-[10px] text-gray-400 block">{p.productCode}</span>
+                <div
+                  key={p.productId ?? idx}
+                  className="flex items-center justify-between gap-2 py-2.5 hover:bg-slate-50/70 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xs font-medium text-slate-400 tabular-nums w-4 shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate" title={p.productName}>
+                        {p.productName}
+                      </p>
+                      <span className="text-[11px] text-slate-500 tabular-nums block truncate">
+                        {p.productCode}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-bold text-emerald-600">{formatVND(p.grossProfit)}</span>
-                    <span className="text-[10px] text-purple-600 font-semibold block">Biên: {p.grossMarginPercentage}%</span>
+                  <div className="text-right shrink-0 tabular-nums">
+                    <span
+                      className={`text-xs font-semibold block ${
+                        p.grossProfit < 0 ? 'text-rose-600' : 'text-emerald-700'
+                      }`}
+                    >
+                      {formatVND(p.grossProfit)}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      Biên {p.grossMarginPercentage}%
+                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-center text-xs text-gray-400 py-10">Chưa có dữ liệu sản phẩm</p>
+              <p className="text-center text-xs text-slate-400 py-12">Chưa có dữ liệu sản phẩm</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Performance Matrix Table */}
-      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 border-gray-100">
+      {/* ==================== PERFORMANCE MATRIX TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600" />
-              <span>Ma Trận Hiệu Quả Từng SKU Chi Tiết</span>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Ma trận lợi nhuận gộp chi tiết theo SKU
             </h2>
-            <p className="text-xs text-gray-500">
-              Tổng hợp Sản lượng bán, Doanh thu, Giá vốn, Lợi nhuận, Tồn kho và Số ca bảo hành
+            <p className="text-xs text-slate-500 mt-0.5">
+              Đối soát sản lượng bán, doanh thu thuần, giá vốn (COGS), lợi nhuận gộp, tồn kho và lượt bảo hành
             </p>
           </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Tìm theo SKU, tên, hãng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs w-56 focus:outline-blue-500"
-            />
-            <button
-              onClick={exportCSV}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất CSV</span>
-            </button>
-          </div>
+          <span className="text-xs text-slate-500 tabular-nums shrink-0">
+            Hiển thị <strong className="font-medium text-slate-900">{formatNumber(filteredMatrix.length)}</strong> SKU
+          </span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+            <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-2.5 px-3">Mã SKU</th>
-                <th className="py-2.5 px-3">Tên Sản Phẩm</th>
-                <th className="py-2.5 px-3">Danh Mục</th>
-                <th className="py-2.5 px-3">Hãng</th>
-                <th className="py-2.5 px-3 text-right">SL Bán</th>
-                <th className="py-2.5 px-3 text-right">Doanh Thu Thuần</th>
-                <th className="py-2.5 px-3 text-right">Giá Vốn (COGS)</th>
-                <th className="py-2.5 px-3 text-right">Lợi Nhuận Gộp</th>
-                <th className="py-2.5 px-3 text-right">Biên LN (%)</th>
-                <th className="py-2.5 px-3 text-right">Tồn Kho</th>
-                <th className="py-2.5 px-3 text-right">Bảo Hành</th>
+                <th className="py-2.5 px-4 min-w-[260px]">Sản phẩm</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">SL bán</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Doanh thu thuần</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Giá vốn (COGS)</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Lợi nhuận gộp</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Biên LN (%)</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Tồn kho</th>
+                <th className="py-2.5 px-4 text-right whitespace-nowrap">Bảo hành</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
+            <tbody className="divide-y divide-slate-100 text-slate-800">
               {filteredMatrix.length > 0 ? (
-                filteredMatrix.map((m, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="py-3 px-3 font-semibold text-blue-600">{m.productCode}</td>
-                    <td className="py-3 px-3 max-w-[200px] truncate font-medium text-gray-900" title={m.productName}>
-                      {m.productName}
-                    </td>
-                    <td className="py-3 px-3 text-gray-600">{m.categoryName}</td>
-                    <td className="py-3 px-3 text-gray-600 font-semibold">{m.brandName}</td>
-                    <td className="py-3 px-3 text-right font-bold text-gray-900">{formatNumber(m.quantitySold)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-blue-600">{formatVND(m.revenue)}</td>
-                    <td className="py-3 px-3 text-right font-medium text-rose-600">{formatVND(m.cogs)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-emerald-600">{formatVND(m.grossProfit)}</td>
-                    <td className="py-3 px-3 text-right font-bold text-purple-700">{m.grossMarginPercentage}%</td>
-                    <td className="py-3 px-3 text-right font-medium text-gray-700">{m.currentStock}</td>
-                    <td className="py-3 px-3 text-right">
-                      {m.warrantyCount > 0 ? (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                          <ShieldCheck className="w-3 h-3" /> {m.warrantyCount}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">0</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                filteredMatrix.map((m, idx) => {
+                  const isNegativeProfit = m.grossProfit < 0;
+                  const isLowMargin = m.grossMarginPercentage < 10;
+                  return (
+                    <tr key={m.productId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3 min-w-0 max-w-[340px]">
+                          <div className="w-9 h-9 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 text-slate-400">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div
+                              className="font-medium text-slate-900 truncate"
+                              title={m.productName}
+                            >
+                              {m.productName}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate">
+                              <span className="font-medium text-blue-600 tabular-nums shrink-0">
+                                {m.productCode}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="truncate">{m.categoryName}</span>
+                              <span className="text-slate-300">•</span>
+                              <span className="truncate">{m.brandName}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatNumber(m.quantitySold)}
+                      </td>
+                      <td className="py-3 px-4 text-right font-medium text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatVND(m.revenue)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                        {formatVND(m.cogs)}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-right font-semibold tabular-nums whitespace-nowrap ${
+                          isNegativeProfit ? 'text-rose-600' : 'text-emerald-700'
+                        }`}
+                      >
+                        {formatVND(m.grossProfit)}
+                      </td>
+                      <td
+                        className={`py-3 px-4 text-right font-medium tabular-nums whitespace-nowrap ${
+                          isNegativeProfit
+                            ? 'text-rose-600'
+                            : isLowMargin
+                              ? 'text-amber-600'
+                              : 'text-slate-700'
+                        }`}
+                      >
+                        {m.grossMarginPercentage}%
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-700 tabular-nums whitespace-nowrap">
+                        {formatNumber(m.currentStock)}
+                      </td>
+                      <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                        {m.warrantyCount > 0 ? (
+                          <span className="inline-flex items-center justify-end gap-1.5 font-medium text-amber-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                            <span>{formatNumber(m.warrantyCount)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={11} className="py-8 text-center text-gray-400">
+                  <td colSpan={8} className="py-10 text-center text-slate-400">
                     Chưa có sản phẩm nào trong ma trận hiệu quả
                   </td>
                 </tr>

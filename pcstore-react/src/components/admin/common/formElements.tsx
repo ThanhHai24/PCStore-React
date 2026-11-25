@@ -404,11 +404,11 @@ export const AdminButton = forwardRef<HTMLButtonElement, AdminButtonProps>(
             case 'secondary':
             case 'cancel':
                 variantClasses =
-                    'border border-[#ababab] text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50';
+                    'border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50';
                 break;
             case 'danger':
                 variantClasses =
-                    'bg-rose-600 text-white font-semibold hover:bg-rose-700 active:scale-[0.98] shadow-md shadow-rose-500/20 disabled:opacity-50';
+                    'bg-rose-600 text-white font-semibold hover:bg-rose-700 border border-rose-600 disabled:opacity-50';
                 break;
             case 'ghost':
                 variantClasses =
@@ -416,12 +416,12 @@ export const AdminButton = forwardRef<HTMLButtonElement, AdminButtonProps>(
                 break;
             case 'outline':
                 variantClasses =
-                    'border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50';
+                    'border border-slate-200 bg-white text-slate-700 font-medium hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50';
                 break;
             case 'primary':
             default:
                 variantClasses =
-                    'bg-blue-600 text-white font-semibold hover:bg-blue-700 active:scale-[0.98] shadow-md shadow-blue-500/20 disabled:opacity-50';
+                    'bg-blue-600 text-white font-semibold hover:bg-blue-700 border border-blue-600 disabled:opacity-50';
                 break;
         }
 
@@ -567,20 +567,20 @@ export const AdminModalHeader: React.FC<AdminModalHeaderProps> = ({
     const renderedHeaderIcon = renderIconNode(HeaderIcon, 'w-5 h-5');
 
     return (
-        <div className={`px-6 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between gap-4 shrink-0 ${className}`}>
+        <div className={`px-6 pt-4 pb-3.5 border-b border-slate-200 flex items-start justify-between gap-4 shrink-0 ${className}`}>
             <div className="flex items-center gap-3 min-w-0">
                 {renderedHeaderIcon && (
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-bold border border-blue-100/50">
+                    <div className="w-9 h-9 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 font-bold border border-blue-100">
                         {renderedHeaderIcon}
                     </div>
                 )}
                 <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2 truncate">
+                    <h2 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2 truncate">
                         {title}
                         {badge}
                     </h2>
                     {(subtitle || description) && (
-                        <p className="text-xs text-gray-500 mt-0.5 truncate">{subtitle || description}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate tabular-nums">{subtitle || description}</p>
                     )}
                 </div>
             </div>
@@ -589,7 +589,7 @@ export const AdminModalHeader: React.FC<AdminModalHeaderProps> = ({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors shrink-0 cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors shrink-0 cursor-pointer"
                     title="Đóng (Esc)"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

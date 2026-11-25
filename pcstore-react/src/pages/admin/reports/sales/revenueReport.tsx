@@ -631,33 +631,20 @@ export default function RevenueReportPage() {
                 render: (item, idx) => {
                     const rankNumber = (currentPage - 1) * pageSize + idx + 1;
                     return (
-                        <div className="flex items-start gap-3 py-0.5 max-w-md">
-                            <div
-                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5 border ${
-                                    rankNumber <= 3 && activeDimensionTab !== 'TIME'
-                                        ? 'bg-blue-50 text-[#2563EB] border-blue-200'
-                                        : 'bg-[#F8FAFC] text-slate-600 border-[#E2E8F0]'
-                                }`}
-                            >
-                                {activeDimensionTab === 'TIME' ? (
-                                    <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
-                                ) : (
-                                    `#${rankNumber}`
-                                )}
-                            </div>
-                            <div className="min-w-0">
-                                <div className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 hover:text-[#2563EB] transition-colors">
+                        <div className="flex items-start gap-2.5 max-w-md">
+                            {activeDimensionTab !== 'TIME' && (
+                                <span className="font-mono text-[11px] font-medium text-slate-400 tabular-nums shrink-0 mt-0.5 w-6">
+                                    #{rankNumber}
+                                </span>
+                            )}
+                            <div className="min-w-0 space-y-0.5">
+                                <div className="font-medium text-slate-900 text-xs leading-snug line-clamp-2 hover:text-blue-600 transition-colors">
                                     {item.name}
                                 </div>
                                 {item.subLabel && (
-                                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                    <div className="text-[11px] text-slate-500 font-mono tabular-nums truncate">
                                         {item.subLabel}
                                     </div>
-                                )}
-                                {item.badgeText && (
-                                    <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] text-[10px] font-semibold text-slate-600">
-                                        {item.badgeText}
-                                    </span>
                                 )}
                             </div>
                         </div>
@@ -667,33 +654,32 @@ export default function RevenueReportPage() {
             {
                 key: 'completedOrders',
                 header: 'Số đơn hoàn tất',
-                align: 'center',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.completedOrders,
                 render: (item) => (
-                    <div className="inline-flex flex-col items-center">
-                        <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-xs">
+                    <div className="text-right tabular-nums whitespace-nowrap">
+                        <div className="text-xs font-medium text-slate-900">
                             {formatNumber(item.completedOrders)} đơn
-                        </span>
+                        </div>
                         {item.cancelledReturnOrders > 0 && (
-                            <span className="text-[10px] text-rose-500 font-medium mt-0.5">
-                                ({item.cancelledReturnOrders} hủy/hoàn)
-                            </span>
+                            <div className="text-[11px] text-rose-600">
+                                {item.cancelledReturnOrders} hủy/hoàn
+                            </div>
                         )}
                     </div>
                 ),
             },
             {
                 key: 'unitsSold',
-                header: 'Sản lượng bán',
-                align: 'center',
+                header: 'Sản lượng',
+                align: 'right',
                 sortable: true,
                 sortValue: (item) => item.unitsSold,
                 render: (item) => (
-                    <div className="font-bold text-slate-800 text-xs">
-                        {formatNumber(item.unitsSold)}{' '}
-                        <span className="text-[11px] font-normal text-slate-500">SP</span>
-                    </div>
+                    <span className="font-mono text-xs font-medium text-slate-800 tabular-nums whitespace-nowrap">
+                        {formatNumber(item.unitsSold)} SP
+                    </span>
                 ),
             },
             {
@@ -703,7 +689,7 @@ export default function RevenueReportPage() {
                 sortable: true,
                 sortValue: (item) => item.grossRevenue,
                 render: (item) => (
-                    <span className="font-semibold text-slate-700 font-mono text-xs">
+                    <span className="font-medium text-slate-700 font-mono text-xs tabular-nums whitespace-nowrap">
                         {formatVND(item.grossRevenue)}
                     </span>
                 ),
@@ -715,15 +701,13 @@ export default function RevenueReportPage() {
                 sortable: true,
                 sortValue: (item) => item.deductionRevenue,
                 render: (item) => (
-                    <div className="text-right">
-                        {item.deductionRevenue > 0 ? (
-                            <span className="font-semibold text-rose-600 font-mono text-xs bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100">
-                                -{formatVND(item.deductionRevenue)}
-                            </span>
-                        ) : (
-                            <span className="text-slate-400 font-mono text-xs">0 ₫</span>
-                        )}
-                    </div>
+                    <span
+                        className={`font-mono text-xs tabular-nums whitespace-nowrap ${
+                            item.deductionRevenue > 0 ? 'font-medium text-rose-600' : 'text-slate-400'
+                        }`}
+                    >
+                        {item.deductionRevenue > 0 ? `-${formatVND(item.deductionRevenue)}` : '0 ₫'}
+                    </span>
                 ),
             },
             {
@@ -733,27 +717,25 @@ export default function RevenueReportPage() {
                 sortable: true,
                 sortValue: (item) => item.netRevenue,
                 render: (item) => (
-                    <div className="font-extrabold text-[#2563EB] font-mono text-xs">
+                    <span className="font-semibold text-slate-900 font-mono text-xs tabular-nums whitespace-nowrap">
                         {formatVND(item.netRevenue)}
-                    </div>
+                    </span>
                 ),
             },
             {
                 key: 'sharePercent',
-                header: 'Tỷ trọng (%)',
+                header: 'Tỷ trọng',
                 align: 'right',
                 sortable: true,
                 sortValue: (item) => item.sharePercent,
                 render: (item) => (
-                    <div className="w-32 ml-auto space-y-1">
-                        <div className="flex items-center justify-end gap-1.5 text-xs">
-                            <span className="font-bold text-slate-800 font-mono">
-                                {item.sharePercent.toFixed(1)}%
-                            </span>
+                    <div className="w-24 ml-auto space-y-1 tabular-nums">
+                        <div className="text-right text-xs font-mono font-medium text-slate-700">
+                            {item.sharePercent.toFixed(1)}%
                         </div>
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-[#E2E8F0]">
+                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                             <div
-                                className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
+                                className="h-full bg-blue-600 rounded-full"
                                 style={{ width: `${Math.min(100, Math.max(2, item.sharePercent))}%` }}
                             />
                         </div>
@@ -763,7 +745,7 @@ export default function RevenueReportPage() {
             {
                 key: 'actions',
                 header: 'Chi tiết',
-                align: 'center',
+                align: 'right',
                 render: (item) => (
                     <button
                         type="button"
@@ -771,7 +753,7 @@ export default function RevenueReportPage() {
                             e.stopPropagation();
                             setDrilldownRow(item);
                         }}
-                        className="p-1.5 text-slate-500 hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                         title="Xem danh sách đơn hàng cấu thành"
                     >
                         <Eye className="w-4 h-4" />
@@ -793,29 +775,29 @@ export default function RevenueReportPage() {
         const totShare = searchedTableRows.reduce((s, r) => s + r.sharePercent, 0);
 
         return (
-            <tr className="bg-[#F8FAFC] border-t-2 border-[#E2E8F0] font-bold text-slate-900">
-                <td className="px-4 py-3.5 text-xs uppercase tracking-wider text-slate-700">
+            <tr className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900 tabular-nums">
+                <td className="px-4 py-3 text-xs uppercase tracking-wider text-slate-700">
                     Tổng cộng ({searchedTableRows.length} mục)
                 </td>
-                <td className="px-4 py-3.5 text-center text-xs text-emerald-700">
+                <td className="px-4 py-3 text-right font-mono text-xs text-slate-900 whitespace-nowrap">
                     {formatNumber(totCompleted)} đơn
                 </td>
-                <td className="px-4 py-3.5 text-center text-xs text-slate-900">
+                <td className="px-4 py-3 text-right font-mono text-xs text-slate-900 whitespace-nowrap">
                     {formatNumber(totUnits)} SP
                 </td>
-                <td className="px-4 py-3.5 text-right font-mono text-xs text-slate-800">
+                <td className="px-4 py-3 text-right font-mono text-xs text-slate-800 whitespace-nowrap">
                     {formatVND(totGross)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-mono text-xs text-rose-600">
+                <td className="px-4 py-3 text-right font-mono text-xs text-rose-600 whitespace-nowrap">
                     {totDeduction > 0 ? `-${formatVND(totDeduction)}` : '0 ₫'}
                 </td>
-                <td className="px-4 py-3.5 text-right font-mono text-xs text-[#2563EB] font-extrabold">
+                <td className="px-4 py-3 text-right font-mono text-xs text-blue-600 whitespace-nowrap">
                     {formatVND(totNet)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-mono text-xs text-slate-900">
+                <td className="px-4 py-3 text-right font-mono text-xs text-slate-900 whitespace-nowrap">
                     {Math.min(100, totShare).toFixed(1)}%
                 </td>
-                <td className="px-4 py-3.5 text-center text-xs text-slate-400">—</td>
+                <td className="px-4 py-3 text-right text-xs text-slate-400">—</td>
             </tr>
         );
     }, [searchedTableRows]);
@@ -825,48 +807,45 @@ export default function RevenueReportPage() {
         if (!active || !payload || !payload.length) return null;
         const dataPoint = payload[0]?.payload;
         return (
-            <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-xl p-3.5 min-w-[250px] text-xs space-y-2">
-                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
-                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
-                        {label}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#2563EB] font-bold text-[10px]">
+            <div className="bg-white border border-slate-200 rounded-md shadow-sm p-3 min-w-[230px] text-xs space-y-2 tabular-nums">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 gap-3">
+                    <span className="font-semibold text-slate-900">{label}</span>
+                    <span className="text-[11px] text-slate-500 font-medium">
                         {dataPoint?.completedOrders || 0} đơn hoàn tất
                     </span>
                 </div>
-                <div className="space-y-1.5 pt-0.5">
+                <div className="space-y-1">
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 inline-block" />
-                            Doanh thu gộp:
+                            <span className="w-2 h-2 rounded-xs bg-slate-300 inline-block" />
+                            Doanh thu gộp
                         </span>
-                        <span className="font-semibold text-slate-800 font-mono">
+                        <span className="font-medium text-slate-800 font-mono">
                             {formatVND(dataPoint?.grossRevenue || 0)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-slate-500 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block" />
-                            Giảm trừ hoàn/hủy:
+                            <span className="w-2 h-2 rounded-xs bg-rose-500 inline-block" />
+                            Giảm trừ hoàn/hủy
                         </span>
-                        <span className="font-semibold text-rose-600 font-mono">
+                        <span className="font-medium text-rose-600 font-mono">
                             -{formatVND(dataPoint?.deductionRevenue || 0)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-100">
-                        <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-sm bg-[#2563EB] inline-block" />
-                            Doanh thu thuần:
+                        <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-xs bg-blue-600 inline-block" />
+                            Doanh thu thuần
                         </span>
-                        <span className="font-extrabold text-[#2563EB] font-mono">
+                        <span className="font-semibold text-blue-600 font-mono">
                             {formatVND(dataPoint?.netRevenue || 0)}
                         </span>
                     </div>
                     <div className="flex items-center justify-between gap-4 text-[11px] text-slate-500">
-                        <span>Sản lượng xuất bán:</span>
-                        <span className="font-semibold text-slate-700">
-                            {formatNumber(dataPoint?.unitsSold || 0)} sản phẩm
+                        <span>Sản lượng</span>
+                        <span className="font-mono text-slate-700">
+                            {formatNumber(dataPoint?.unitsSold || 0)} SP
                         </span>
                     </div>
                 </div>
@@ -913,43 +892,23 @@ export default function RevenueReportPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] space-y-6 pb-10">
+        <div className="space-y-5 pb-8">
             {/* ==================== PAGE HEADER ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#2563EB] text-white flex items-center justify-center shadow-sm shrink-0">
-                        <DollarSign className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB] bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-100">
-                                Báo cáo bán hàng
-                            </span>
-                            <span className="text-xs text-slate-400">•</span>
-                            <span className="text-xs font-medium text-slate-500">
-                                Kỳ báo cáo: {formatDateVN(fromDate)} — {formatDateVN(toDate)}
-                            </span>
-                        </div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
-                            Báo Cáo Doanh Thu Thực Tế
-                        </h1>
-                        <p className="text-xs text-slate-500 mt-1 max-w-3xl leading-relaxed">
-                            Phân tích đa chiều doanh thu gộp, giá trị giảm trừ (đơn hủy / hoàn trả) và{' '}
-                            <strong className="text-slate-700">doanh thu thuần thực tế</strong> (chỉ ghi nhận
-                            các đơn hàng ở trạng thái{' '}
-                            <span className="text-emerald-700 font-semibold">
-                                &ldquo;Đã đưa tới khách hàng&rdquo;
-                            </span>
-                            ).
-                        </p>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Báo cáo doanh thu
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        Kỳ báo cáo: {formatDateVN(fromDate)} — {formatDateVN(toDate)} · {formatNumber(currentPeriodRecords.length)} giao dịch phát sinh
+                    </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => window.print()}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white border border-[#E2E8F0] text-slate-700 text-xs font-semibold hover:bg-[#F8FAFC] transition-colors cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-white border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     >
                         <Printer className="w-4 h-4 text-slate-500" />
                         <span>In báo cáo</span>
@@ -957,7 +916,7 @@ export default function RevenueReportPage() {
                     <button
                         type="button"
                         onClick={handleExportCSV}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                     >
                         <FileSpreadsheet className="w-4 h-4" />
                         <span>Xuất Excel / CSV</span>
@@ -966,14 +925,10 @@ export default function RevenueReportPage() {
             </div>
 
             {/* ==================== 1. MULTI-DIMENSIONAL FILTER BAR ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="bg-white border border-slate-200 rounded-md p-4 space-y-3.5">
                 {/* Top Row: Quick Date Presets & Period Grouping */}
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3.5 border-b border-[#E2E8F0]">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mr-1">
-                            <Filter className="w-4 h-4 text-[#2563EB]" />
-                            Bộ lọc đa chiều:
-                        </span>
+                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         {[
                             { id: 'LAST_30_DAYS', label: '30 ngày qua' },
                             { id: 'THIS_QUARTER', label: 'Quý 4/2026' },
@@ -985,10 +940,10 @@ export default function RevenueReportPage() {
                                 key={preset.id}
                                 type="button"
                                 onClick={() => handleApplyDatePreset(preset.id)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
+                                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                                     activeDatePreset === preset.id
-                                        ? 'bg-blue-50 text-[#2563EB] border-blue-200 shadow-2xs'
-                                        : 'bg-[#F8FAFC] text-slate-600 border-[#E2E8F0] hover:bg-slate-100'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                                 }`}
                             >
                                 {preset.label}
@@ -998,8 +953,8 @@ export default function RevenueReportPage() {
 
                     {/* Chu kỳ gộp: Ngày / Tháng / Quý / Năm */}
                     <div className="flex items-center gap-2 self-start xl:self-auto">
-                        <span className="text-xs font-semibold text-slate-500">Chu kỳ gộp:</span>
-                        <div className="inline-flex p-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                        <span className="text-xs text-slate-500">Chu kỳ:</span>
+                        <div className="inline-flex p-0.5 rounded-md bg-slate-100 border border-slate-200">
                             {(
                                 [
                                     { id: 'DAY', label: 'Ngày' },
@@ -1015,27 +970,32 @@ export default function RevenueReportPage() {
                                         setPeriodGroup(g.id);
                                         setCurrentPage(1);
                                     }}
-                                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                         periodGroup === g.id
-                                            ? 'bg-[#2563EB] text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900'
+                                            ? 'bg-white text-slate-900 border border-slate-200'
+                                            : 'text-slate-600 hover:text-slate-900 border border-transparent'
                                     }`}
                                 >
                                     {g.label}
                                 </button>
                             ))}
                         </div>
+                        <button
+                            type="button"
+                            onClick={handleResetFilters}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Đặt lại bộ lọc"
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Đặt lại</span>
+                        </button>
                     </div>
                 </div>
 
-                {/* Main Filter Grid: Từ ngày, Đến ngày, Danh mục, Phân loại, Thương hiệu, Sản phẩm */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
-                    {/* Từ ngày */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Từ ngày
-                        </label>
+                {/* Main Filter Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Từ ngày</label>
                         <input
                             type="date"
                             value={fromDate}
@@ -1045,16 +1005,12 @@ export default function RevenueReportPage() {
                                 setActiveDatePreset('CUSTOM');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all"
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-mono tabular-nums text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                         />
                     </div>
 
-                    {/* Đến ngày */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Đến ngày
-                        </label>
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Đến ngày</label>
                         <input
                             type="date"
                             value={toDate}
@@ -1064,16 +1020,12 @@ export default function RevenueReportPage() {
                                 setActiveDatePreset('CUSTOM');
                                 setCurrentPage(1);
                             }}
-                            className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all"
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-mono tabular-nums text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                         />
                     </div>
 
-                    {/* Danh mục */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Danh mục
-                        </label>
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Danh mục</label>
                         <SelectDropdown
                             value={selectedCategory}
                             onChange={(e) => {
@@ -1088,16 +1040,12 @@ export default function RevenueReportPage() {
                             size="sm"
                             searchable
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
 
-                    {/* Phân loại */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Tag className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Phân loại
-                        </label>
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Phân loại</label>
                         <SelectDropdown
                             value={selectedClassification}
                             onChange={(e) => {
@@ -1112,16 +1060,12 @@ export default function RevenueReportPage() {
                             size="sm"
                             searchable
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
 
-                    {/* Thương hiệu */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Award className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Thương hiệu
-                        </label>
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Thương hiệu</label>
                         <SelectDropdown
                             value={selectedBrand}
                             onChange={(e) => {
@@ -1136,16 +1080,12 @@ export default function RevenueReportPage() {
                             size="sm"
                             searchable
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
 
-                    {/* Sản phẩm */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                            <Package className="w-3.5 h-3.5 text-[#2563EB]" />
-                            Sản phẩm linh kiện
-                        </label>
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-medium text-slate-500 block">Sản phẩm linh kiện</label>
                         <SelectDropdown
                             value={selectedProduct}
                             onChange={(e) => {
@@ -1162,380 +1102,260 @@ export default function RevenueReportPage() {
                             size="sm"
                             searchable
                             className="w-full"
-                            triggerClassName="bg-[#F8FAFC] border-[#E2E8F0] rounded-xl text-xs font-semibold text-slate-800"
+                            triggerClassName="bg-white border-slate-200 rounded-md text-xs font-medium text-slate-800"
                         />
                     </div>
                 </div>
-
-                {/* Bottom Active Filter Status & Reset */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                    <div className="flex flex-wrap items-center gap-2 text-slate-500">
-                        <span>
-                            Tìm thấy{' '}
-                            <strong className="text-slate-900">{currentPeriodRecords.length}</strong> giao
-                            dịch phát sinh trong kỳ
-                        </span>
-                        {(selectedCategory !== 'ALL' ||
-                            selectedClassification !== 'ALL' ||
-                            selectedBrand !== 'ALL' ||
-                            selectedProduct !== 'ALL') && (
-                            <>
-                                <span>•</span>
-                                <span className="text-[#2563EB] font-semibold">
-                                    Đang áp dụng bộ lọc chuyên sâu theo chiều sản phẩm
-                                </span>
-                            </>
-                        )}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={handleResetFilters}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                    >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Đặt lại bộ lọc</span>
-                    </button>
-                </div>
             </div>
 
-            {/* ==================== 2. 4 KPI CARDS ==================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                {/* KPI 1: Tổng doanh thu gộp */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                1. Tổng doanh thu gộp
-                            </p>
-                            <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono mt-1.5">
-                                {formatVND(kpiMetrics.grossRevenue)}
-                            </h3>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-                            <ShoppingBag className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Tổng số đơn phát sinh:</span>
-                        <span className="font-bold text-slate-800">
-                            {formatNumber(kpiMetrics.totalOrdersCount)} đơn hàng
-                        </span>
-                    </div>
+            {/* ==================== 2. FLAT KPI METRIC STRIP (DIVIDE-X) ==================== */}
+            <div className="bg-white border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+                <div className="p-4 space-y-1 tabular-nums">
+                    <p className="text-xs font-medium text-slate-500">Tổng doanh thu gộp</p>
+                    <p className="text-xl font-semibold text-slate-900 font-mono">
+                        {formatVND(kpiMetrics.grossRevenue)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        {formatNumber(kpiMetrics.totalOrdersCount)} đơn phát sinh
+                    </p>
                 </div>
 
-                {/* KPI 2: Giá trị đơn hủy / hoàn trả (loại trừ khỏi doanh thu thực) */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                2. Giá trị đơn hủy / hoàn trả
-                            </p>
-                            <h3 className="text-xl sm:text-2xl font-extrabold text-rose-600 font-mono mt-1.5">
-                                -{formatVND(kpiMetrics.cancelledReturnedAmount)}
-                            </h3>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
-                            <XCircle className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-rose-600 font-medium">
-                            Loại trừ khỏi doanh thu thực ({kpiMetrics.deductionRate.toFixed(1)}%)
-                        </span>
-                        <span className="font-bold text-slate-700">
-                            {formatNumber(kpiMetrics.cancelledReturnedOrdersCount)} đơn hủy/hoàn
-                        </span>
-                    </div>
+                <div className="p-4 space-y-1 tabular-nums">
+                    <p className="text-xs font-medium text-slate-500">Đơn hủy / hoàn trả</p>
+                    <p className="text-xl font-semibold text-rose-600 font-mono">
+                        -{formatVND(kpiMetrics.cancelledReturnedAmount)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        {formatNumber(kpiMetrics.cancelledReturnedOrdersCount)} đơn · {kpiMetrics.deductionRate.toFixed(1)}% doanh thu gộp
+                    </p>
                 </div>
 
-                {/* KPI 3: Doanh thu thuần thực tế (chỉ tính đơn "Đã đưa tới khách hàng") */}
-                <div className="bg-white border-2 border-[#2563EB] rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-3 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 px-2.5 py-0.5 bg-[#2563EB] text-white text-[10px] font-bold rounded-bl-xl">
-                        CHỈ SỐ CHÍNH
-                    </div>
-                    <div className="flex items-start justify-between gap-3 pt-1">
-                        <div>
-                            <p className="text-xs font-bold text-[#2563EB] uppercase tracking-wider">
-                                3. Doanh thu thuần thực tế
-                            </p>
-                            <h3 className="text-xl sm:text-2xl font-black text-[#2563EB] font-mono mt-1.5">
-                                {formatVND(kpiMetrics.netActualRevenue)}
-                            </h3>
-                        </div>
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#2563EB] flex items-center justify-center shrink-0 border border-blue-200">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                    </div>
-                    <div className="pt-2.5 border-t border-blue-100 flex items-center justify-between text-[11px]">
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                            Đơn &ldquo;Đã đưa tới khách hàng&rdquo;
-                        </span>
-                        <span className="font-bold text-slate-900">
-                            {formatNumber(kpiMetrics.completedOrdersCount)} đơn ({formatNumber(kpiMetrics.totalUnitsSold)} SP)
-                        </span>
-                    </div>
+                <div className="p-4 space-y-1 tabular-nums bg-slate-50/60">
+                    <p className="text-xs font-medium text-blue-700">Doanh thu thuần thực tế</p>
+                    <p className="text-xl font-semibold text-blue-600 font-mono">
+                        {formatVND(kpiMetrics.netActualRevenue)}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                        {formatNumber(kpiMetrics.completedOrdersCount)} đơn hoàn tất · {formatNumber(kpiMetrics.totalUnitsSold)} SP
+                    </p>
                 </div>
 
-                {/* KPI 4: Tỷ lệ tăng trưởng so với kỳ trước (%) */}
-                <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                4. Tăng trưởng so với kỳ trước
-                            </p>
-                            <div className="flex items-baseline gap-2 mt-1.5">
-                                <h3
-                                    className={`text-xl sm:text-2xl font-extrabold font-mono ${
-                                        kpiMetrics.growthPercent >= 0
-                                            ? 'text-emerald-600'
-                                            : 'text-rose-600'
-                                    }`}
-                                >
-                                    {kpiMetrics.growthPercent >= 0 ? '+' : ''}
-                                    {kpiMetrics.growthPercent.toFixed(2)}%
-                                </h3>
-                                <span
-                                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                        kpiMetrics.growthPercent >= 0
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                                    }`}
-                                >
-                                    {kpiMetrics.growthPercent >= 0 ? 'Tăng trưởng' : 'Sụt giảm'}
-                                </span>
-                            </div>
-                        </div>
-                        <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                                kpiMetrics.growthPercent >= 0
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                    : 'bg-rose-50 text-rose-600 border-rose-100'
-                            }`}
-                        >
-                            {kpiMetrics.growthPercent >= 0 ? (
-                                <TrendingUp className="w-5 h-5" />
-                            ) : (
-                                <TrendingDown className="w-5 h-5" />
-                            )}
-                        </div>
-                    </div>
-                    <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Kỳ liền trước:</span>
-                        <span className="font-semibold text-slate-700 font-mono">
-                            {formatVND(kpiMetrics.prevNetRevenue)}
-                        </span>
-                    </div>
+                <div className="p-4 space-y-1 tabular-nums">
+                    <p className="text-xs font-medium text-slate-500">Tăng trưởng so với kỳ trước</p>
+                    <p
+                        className={`text-xl font-semibold font-mono ${
+                            kpiMetrics.growthPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                    >
+                        {kpiMetrics.growthPercent >= 0 ? '+' : ''}
+                        {kpiMetrics.growthPercent.toFixed(2)}%
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        Kỳ trước: <span className="font-mono text-slate-700">{formatVND(kpiMetrics.prevNetRevenue)}</span>
+                    </p>
                 </div>
             </div>
 
             {/* ==================== 3. MAIN REVENUE CHART (RECHARTS) ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-xs space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E2E8F0]">
+            <div className="bg-white border border-slate-200 rounded-md p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-200">
                     <div>
-                        <div className="flex items-center gap-2">
-                            <BarChart3 className="w-5 h-5 text-[#2563EB]" />
-                            <h2 className="text-base font-bold text-slate-900">
-                                Biểu Đồ Biến Động Doanh Thu Thuần Theo Trục Thời Gian (
-                                {periodGroup === 'DAY'
-                                    ? 'Theo Ngày'
-                                    : periodGroup === 'MONTH'
-                                      ? 'Theo Tháng'
-                                      : periodGroup === 'QUARTER'
-                                        ? 'Theo Quý'
-                                        : 'Theo Năm'}
-                                )
-                            </h2>
-                        </div>
+                        <h2 className="text-sm font-semibold text-slate-900">
+                            Biến động doanh thu thuần theo thời gian (
+                            {periodGroup === 'DAY'
+                                ? 'Theo ngày'
+                                : periodGroup === 'MONTH'
+                                  ? 'Theo tháng'
+                                  : periodGroup === 'QUARTER'
+                                    ? 'Theo quý'
+                                    : 'Theo năm'}
+                            )
+                        </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Đối chiếu trực quan giữa Doanh thu thuần thực tế (màu xanh #2563EB), Doanh thu gộp
-                            và Giá trị đơn hủy/hoàn trả qua từng mốc thời gian
+                            So sánh doanh thu thuần thực tế, doanh thu gộp và giá trị giảm trừ qua từng kỳ
                         </p>
                     </div>
 
                     {/* Chuyển kiểu biểu đồ */}
-                    <div className="inline-flex p-1 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] self-start sm:self-auto">
+                    <div className="inline-flex p-0.5 rounded-md bg-slate-100 border border-slate-200 self-start sm:self-auto">
                         <button
                             type="button"
                             onClick={() => setChartMode('COMPOSED')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                 chartMode === 'COMPOSED'
-                                    ? 'bg-[#2563EB] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
+                                    ? 'bg-white text-slate-900 border border-slate-200'
+                                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
                             }`}
                         >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            <span>Cột & Đường</span>
+                            Cột &amp; Đường
                         </button>
                         <button
                             type="button"
                             onClick={() => setChartMode('BAR')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                 chartMode === 'BAR'
-                                    ? 'bg-[#2563EB] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
+                                    ? 'bg-white text-slate-900 border border-slate-200'
+                                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
                             }`}
                         >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            <span>Biểu đồ Cột</span>
+                            Biểu đồ cột
                         </button>
                         <button
                             type="button"
                             onClick={() => setChartMode('AREA')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                                 chartMode === 'AREA'
-                                    ? 'bg-[#2563EB] text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900'
+                                    ? 'bg-white text-slate-900 border border-slate-200'
+                                    : 'text-slate-600 hover:text-slate-900 border border-transparent'
                             }`}
                         >
-                            <LineChartIcon className="w-3.5 h-3.5" />
-                            <span>Đường xu hướng</span>
+                            Xu hướng
                         </button>
                     </div>
                 </div>
 
                 {timeSeriesChartData.length === 0 ? (
-                    <div className="h-80 flex flex-col items-center justify-center text-slate-400 bg-[#F8FAFC] rounded-xl border border-dashed border-[#E2E8F0]">
-                        <BarChart3 className="w-10 h-10 mb-2 text-slate-300" />
-                        <p className="text-xs font-semibold text-slate-500">
+                    <div className="h-72 flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-md border border-dashed border-slate-200">
+                        <BarChart3 className="w-8 h-8 mb-2 text-slate-300" />
+                        <p className="text-xs font-medium text-slate-500">
                             Không có dữ liệu giao dịch trong khoảng thời gian và bộ lọc đã chọn.
                         </p>
                     </div>
                 ) : (
-                    <div className="h-[370px] w-full">
+                    <div className="h-[340px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             {chartMode === 'COMPOSED' ? (
                                 <ComposedChart
                                     data={timeSeriesChartData}
-                                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                                    margin={{ top: 8, right: 16, left: 4, bottom: 4 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                     <XAxis
                                         dataKey="periodLabel"
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={{ stroke: '#E2E8F0' }}
                                         tickLine={false}
                                     />
                                     <YAxis
                                         tickFormatter={formatCompactVND}
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={false}
                                         tickLine={false}
-                                        width={70}
+                                        width={64}
                                     />
                                     <Tooltip content={renderCustomChartTooltip} />
                                     <Legend
-                                        wrapperStyle={{ fontSize: '12px', paddingTop: '12px', fontWeight: 600 }}
+                                        wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                                     />
                                     <Bar
                                         dataKey="grossRevenue"
                                         name="Doanh thu gộp"
                                         fill="#CBD5E1"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={36}
+                                        radius={[3, 3, 0, 0]}
+                                        maxBarSize={32}
                                     />
                                     <Bar
                                         dataKey="netRevenue"
                                         name="Doanh thu thuần thực tế"
                                         fill="#2563EB"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={36}
+                                        radius={[3, 3, 0, 0]}
+                                        maxBarSize={32}
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="netRevenue"
-                                        name="Đường xu hướng DT thuần"
+                                        name="Xu hướng DT thuần"
                                         stroke="#1D4ED8"
-                                        strokeWidth={2.5}
-                                        dot={{ r: 4, fill: '#2563EB', strokeWidth: 2, stroke: '#FFFFFF' }}
-                                        activeDot={{ r: 6 }}
+                                        strokeWidth={2}
+                                        dot={{ r: 3, fill: '#2563EB', strokeWidth: 1.5, stroke: '#FFFFFF' }}
+                                        activeDot={{ r: 5 }}
                                     />
                                 </ComposedChart>
                             ) : chartMode === 'BAR' ? (
                                 <BarChart
                                     data={timeSeriesChartData}
-                                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                                    margin={{ top: 8, right: 16, left: 4, bottom: 4 }}
                                 >
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                     <XAxis
                                         dataKey="periodLabel"
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={{ stroke: '#E2E8F0' }}
                                         tickLine={false}
                                     />
                                     <YAxis
                                         tickFormatter={formatCompactVND}
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={false}
                                         tickLine={false}
-                                        width={70}
+                                        width={64}
                                     />
                                     <Tooltip content={renderCustomChartTooltip} />
                                     <Legend
-                                        wrapperStyle={{ fontSize: '12px', paddingTop: '12px', fontWeight: 600 }}
+                                        wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                                     />
                                     <Bar
                                         dataKey="netRevenue"
                                         name="Doanh thu thuần thực tế"
                                         fill="#2563EB"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={42}
+                                        radius={[3, 3, 0, 0]}
+                                        maxBarSize={36}
                                     />
                                     <Bar
                                         dataKey="deductionRevenue"
                                         name="Giá trị đơn hủy / hoàn trả"
-                                        fill="#F43F5E"
-                                        radius={[6, 6, 0, 0]}
-                                        maxBarSize={42}
+                                        fill="#E11D48"
+                                        radius={[3, 3, 0, 0]}
+                                        maxBarSize={36}
                                     />
                                 </BarChart>
                             ) : (
                                 <AreaChart
                                     data={timeSeriesChartData}
-                                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                                    margin={{ top: 8, right: 16, left: 4, bottom: 4 }}
                                 >
                                     <defs>
                                         <linearGradient id="netRevGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.28} />
-                                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0.02} />
+                                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.18} />
+                                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0.01} />
                                         </linearGradient>
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                                     <XAxis
                                         dataKey="periodLabel"
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={{ stroke: '#E2E8F0' }}
                                         tickLine={false}
                                     />
                                     <YAxis
                                         tickFormatter={formatCompactVND}
-                                        tick={{ fontSize: 11, fill: '#64748B', fontWeight: 600 }}
+                                        tick={{ fontSize: 11, fill: '#64748B' }}
                                         axisLine={false}
                                         tickLine={false}
-                                        width={70}
+                                        width={64}
                                     />
                                     <Tooltip content={renderCustomChartTooltip} />
                                     <Legend
-                                        wrapperStyle={{ fontSize: '12px', paddingTop: '12px', fontWeight: 600 }}
+                                        wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="netRevenue"
                                         name="Doanh thu thuần thực tế"
                                         stroke="#2563EB"
-                                        strokeWidth={3}
+                                        strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#netRevGrad)"
-                                        dot={{ r: 4, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
+                                        dot={{ r: 3, fill: '#2563EB', stroke: '#fff', strokeWidth: 1.5 }}
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="deductionRevenue"
                                         name="Giảm trừ hoàn/hủy"
-                                        stroke="#F43F5E"
-                                        strokeWidth={2}
+                                        stroke="#E11D48"
+                                        strokeWidth={1.75}
                                         strokeDasharray="4 4"
-                                        dot={{ r: 3, fill: '#F43F5E' }}
+                                        dot={{ r: 2.5, fill: '#E11D48' }}
                                     />
                                 </AreaChart>
                             )}
@@ -1545,31 +1365,20 @@ export default function RevenueReportPage() {
             </div>
 
             {/* ==================== 4. DETAILED DATATABLE WITH 5 PERSPECTIVE TABS ==================== */}
-            <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-xs overflow-hidden">
-                {/* Section Header + Perspective Tabs */}
-                <div className="p-5 pb-0 border-b border-[#E2E8F0] bg-white space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <h2 className="text-base font-bold text-slate-900">
-                                Bảng Thống Kê Chi Tiết Doanh Thu Đa Chiều
-                            </h2>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                                Nhấn vào các Tab bên dưới để chuyển góc nhìn phân tích hoặc nhấp vào tiêu đề cột
-                                để sắp xếp dữ liệu
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 bg-[#F8FAFC] px-3 py-1.5 rounded-xl border border-[#E2E8F0]">
-                            <Info className="w-4 h-4 text-[#2563EB] shrink-0" />
-                            <span>
-                                Nhấn vào một dòng bất kỳ để xem danh sách đơn hàng chi tiết
-                            </span>
-                        </div>
+            <div className="bg-white border border-slate-200 rounded-md overflow-hidden">
+                {/* Perspective Tabs */}
+                <div className="px-4 pt-3.5 border-b border-slate-200 bg-white space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h2 className="text-sm font-semibold text-slate-900">
+                            Chi tiết doanh thu đa chiều
+                        </h2>
+                        <span className="text-xs text-slate-500">
+                            Nhấn vào một dòng để xem danh sách đơn hàng cấu thành
+                        </span>
                     </div>
 
-                    {/* 5 Dimension Tabs: Theo Thời gian | Theo Danh mục | Theo Phân loại | Theo Thương hiệu | Theo Sản phẩm */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-5 overflow-x-auto no-scrollbar">
                         {dimensionTabs.map((tab) => {
-                            const IconComp = tab.icon;
                             const isActive = activeDimensionTab === tab.id;
                             return (
                                 <button
@@ -1580,18 +1389,17 @@ export default function RevenueReportPage() {
                                         setTableSearchQuery('');
                                         setCurrentPage(1);
                                     }}
-                                    className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                                    className={`flex items-center gap-2 pb-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
                                         isActive
-                                            ? 'border-[#2563EB] text-[#2563EB] bg-blue-50/50 rounded-t-xl'
-                                            : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-xl'
+                                            ? 'border-blue-600 text-blue-600'
+                                            : 'border-transparent text-slate-500 hover:text-slate-900'
                                     }`}
                                 >
-                                    <IconComp className="w-4 h-4" />
                                     <span>{tab.label}</span>
                                     <span
-                                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                        className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
                                             isActive
-                                                ? 'bg-[#2563EB] text-white'
+                                                ? 'bg-blue-50 text-blue-700'
                                                 : 'bg-slate-100 text-slate-600'
                                         }`}
                                     >
@@ -1635,9 +1443,9 @@ export default function RevenueReportPage() {
                         <button
                             type="button"
                             onClick={handleExportCSV}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F8FAFC] hover:bg-blue-50 text-slate-700 hover:text-[#2563EB] border border-[#E2E8F0] text-xs font-semibold transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                         >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-3.5 h-3.5 text-slate-500" />
                             <span>Tải CSV tab hiện tại</span>
                         </button>
                     }
@@ -1659,89 +1467,87 @@ export default function RevenueReportPage() {
                 }
             >
                 {drilldownRow && (
-                    <div className="space-y-5">
-                        {/* Mini summary cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-                                <div className="text-[11px] font-semibold text-slate-500 uppercase">
-                                    Doanh thu gộp
-                                </div>
-                                <div className="text-base font-extrabold text-slate-900 font-mono mt-1">
+                    <div className="space-y-4">
+                        {/* Flat 3-column summary strip (no nested cards) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 bg-slate-50 border border-slate-200 rounded-md tabular-nums">
+                            <div className="p-3.5">
+                                <div className="text-[11px] font-medium text-slate-500">Doanh thu gộp</div>
+                                <div className="text-base font-semibold text-slate-900 font-mono mt-0.5">
                                     {formatVND(drilldownRow.grossRevenue)}
                                 </div>
                             </div>
-                            <div className="p-4 rounded-xl bg-rose-50/60 border border-rose-200">
-                                <div className="text-[11px] font-semibold text-rose-600 uppercase">
+                            <div className="p-3.5">
+                                <div className="text-[11px] font-medium text-slate-500">
                                     Giảm trừ hoàn / hủy ({drilldownRow.cancelledReturnOrders} đơn)
                                 </div>
-                                <div className="text-base font-extrabold text-rose-600 font-mono mt-1">
+                                <div className="text-base font-semibold text-rose-600 font-mono mt-0.5">
                                     -{formatVND(drilldownRow.deductionRevenue)}
                                 </div>
                             </div>
-                            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200">
-                                <div className="text-[11px] font-bold text-[#2563EB] uppercase">
+                            <div className="p-3.5">
+                                <div className="text-[11px] font-medium text-blue-700">
                                     Doanh thu thuần ({drilldownRow.completedOrders} đơn hoàn tất)
                                 </div>
-                                <div className="text-base font-black text-[#2563EB] font-mono mt-1">
+                                <div className="text-base font-semibold text-blue-600 font-mono mt-0.5">
                                     {formatVND(drilldownRow.netRevenue)}
                                 </div>
                             </div>
                         </div>
 
                         {/* List of orders */}
-                        <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+                        <div className="border border-slate-200 rounded-md overflow-hidden">
                             <div className="overflow-x-auto max-h-[420px]">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="bg-[#F8FAFC] text-slate-500 font-semibold uppercase border-b border-[#E2E8F0] sticky top-0">
+                                    <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200 sticky top-0">
                                         <tr>
-                                            <th className="px-4 py-3">Mã đơn</th>
-                                            <th className="px-4 py-3">Ngày GD</th>
-                                            <th className="px-4 py-3">Khách hàng</th>
-                                            <th className="px-4 py-3">Sản phẩm linh kiện</th>
-                                            <th className="px-4 py-3 text-center">SL</th>
-                                            <th className="px-4 py-3 text-center">Trạng thái đơn</th>
-                                            <th className="px-4 py-3 text-right">Doanh thu thuần</th>
+                                            <th className="px-3.5 py-2.5">Mã đơn</th>
+                                            <th className="px-3.5 py-2.5">Ngày GD</th>
+                                            <th className="px-3.5 py-2.5">Khách hàng</th>
+                                            <th className="px-3.5 py-2.5">Sản phẩm linh kiện</th>
+                                            <th className="px-3.5 py-2.5 text-right">SL</th>
+                                            <th className="px-3.5 py-2.5">Trạng thái</th>
+                                            <th className="px-3.5 py-2.5 text-right">Doanh thu thuần</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#E2E8F0]">
+                                    <tbody className="divide-y divide-slate-200">
                                         {drilldownTransactions.map((tx) => (
-                                            <tr key={tx.id} className="hover:bg-[#F8FAFC]">
-                                                <td className="px-4 py-3 font-mono font-bold text-[#2563EB]">
+                                            <tr key={tx.id} className="hover:bg-slate-50/70">
+                                                <td className="px-3.5 py-2.5 font-mono font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                                                     {tx.orderCode}
                                                 </td>
-                                                <td className="px-4 py-3 text-slate-600 font-mono">
+                                                <td className="px-3.5 py-2.5 text-slate-600 font-mono tabular-nums whitespace-nowrap">
                                                     {formatDateVN(tx.date)}
                                                 </td>
-                                                <td className="px-4 py-3 font-semibold text-slate-800">
+                                                <td className="px-3.5 py-2.5 font-medium text-slate-800 whitespace-nowrap">
                                                     {tx.customerName}
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-3.5 py-2.5">
                                                     <div className="font-medium text-slate-900 line-clamp-1">
                                                         {tx.productName}
                                                     </div>
-                                                    <div className="text-[10px] text-slate-500 font-mono">
-                                                        {tx.productSku} • {tx.brandName}
+                                                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                                                        {tx.productSku} · {tx.brandName}
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-center font-bold text-slate-800">
+                                                <td className="px-3.5 py-2.5 text-right font-mono font-semibold text-slate-800 tabular-nums">
                                                     {tx.quantity}
                                                 </td>
-                                                <td className="px-4 py-3 text-center">
+                                                <td className="px-3.5 py-2.5">
                                                     {tx.status === 'DELIVERED' ? (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                            <CheckCircle2 className="w-3 h-3" />
-                                                            Đã đưa tới khách hàng
+                                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                                                            <span>Hoàn tất</span>
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                                            <XCircle className="w-3 h-3" />
-                                                            {tx.statusLabel} (Loại trừ)
+                                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                                            <span>{tx.statusLabel}</span>
                                                         </span>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-mono font-bold">
+                                                <td className="px-3.5 py-2.5 text-right font-mono font-semibold tabular-nums whitespace-nowrap">
                                                     {tx.status === 'DELIVERED' ? (
-                                                        <span className="text-[#2563EB]">
+                                                        <span className="text-slate-900">
                                                             {formatVND(tx.netActualRevenue)}
                                                         </span>
                                                     ) : (

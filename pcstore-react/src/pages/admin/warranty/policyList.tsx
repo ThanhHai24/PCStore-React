@@ -548,79 +548,43 @@ export default function WarrantyPolicyList() {
     // Table Columns
     const columns: Column<PolicyUI>[] = [
         {
-            key: 'numericId',
-            header: 'Mã ID',
-            render: (item) => (
-                <div className="flex items-center gap-1.5 font-mono text-xs text-slate-700">
-                    <span className="font-semibold text-indigo-600">#{item.numericId}</span>
-                </div>
-            ),
-        },
-        {
             key: 'name',
-            header: 'Tên chính sách bảo hành',
+            header: 'Mã & Tên chính sách',
             render: (item) => (
-                <div className="max-w-md">
-                    <div className="font-medium text-slate-900 line-clamp-1">{item.name}</div>
-                    <div className="text-xs text-slate-500 line-clamp-1 mt-0.5">{item.description}</div>
-                </div>
-            ),
-        },
-        {
-            key: 'durationDays',
-            header: 'Thời hạn bảo hành',
-            render: (item) => (
-                <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <Clock className="w-3.5 h-3.5" />
-                        {item.durationDays} ngày ({item.durationMonths} tháng)
-                    </span>
+                <div className="max-w-md space-y-0.5">
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-medium text-slate-500 tabular-nums shrink-0">
+                            #{item.numericId}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-900 line-clamp-1">
+                            {item.name}
+                        </span>
+                    </div>
+                    <div className="text-xs text-slate-500 line-clamp-2">{item.description}</div>
                 </div>
             ),
         },
         {
             key: 'targetTypeName',
-            header: 'Đối tượng mục tiêu bảo hành',
+            header: 'Phạm vi áp dụng',
             render: (item) => {
                 const typeStr = String(item.targetType ?? '').toUpperCase();
-                const isGeneral = item.targetType === null || item.targetType === undefined || typeStr === '' || typeStr === 'ALL';
-                const isCategory = typeStr === '0' || typeStr === 'CATEGORY';
-                const isProduct = typeStr === '1' || typeStr === 'PRODUCT';
-                const isBrand = typeStr === '2' || typeStr === 'BRAND';
+                let scopeLabel = 'Toàn bộ (Chung)';
+                if (typeStr === '0' || typeStr === 'CATEGORY') scopeLabel = 'Danh mục';
+                else if (typeStr === '1' || typeStr === 'PRODUCT') scopeLabel = 'Sản phẩm';
+                else if (typeStr === '2' || typeStr === 'BRAND') scopeLabel = 'Thương hiệu';
 
                 return (
-                    <div className="space-y-1.5 max-w-xs">
-                        <div>
-                            {isGeneral && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                                    <Layers className="w-3 h-3 text-slate-500" />
-                                    Áp dụng toàn bộ (Chung)
-                                </span>
-                            )}
-                            {isCategory && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                    <Layers className="w-3 h-3 text-blue-600" />
-                                    Theo Danh mục
-                                </span>
-                            )}
-                            {isProduct && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                                    <Package className="w-3 h-3 text-purple-600" />
-                                    Theo Sản phẩm
-                                </span>
-                            )}
-                            {isBrand && (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <Building2 className="w-3 h-3 text-emerald-600" />
-                                    Theo Thương hiệu
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
-                            <span className="text-slate-900 line-clamp-2">{item.targetName}</span>
+                    <div className="space-y-1 max-w-[260px]">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-700 border border-slate-200">
+                            {scopeLabel}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span className="font-medium text-slate-900 truncate" title={item.targetName}>
+                                {item.targetName}
+                            </span>
                             {item.targetId && (
-                                <span className="font-mono text-[10px] text-indigo-600 bg-indigo-50 px-1 rounded border border-indigo-100 shrink-0">
+                                <span className="font-mono text-[11px] text-slate-500 tabular-nums shrink-0">
                                     #{item.targetId}
                                 </span>
                             )}
@@ -630,35 +594,46 @@ export default function WarrantyPolicyList() {
             },
         },
         {
+            key: 'durationDays',
+            header: 'Thời hạn bảo hành',
+            align: 'right',
+            render: (item) => (
+                <div className="text-right tabular-nums whitespace-nowrap">
+                    <div className="text-xs font-semibold text-slate-900">
+                        {item.durationMonths} tháng
+                    </div>
+                    <div className="text-[11px] text-slate-500">{item.durationDays} ngày</div>
+                </div>
+            ),
+        },
+        {
             key: 'status',
             header: 'Trạng thái',
             render: (item) => (
                 <button
+                    type="button"
                     onClick={() => handleToggleStatus(item)}
                     title="Nhấn để đổi trạng thái"
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${item.status === 1
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                        : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                        }`}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 -mx-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 >
-                    {item.status === 1 ? (
-                        <>
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            Đang áp dụng
-                        </>
-                    ) : (
-                        <>
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                            Ngừng áp dụng
-                        </>
-                    )}
+                    <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            item.status === 1 ? 'bg-emerald-600' : 'bg-slate-400'
+                        }`}
+                    />
+                    <span>{item.status === 1 ? 'Đang áp dụng' : 'Ngừng áp dụng'}</span>
                 </button>
             ),
         },
         {
             key: 'createdDate',
             header: 'Ngày tạo',
-            render: (item) => <span className="text-xs text-slate-600">{item.createdDate}</span>,
+            align: 'right',
+            render: (item) => (
+                <span className="text-xs text-slate-600 tabular-nums whitespace-nowrap">
+                    {item.createdDate}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -728,23 +703,21 @@ export default function WarrantyPolicyList() {
     ];
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                            <FileCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">Quản lý chính sách bảo hành</h1>
-                        </div>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý chính sách bảo hành
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.total} chính sách · {stats.active} đang áp dụng · {stats.inactive} ngừng áp dụng
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <AdminButton
                         variant="secondary"
-                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />}
                         onClick={fetchPolicies}
                     >
                         Làm mới
@@ -758,104 +731,55 @@ export default function WarrantyPolicyList() {
                 </div>
             </div>
 
-            {/* KPI Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng chính sách</p>
-                        <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
-                    </div>
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <ShieldCheck className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đang áp dụng</p>
-                        <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.active}</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tạm dừng áp dụng</p>
-                        <p className="text-2xl font-bold text-slate-600 mt-1">{stats.inactive}</p>
-                    </div>
-                    <div className="p-3 bg-slate-100 text-slate-600 rounded-lg">
-                        <XCircle className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Theo danh mục</p>
-                        <p className="text-2xl font-bold text-indigo-600 mt-1">{stats.categoryScoped}</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <Layers className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
             {/* Quick Status Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('ALL');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${quickStatusTab === 'ALL'
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    Tất cả chính sách ({stats.total})
-                </button>
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('ACTIVE');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${quickStatusTab === 'ACTIVE'
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Đang áp dụng ({stats.active})
-                </button>
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('INACTIVE');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${quickStatusTab === 'INACTIVE'
-                        ? 'bg-slate-700 text-white shadow-sm'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    <XCircle className="w-3.5 h-3.5" />
-                    Ngừng áp dụng ({stats.inactive})
-                </button>
+            <div className="flex items-center gap-6 border-b border-slate-200 overflow-x-auto">
+                {(
+                    [
+                        { id: 'ALL', label: 'Tất cả chính sách', count: stats.total },
+                        { id: 'ACTIVE', label: 'Đang áp dụng', count: stats.active },
+                        { id: 'INACTIVE', label: 'Ngừng áp dụng', count: stats.inactive },
+                    ] as const
+                ).map((tab) => {
+                    const isActive = quickStatusTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => {
+                                setQuickStatusTab(tab.id);
+                                setCurrentPage(1);
+                            }}
+                            className={`pb-2.5 text-sm font-medium flex items-center gap-2 border-b-2 -mb-px whitespace-nowrap transition-colors cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
+                                isActive
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                            }`}
+                        >
+                            <span>{tab.label}</span>
+                            <span
+                                className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
+                                    isActive ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+                                }`}
+                            >
+                                {tab.count}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Filter Section */}
-            <AdminFilter
-                fields={filterFields}
-                searchPlaceholder="Tìm theo tên chính sách hoặc mô tả..."
-                searchQuery={searchQuery}
-                onSearchChange={handleSearch}
-                values={filters}
-                onFilterChange={handleFilterChange}
-                onReset={handleFilterReset}
-            />
+            {/* Filter & Table */}
+            <div className="space-y-4">
+                <AdminFilter
+                    fields={filterFields}
+                    searchPlaceholder="Tìm theo tên chính sách hoặc mô tả..."
+                    searchQuery={searchQuery}
+                    onSearchChange={handleSearch}
+                    values={filters}
+                    onFilterChange={handleFilterChange}
+                    onReset={handleFilterReset}
+                />
 
-            {/* Table with Pagination */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <AdminTable
                     columns={columns}
                     data={policies}
@@ -876,8 +800,6 @@ export default function WarrantyPolicyList() {
                     itemUnitName="chính sách"
                     emptyText="Chưa có chính sách bảo hành nào phù hợp với bộ lọc"
                 />
-
-
             </div>
 
             {/* Modal Create Policy */}
@@ -918,8 +840,9 @@ export default function WarrantyPolicyList() {
                                 value={formData.durationDays}
                                 onChange={(e) => setFormData({ ...formData, durationDays: Number(e.target.value) })}
                                 error={formErrors.durationDays}
+                                className="font-mono tabular-nums"
                             />
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1 tabular-nums">
                                 Tương đương: ~{Math.round(formData.durationDays / 30)} tháng
                             </p>
                         </div>
@@ -1031,8 +954,9 @@ export default function WarrantyPolicyList() {
                                 value={formData.durationDays}
                                 onChange={(e) => setFormData({ ...formData, durationDays: Number(e.target.value) })}
                                 error={formErrors.durationDays}
+                                className="font-mono tabular-nums"
                             />
-                            <p className="text-xs text-slate-500 mt-1">
+                            <p className="text-xs text-slate-500 mt-1 tabular-nums">
                                 Tương đương: ~{Math.round(formData.durationDays / 30)} tháng
                             </p>
                         </div>
@@ -1125,96 +1049,95 @@ export default function WarrantyPolicyList() {
                 {selectedPolicy && (
                     <div className="space-y-4">
                         {detailTab === 'info' && (
-                            <div className="space-y-3">
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500 uppercase font-semibold">Tên chính sách</div>
-                                    <div className="text-base font-bold text-slate-900 mt-1">{selectedPolicy.name}</div>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="text-xs font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">
-                                            ID: #{selectedPolicy.numericId}
+                            <div className="space-y-4">
+                                {/* Flat summary header strip */}
+                                <div className="px-4 py-3 bg-slate-50 rounded-md border border-slate-200 space-y-1.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-mono text-xs text-slate-500 tabular-nums">
+                                            ID #{selectedPolicy.numericId}
                                         </span>
-                                        <span
-                                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${selectedPolicy.status === 1
-                                                ? 'bg-emerald-100 text-emerald-700'
-                                                : 'bg-slate-200 text-slate-700'
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                            <span
+                                                className={`w-1.5 h-1.5 rounded-full ${
+                                                    selectedPolicy.status === 1 ? 'bg-emerald-600' : 'bg-slate-400'
                                                 }`}
-                                        >
+                                            />
                                             {selectedPolicy.status === 1 ? 'Đang áp dụng' : 'Ngừng áp dụng'}
                                         </span>
                                     </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 gap-3">
-                                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Thời hạn</div>
-                                        <div className="text-lg font-bold text-slate-900 mt-0.5">
-                                            {selectedPolicy.durationDays} ngày ({selectedPolicy.durationMonths} Tháng)
-                                        </div>
+                                    <div className="text-sm font-semibold text-slate-900">
+                                        {selectedPolicy.name}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
-                                        <div className="text-xs text-indigo-700 font-semibold uppercase">Loại phạm vi</div>
-                                        <div className="text-base font-bold text-slate-900 mt-1">
+                                {/* Flat 2-column metadata grid (no card-in-card) */}
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs pt-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Thời hạn bảo hành</dt>
+                                        <dd className="mt-0.5 font-semibold text-slate-900 tabular-nums">
+                                            {selectedPolicy.durationMonths} tháng ({selectedPolicy.durationDays} ngày)
+                                        </dd>
+                                    </div>
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Ngày tạo chính sách</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900 tabular-nums">
+                                            {selectedPolicy.createdDate}
+                                        </dd>
+                                    </div>
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Loại phạm vi</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900">
                                             {selectedPolicy.targetTypeName}
-                                        </div>
+                                        </dd>
                                     </div>
-
-                                    <div className="p-4 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Đối tượng mục tiêu được bảo hành</div>
-                                        <div className="text-sm font-semibold text-indigo-700 mt-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Đối tượng mục tiêu</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900">
                                             {selectedPolicy.targetName}
-                                        </div>
-                                        {selectedPolicy.targetId && (
-                                            <p className="text-xs text-slate-500 mt-1">
-                                                Mã định danh đối tượng: #{selectedPolicy.targetId}
-                                            </p>
-                                        )}
+                                            {selectedPolicy.targetId && (
+                                                <span className="ml-1.5 font-mono text-[11px] text-slate-500 tabular-nums">
+                                                    #{selectedPolicy.targetId}
+                                                </span>
+                                            )}
+                                        </dd>
                                     </div>
-                                </div>
+                                </dl>
 
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500 font-medium">Mô tả chi tiết</div>
-                                    <p className="text-sm text-slate-700 mt-1 whitespace-pre-line">
+                                {/* Flat description block */}
+                                <div className="p-3.5 rounded-md border border-slate-200 bg-white space-y-1">
+                                    <div className="text-xs font-medium text-slate-500">
+                                        Mô tả &amp; điều khoản bảo hành
+                                    </div>
+                                    <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
                                         {selectedPolicy.description}
                                     </p>
-                                </div>
-
-                                <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-500">
-                                    Ngày tạo chính sách: {selectedPolicy.createdDate}
                                 </div>
                             </div>
                         )}
 
                         {detailTab === 'scope' && (
-                            <div className="space-y-4">
-                                <div className="p-4 bg-indigo-50/70 rounded-xl border border-indigo-200 space-y-2">
-                                    <div className="font-bold text-indigo-950 text-sm flex items-center gap-2">
-                                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                                        Quy tắc đối tượng được bảo hành
+                            <div className="space-y-4 text-xs">
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
+                                    <div className="px-3.5 py-2.5 flex items-center justify-between">
+                                        <span className="text-slate-500">Phân loại phạm vi</span>
+                                        <span className="font-medium text-slate-900">{selectedPolicy.targetTypeName}</span>
                                     </div>
-                                    <p className="text-xs text-indigo-900 leading-relaxed">
-                                        Chính sách này sẽ được hệ thống tự động gán cho các thiết bị &amp; linh kiện thỏa mãn:
-                                    </p>
-                                    <div className="mt-2 p-3 bg-white rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
-                                        <span className="text-slate-600">Phân loại phạm vi:</span>
-                                        <span className="font-bold text-indigo-700">{selectedPolicy.targetTypeName}</span>
-                                    </div>
-                                    <div className="p-3 bg-white rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
-                                        <span className="text-slate-600">Đối tượng mục tiêu cụ thể:</span>
-                                        <span className="font-bold text-slate-900">{selectedPolicy.targetName}</span>
+                                    <div className="px-3.5 py-2.5 flex items-center justify-between gap-4">
+                                        <span className="text-slate-500 shrink-0">Đối tượng mục tiêu</span>
+                                        <span className="font-medium text-slate-900 text-right">{selectedPolicy.targetName}</span>
                                     </div>
                                     {selectedPolicy.targetId && (
-                                        <div className="p-3 bg-white rounded-lg border border-indigo-100 flex items-center justify-between text-xs">
-                                            <span className="text-slate-600">Mã định danh đối tượng (Target ID):</span>
-                                            <span className="font-mono font-bold text-slate-700">#{selectedPolicy.targetId}</span>
+                                        <div className="px-3.5 py-2.5 flex items-center justify-between">
+                                            <span className="text-slate-500">Mã định danh đối tượng</span>
+                                            <span className="font-mono font-medium text-slate-900 tabular-nums">
+                                                #{selectedPolicy.targetId}
+                                            </span>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 flex gap-2.5">
-                                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                <div className="p-3 bg-amber-50 rounded-md border border-amber-200 flex gap-2.5">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                                     <div className="text-xs text-amber-800 leading-relaxed">
                                         Khi đơn hàng giao hoàn tất hoặc xuất kho thành công, hệ thống tự động dò tìm chính sách phù hợp nhất (thứ tự ưu tiên: Sản phẩm cụ thể &gt; Danh mục &gt; Thương hiệu &gt; Toàn bộ hệ thống) để kích hoạt thời hạn bảo hành cho từng số Serial linh kiện.
                                     </div>

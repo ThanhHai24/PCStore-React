@@ -51,9 +51,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     };
 
     const sizeStyles = {
-        sm: 'py-1.5 pl-8 pr-7 text-xs rounded-lg',
-        md: 'py-2 pl-9 pr-8 text-sm rounded-xl',
-        lg: 'py-2.5 pl-10 pr-9 text-base rounded-xl',
+        sm: 'py-1.5 pl-8 pr-7 text-xs rounded-md',
+        md: 'py-2 pl-9 pr-8 text-sm rounded-md',
+        lg: 'py-2.5 pl-10 pr-9 text-base rounded-md',
     };
 
     const iconSizes = {
@@ -81,13 +81,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 placeholder={placeholder}
                 disabled={disabled}
                 autoFocus={autoFocus}
-                className={`w-full bg-white border border-gray-200 text-gray-800 placeholder-gray-400 font-small shadow-sm transition-all focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 hover:border-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed ${sizeStyles[size]}`}
+                className={`w-full bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-normal transition-colors focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15 hover:border-slate-300 disabled:bg-slate-50 disabled:cursor-not-allowed ${sizeStyles[size]}`}
             />
             {internalValue && (
                 <button
                     type="button"
                     onClick={handleClear}
-                    className={`absolute top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors ${clearSizes[size]}`}
+                    className={`absolute top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition-colors cursor-pointer ${clearSizes[size]}`}
                     title="Xóa tìm kiếm"
                 >
                     <X className="w-3.5 h-3.5" />

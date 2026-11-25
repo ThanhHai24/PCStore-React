@@ -493,116 +493,116 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
   if (readOnly) {
     if (items.length === 0) {
       return (
-        <div className="p-6 text-center rounded-2xl bg-gray-50 border border-dashed border-gray-200">
-          <Layers className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm font-medium text-gray-600">Chưa cập nhật bảng thông số kỹ thuật chi tiết</p>
-          <p className="text-xs text-gray-400 mt-1">Sản phẩm này chưa có thông tin phần cứng hoặc linh kiện cấu thành.</p>
+        <div className="p-6 text-center rounded-md bg-slate-50 border border-dashed border-slate-200">
+          <Layers className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+          <p className="text-xs font-semibold text-slate-700">Chưa cập nhật bảng thông số kỹ thuật chi tiết</p>
+          <p className="text-xs text-slate-500 mt-1">Sản phẩm này chưa có thông tin phần cứng hoặc linh kiện cấu thành.</p>
         </div>
       );
     }
 
     if (activeMode === 'PC') {
+      const totalComponentPrice = items.reduce(
+        (sum, it) => sum + (it.productPrice && it.productPrice > 0 ? Number(it.productPrice) : 0),
+        0
+      );
+
       return (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-xs bg-white">
-          <div className="bg-sky-50/70 px-4 py-3 border-b border-sky-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-sky-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Cpu className="w-4 h-4 text-sky-600" />
-              Bảng linh kiện cấu hình PC ({items.length} thành phần)
+        <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+          <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 tabular-nums">
+              <Cpu className="w-3.5 h-3.5 text-slate-500" />
+              Linh kiện cấu hình ({items.length})
             </span>
-            <span className="text-xs text-sky-600 font-medium">Bảo hành linh kiện chính hãng</span>
+            <span className="text-xs text-slate-500">Bảo hành linh kiện chính hãng</span>
           </div>
-          <table className="w-full text-xs sm:text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-50 text-gray-700 font-bold uppercase text-left border-b border-gray-200">
-                <th className="px-4 py-3 w-28 sm:w-36">Linh kiện</th>
-                <th className="px-4 py-3">Tên sản phẩm chi tiết</th>
-                <th className="px-4 py-3 w-28 sm:w-36 text-center">Bảo hành</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item, idx) => {
-                const itemImg = getProductImageForItem(item);
-                return (
-                  <tr key={idx} className="hover:bg-sky-50/30 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-gray-900 uppercase">
-                      <span className="inline-block px-2.5 py-1 rounded-md bg-gray-100 text-gray-800 text-xs font-bold">
-                        {item.key}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-800 font-medium leading-relaxed">
-                      <div className="flex items-center gap-3">
-                        {itemImg && (
-                          <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 p-1 shrink-0 overflow-hidden flex items-center justify-center shadow-2xs">
-                            <img
-                              src={itemImg}
-                              alt={item.name}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
+          <div className="divide-y divide-slate-200/80">
+            {items.map((item, idx) => {
+              const itemImg = getProductImageForItem(item);
+              return (
+                <div key={idx} className="px-4 py-2.5 hover:bg-slate-50/70 transition-colors flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <span className="w-20 sm:w-24 text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 truncate">
+                      {item.key}
+                    </span>
+                    <div className="w-9 h-9 aspect-square rounded-md bg-white border border-slate-200 p-0.5 shrink-0 overflow-hidden flex items-center justify-center">
+                      {itemImg ? (
+                        <img
+                          src={itemImg}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <Cpu className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-slate-900 truncate" title={item.name}>
+                        {item.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                        {item.productId && (
+                          <span className="font-mono tabular-nums">#{item.productId}</span>
                         )}
-                        <div>
-                          {item.productId ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-blue-600 font-semibold">{item.name}</span>
-                              <span className="inline-flex items-center gap-1 text-[11px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200">
-                                ID: #{item.productId}
-                              </span>
-                              {item.productPrice && item.productPrice > 0 && (
-                                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                  {Number(item.productPrice).toLocaleString('vi-VN')} đ
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-800">{item.name}</span>
-                          )}
-                        </div>
+                        <span>{item.warranty || 'Chính hãng'}</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-600 text-xs font-medium">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                        {item.warranty || 'Chính hãng'}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {item.productPrice && item.productPrice > 0 ? (
+                      <span className="text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                        {Number(item.productPrice).toLocaleString('vi-VN')} ₫
                       </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {totalComponentPrice > 0 && (
+            <div className="px-4 py-2.5 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-600 tabular-nums">
+                Tổng giá trị linh kiện ({items.length} món)
+              </span>
+              <span className="font-semibold text-slate-900 tabular-nums">
+                {totalComponentPrice.toLocaleString('vi-VN')} ₫
+              </span>
+            </div>
+          )}
         </div>
       );
     }
 
     return (
-      <div className="overflow-hidden rounded-2xl border border-gray-200 shadow-xs bg-white">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-            {activeMode === 'LAPTOP' ? <Laptop className="w-4 h-4 text-indigo-600" /> : <Layers className="w-4 h-4 text-blue-600" />}
-            {activeMode === 'LAPTOP' ? 'Thông số kỹ thuật Laptop' : 'Bảng thông số kỹ thuật chi tiết'}
+      <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+        <div className="bg-slate-50/80 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            {activeMode === 'LAPTOP' ? <Laptop className="w-3.5 h-3.5 text-slate-500" /> : <Layers className="w-3.5 h-3.5 text-slate-500" />}
+            {activeMode === 'LAPTOP' ? 'Thông số kỹ thuật Laptop' : 'Thông số kỹ thuật'}
           </span>
-          <span className="text-xs text-gray-500 font-medium">{items.length} mục thông số</span>
+          <span className="text-xs text-slate-500 font-medium tabular-nums">{items.length} mục</span>
         </div>
-        <table className="w-full text-xs sm:text-sm border-collapse">
+        <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-gray-50/80 text-gray-700 font-bold uppercase text-left border-b border-gray-200">
-              <th className="px-4 py-3 w-1/3 sm:w-1/4">Thông số</th>
-              <th className="px-4 py-3">Giá trị chi tiết</th>
+            <tr className="bg-slate-50/60 text-slate-500 text-[11px] font-semibold uppercase tracking-wider text-left border-b border-slate-200">
+              <th className="px-4 py-2.5 w-1/3 sm:w-1/4">Thông số</th>
+              <th className="px-4 py-2.5">Giá trị chi tiết</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-200/80">
             {items.map((item, idx) => (
-              <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                <td className="px-4 py-3 font-semibold text-gray-800">
+              <tr key={idx} className="hover:bg-slate-50/60">
+                <td className="px-4 py-2.5 font-medium text-slate-800">
                   {item.key}
                 </td>
-                <td className="px-4 py-3 text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">
+                <td className="px-4 py-2.5 text-slate-700 leading-relaxed whitespace-pre-wrap">
                   {item.name}
                 </td>
-
               </tr>
             ))}
           </tbody>
@@ -617,9 +617,9 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
   return (
     <div className="space-y-4">
       {/* Unified Top Header: Category Auto-sync & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-sky-50/80 to-indigo-50/80 border border-blue-200/80 shadow-2xs">
-        <div className="flex items-center gap-2.5 text-xs text-blue-900">
-          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-md bg-slate-50 border border-slate-200">
+        <div className="flex items-center gap-2.5 text-xs text-slate-800">
+          <div className="w-8 h-8 rounded-md bg-white border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
             {activeMode === 'PC' ? (
               <Cpu className="w-4 h-4" />
             ) : activeMode === 'LAPTOP' ? (
@@ -630,23 +630,23 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-gray-600 font-medium">Mẫu thông số theo danh mục:</span>
-              <span className="font-bold text-blue-700 bg-white/90 px-2.5 py-0.5 rounded-lg border border-blue-200 shadow-3xs">
+              <span className="text-slate-500 font-medium">Mẫu thông số:</span>
+              <span className="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200">
                 {categoryName || 'Mặc định'}
               </span>
               {activeMode === 'COMPONENT' && categorySpecInfo.template && (
-                <span className="text-gray-500 text-[11px]">
+                <span className="text-slate-500 text-[11px]">
                   ({categorySpecInfo.template.name})
                 </span>
               )}
               {activeMode === 'LAPTOP' && (
-                <span className="text-indigo-600 font-semibold text-[11px]">(Mẫu chuẩn Laptop)</span>
+                <span className="text-slate-500 text-[11px]">(Mẫu chuẩn Laptop)</span>
               )}
               {activeMode === 'PC' && (
-                <span className="text-sky-600 font-semibold text-[11px]">(Mẫu 9 linh kiện PC)</span>
+                <span className="text-slate-500 text-[11px] tabular-nums">(9 khe linh kiện PC)</span>
               )}
             </div>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               Form tự động điều chỉnh theo danh mục sản phẩm đã chọn
             </p>
           </div>
@@ -669,7 +669,7 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                 applyTemplate(categorySpecInfo.template);
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 text-xs font-semibold transition-all shadow-3xs active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
             title="Khôi phục lại các trường thông số chuẩn của danh mục này"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -680,9 +680,9 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
           <button
             type="button"
             onClick={() => setIsRawMode(!isRawMode)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-3xs cursor-pointer ${isRawMode
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${isRawMode
               ? 'bg-slate-900 text-white border-slate-900'
-              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             title="Chuyển đổi xem dạng JSON thô"
           >
@@ -694,191 +694,196 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
 
       {/* RAW JSON MODE */}
       {isRawMode ? (
-        <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50 space-y-3">
+        <div className="border border-slate-200 rounded-md p-3.5 bg-slate-50/50 space-y-2.5">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Code className="w-4 h-4 text-blue-600" />
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Code className="w-3.5 h-3.5 text-slate-500" />
               Chỉnh sửa định dạng JSON hoặc Văn bản thuần
             </label>
-            <span className="text-[11px] text-gray-500">Được tự động đồng bộ khi chuyển chế độ</span>
+            <span className="text-[11px] text-slate-500">Tự động đồng bộ khi chuyển chế độ</span>
           </div>
           <textarea
             rows={12}
             value={rawText}
             onChange={(e) => handleApplyRawJson(e.target.value)}
             placeholder='[\n  { "key": "CPU", "name": "Intel Core i5-13400F", "productId": "12", "warranty": "36 Tháng" }\n]'
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 font-mono text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 leading-relaxed"
+            className="w-full px-3.5 py-2.5 rounded-md border border-slate-200 font-mono text-xs text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 leading-relaxed"
           />
         </div>
       ) : activeMode === 'PC' ? (
         /* ========================================================================= */
-        /* PC MODE: CHỌN LINH KIỆN TỪ DANH SÁCH SẢN PHẨM                            */
-        /* (cpu, mainboard, ram, ssd, hdd, psu, case, cooler, casefan)               */
+        /* PC MODE: DANH SÁCH KHE LINH KIỆN PHẲNG PHÂN TÁCH BẰNG DIVIDE-Y           */
         /* ========================================================================= */
-        <div className="space-y-4">
-          <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100 flex items-start gap-3">
-            <Cpu className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-xs font-bold text-sky-900 uppercase tracking-wider">
-                Cấu hình linh kiện bộ PC (Chọn từ danh sách sản phẩm)
-              </h4>
-              <p className="text-xs text-sky-700 mt-0.5 leading-relaxed">
-                Các linh kiện được chọn sẽ tự động liên kết tới sản phẩm trong cửa hàng (có ID, tên và bảo hành). Khách hàng có thể bấm vào để xem chi tiết từng linh kiện.
-              </p>
-            </div>
-          </div>
+        (() => {
+          const selectedCount = PC_STANDARD_PARTS.filter((part) => {
+            const it = items.find((i) => i.key.toUpperCase() === part.key.toUpperCase());
+            return Boolean(it && it.name);
+          }).length;
+          const estimatedTotal = items.reduce(
+            (sum, it) => sum + (it.productPrice && it.productPrice > 0 ? Number(it.productPrice) : 0),
+            0
+          );
 
-          <div className="grid grid-cols-1 gap-3">
-            {PC_STANDARD_PARTS.map((part) => {
-              const selectedItem = items.find((i) => i.key.toUpperCase() === part.key.toUpperCase());
-              const isSelected = Boolean(selectedItem && selectedItem.name);
-              const itemImg = selectedItem ? getProductImageForItem(selectedItem) : undefined;
+          return (
+            <div className="border border-slate-200 rounded-md bg-white overflow-hidden">
+              <div className="divide-y divide-slate-200/80">
+                {PC_STANDARD_PARTS.map((part) => {
+                  const selectedItem = items.find((i) => i.key.toUpperCase() === part.key.toUpperCase());
+                  const isSelected = Boolean(selectedItem && selectedItem.name);
+                  const itemImg = selectedItem ? getProductImageForItem(selectedItem) : undefined;
 
-              return (
-                <div
-                  key={part.id}
-                  className={`p-3.5 rounded-2xl border transition-all ${isSelected
-                    ? 'bg-white border-blue-200 shadow-xs ring-1 ring-blue-500/10'
-                    : 'bg-gray-50/60 border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    {/* Left: Slot Info & Image */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      {isSelected && itemImg ? (
-                        <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 p-1 shrink-0 overflow-hidden shadow-2xs flex items-center justify-center">
-                          <img
-                            src={itemImg}
-                            alt={selectedItem?.name || part.label}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs uppercase shrink-0 ${isSelected ? 'bg-blue-600 text-white shadow-xs' : 'bg-gray-200 text-gray-600'
-                            }`}
-                        >
-                          {part.key.slice(0, 3)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-900 uppercase">{part.label}</span>
-                          {isSelected && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full shrink-0">
-                              <Check className="w-3 h-3" /> Đã chọn
+                  return (
+                    <div
+                      key={part.id}
+                      className="px-3.5 py-2.5 hover:bg-slate-50/70 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    >
+                      {/* Left: Slot Info & Thumbnail (36x36px rounded-md) */}
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-9 h-9 aspect-square rounded-md bg-white border border-slate-200 p-0.5 shrink-0 overflow-hidden flex items-center justify-center">
+                          {isSelected && itemImg ? (
+                            <img
+                              src={itemImg}
+                              alt={selectedItem?.name || part.label}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <span className="text-[10px] font-semibold uppercase text-slate-500">
+                              {part.key.slice(0, 3)}
                             </span>
                           )}
                         </div>
-                        {isSelected ? (
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-blue-700 truncate max-w-[280px] sm:max-w-[420px]">
-                              {selectedItem?.name}
-                            </span>
-                            {selectedItem?.productId && (
-                              <span className="text-[11px] font-mono bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-200 shrink-0">
-                                SKU/ID: #{selectedItem.productId}
-                              </span>
-                            )}
-                            {selectedItem?.productPrice && selectedItem.productPrice > 0 && (
-                              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
-                                {Number(selectedItem.productPrice).toLocaleString('vi-VN')} đ
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-900 uppercase">{part.label}</span>
+                            {isSelected && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Đã chọn
                               </span>
                             )}
                           </div>
-                        ) : (
-                          <p className="text-xs text-gray-400 mt-0.5">Chưa chọn linh kiện cho phần này</p>
-                        )}
+                          {isSelected ? (
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <span className="text-xs font-medium text-slate-800 truncate max-w-[260px] sm:max-w-[380px]">
+                                {selectedItem?.name}
+                              </span>
+                              {selectedItem?.productId && (
+                                <span className="text-[11px] font-mono text-slate-500 tabular-nums shrink-0">
+                                  #{selectedItem.productId}
+                                </span>
+                              )}
+                              {selectedItem?.productPrice && selectedItem.productPrice > 0 && (
+                                <span className="text-xs font-semibold text-slate-900 tabular-nums shrink-0">
+                                  {Number(selectedItem.productPrice).toLocaleString('vi-VN')} ₫
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 mt-0.5">Chưa chọn linh kiện</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Right: Actions & Warranty */}
-                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                      {isSelected ? (
-                        <>
-                          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-xl">
-                            <ShieldCheck className="w-3.5 h-3.5 text-gray-500" />
-                            <input
-                              type="text"
-                              value={selectedItem?.warranty || part.defaultWarranty}
-                              onChange={(e) => handleUpdateSlotWarranty(part.key, e.target.value)}
-                              placeholder="36 Tháng"
-                              title="Thời hạn bảo hành"
-                              className="w-20 text-xs text-gray-800 bg-transparent font-medium focus:outline-none"
-                            />
-                          </div>
+                      {/* Right: Warranty & Actions */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                        {isSelected ? (
+                          <>
+                            <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-md">
+                              <ShieldCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <input
+                                type="text"
+                                value={selectedItem?.warranty || part.defaultWarranty}
+                                onChange={(e) => handleUpdateSlotWarranty(part.key, e.target.value)}
+                                placeholder="36 Tháng"
+                                title="Thời hạn bảo hành"
+                                className="w-16 text-xs text-slate-700 bg-transparent font-medium tabular-nums focus:outline-none"
+                              />
+                            </div>
 
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPickerSlotKey(part.key);
+                                setPickerSlotLabel(part.label);
+                                setSearchKeyword('');
+                                setManualInputName(selectedItem?.name || '');
+                                setManualInputWarranty(selectedItem?.warranty || part.defaultWarranty);
+                              }}
+                              className="px-2.5 py-1.5 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                            >
+                              Đổi
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSlot(part.key)}
+                              className="p-1.5 rounded-md border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600/40"
+                              title="Xóa linh kiện này khỏi cấu hình"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
                           <button
                             type="button"
                             onClick={() => {
                               setPickerSlotKey(part.key);
                               setPickerSlotLabel(part.label);
                               setSearchKeyword('');
-                              setManualInputName(selectedItem?.name || '');
-                              setManualInputWarranty(selectedItem?.warranty || part.defaultWarranty);
+                              setManualInputName('');
+                              setManualInputWarranty(part.defaultWarranty);
                             }}
-                            className="px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold transition-colors flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-xs font-medium transition-colors inline-flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                           >
-                            Đổi linh kiện
+                            <Plus className="w-3.5 h-3.5 text-slate-500" />
+                            Chọn {part.key}
                           </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSlot(part.key)}
-                            className="p-1.5 rounded-xl border border-gray-200 text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                            title="Xóa linh kiện này khỏi cấu hình"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPickerSlotKey(part.key);
-                            setPickerSlotLabel(part.label);
-                            setSearchKeyword('');
-                            setManualInputName('');
-                            setManualInputWarranty(part.defaultWarranty);
-                          }}
-                          className="px-3.5 py-1.5 rounded-xl border border-dashed border-blue-300 bg-white hover:bg-blue-50/70 text-blue-600 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Chọn {part.key}
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
 
-          {/* Add extra custom component button for PC */}
-          <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-xs text-gray-500">Cần thêm linh kiện phụ (quạt phụ, màn hình kèm, tai nghe)?</span>
-            <button
-              type="button"
-              onClick={() => {
-                const customKey = prompt('Nhập tên mã linh kiện bổ sung (Ví dụ: Fan Case 2, Màn hình kèm):', 'Linh kiện kèm theo');
-                if (customKey && customKey.trim()) {
-                  setPickerSlotKey(customKey.trim());
-                  setPickerSlotLabel(customKey.trim());
-                  setSearchKeyword('');
-                  setManualInputName('');
-                  setManualInputWarranty('12 Tháng');
-                }
-              }}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 py-1 px-2.5 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm linh kiện khác
-            </button>
-          </div>
-        </div>
+              {/* Footer Summary: Selected Count, Estimated Price & Add Custom Slot */}
+              <div className="px-3.5 py-2.5 bg-slate-50/80 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-3 tabular-nums">
+                  <span className="text-slate-600 font-medium">
+                    Đã chọn <strong className="text-slate-900">{selectedCount}/{PC_STANDARD_PARTS.length}</strong> khe chuẩn
+                  </span>
+                  {estimatedTotal > 0 && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-slate-600">
+                        Tạm tính linh kiện: <strong className="text-slate-900">{estimatedTotal.toLocaleString('vi-VN')} ₫</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const customKey = prompt('Nhập tên mã linh kiện bổ sung (Ví dụ: Fan Case 2, Màn hình kèm):', 'Linh kiện kèm theo');
+                    if (customKey && customKey.trim()) {
+                      setPickerSlotKey(customKey.trim());
+                      setPickerSlotLabel(customKey.trim());
+                      setSearchKeyword('');
+                      setManualInputName('');
+                      setManualInputWarranty('12 Tháng');
+                    }
+                  }}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 py-1 px-2 rounded-md hover:bg-blue-50 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Thêm linh kiện khác
+                </button>
+              </div>
+            </div>
+          );
+        })()
       ) : activeMode === 'LAPTOP' ? (
         /* ========================================================================= */
         /* LAPTOP MODE: NHẬP TRỰC TIẾP THÔNG SỐ CẤU HÌNH                            */
@@ -1080,8 +1085,8 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
       {/* MODAL CHỌN LINH KIỆN TỪ DANH SÁCH CHO PC                                  */}
       {/* ========================================================================= */}
       {pickerSlotKey && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-[92vw] max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-gray-200">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-md shadow-lg w-[92vw] max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-slate-200">
             {/* Header */}
             <AdminModalHeader
               title={
@@ -1095,7 +1100,7 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
             />
 
             {/* Search Bar */}
-            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+            <div className="p-3.5 border-b border-slate-200 bg-slate-50/60">
               <AdminInput
                 type="text"
                 value={searchKeyword}
@@ -1107,15 +1112,15 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
             </div>
 
             {/* Product List */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-4 divide-y divide-gray-100">
+            <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-slate-200/80">
               {filteredAvailableProducts.length > 0 ? (
                 filteredAvailableProducts.map((prod) => (
                   <div
                     key={prod.id}
-                    className="py-3 flex items-center justify-between gap-3 hover:bg-blue-50/40 p-2 rounded-xl transition-colors group"
+                    className="px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-200 shrink-0 overflow-hidden flex items-center justify-center p-1">
+                      <div className="w-10 h-10 aspect-square rounded-md bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-0.5">
                         {prod.image ? (
                           <img
                             src={prod.image}
@@ -1126,25 +1131,25 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                             }}
                           />
                         ) : (
-                          <Package className="w-6 h-6 text-gray-400" />
+                          <Package className="w-5 h-5 text-slate-400" />
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-900 group-hover:text-blue-600 truncate transition-colors">
+                          <span className="text-xs font-medium text-slate-900 group-hover:text-blue-600 truncate transition-colors">
                             {prod.name}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-0.5 tabular-nums">
                           {prod.sku && (
-                            <span className="text-[10px] font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                              SKU: {prod.sku}
+                            <span className="text-[11px] font-mono text-slate-500">
+                              {prod.sku}
                             </span>
                           )}
-                          <span className="text-[10px] font-mono text-gray-400">ID: #{prod.id}</span>
+                          <span className="text-[11px] font-mono text-slate-400">#{prod.id}</span>
                           {prod.price > 0 && (
-                            <span className="text-xs font-bold text-emerald-600">
-                              {Number(prod.price).toLocaleString('vi-VN')} đ
+                            <span className="text-xs font-semibold text-slate-900">
+                              {Number(prod.price).toLocaleString('vi-VN')} ₫
                             </span>
                           )}
                         </div>
@@ -1165,9 +1170,9 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-gray-600">Không tìm thấy sản phẩm phù hợp</p>
-                  <p className="text-[11px] text-gray-400 mt-1">
+                  <Package className="w-7 h-7 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-600">Không tìm thấy sản phẩm phù hợp</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
                     Bạn có thể tự gõ tên linh kiện ở phần bên dưới nếu chưa có sản phẩm trong hệ thống.
                   </p>
                 </div>
@@ -1175,8 +1180,8 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
             </div>
 
             {/* Footer / Manual Input Alternative */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50 flex flex-col gap-2.5">
-              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+            <div className="p-3.5 border-t border-slate-200 bg-slate-50 flex flex-col gap-2">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Hoặc tự nhập tên linh kiện (nếu chưa có trong hệ thống):
               </span>
               <div className="flex flex-col sm:flex-row items-center gap-2">
@@ -1199,7 +1204,7 @@ export const DynamicSpecForm: React.FC<DynamicSpecFormProps> = ({
                   onClick={() => handleSaveManualSlot(pickerSlotKey)}
                   disabled={!manualInputName.trim()}
                   variant="secondary"
-                  className="w-full sm:w-auto shrink-0 !bg-gray-800 hover:!bg-gray-900 !text-white !border-transparent"
+                  className="w-full sm:w-auto shrink-0 !bg-slate-900 hover:!bg-slate-800 !text-white !border-slate-900"
                 >
                   Lưu nhập tay
                 </AdminButton>

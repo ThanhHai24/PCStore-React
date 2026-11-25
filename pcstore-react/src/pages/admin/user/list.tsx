@@ -109,54 +109,56 @@ export const mapBackendUserToItem = (u: BackendUserResponse): UserItem => {
     };
 };
 
+const getUserInitials = (fullName: string, username: string): string => {
+    const source = (fullName || username || '?').trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return source.slice(0, 2).toUpperCase();
+};
+
 const ROLE_OPTIONS: Array<{
     role: BackendRole;
     title: string;
     desc: string;
     icon: React.ElementType;
-    color: string;
 }> = [
     {
         role: 'CUSTOMER',
         title: 'Khách hàng',
         desc: 'Mua sắm & xem đơn hàng',
         icon: User,
-        color: 'border-blue-200 bg-blue-50/50 text-blue-700',
     },
     {
         role: 'STAFF_SALES',
         title: 'Nhân viên bán hàng',
         desc: 'Tư vấn & bán hàng',
         icon: UserCheck,
-        color: 'border-amber-200 bg-amber-50/50 text-amber-700',
     },
     {
         role: 'STAFF_WAREHOUSE',
         title: 'Thủ kho',
         desc: 'Quản lý & xuất nhập kho',
         icon: Package,
-        color: 'border-indigo-200 bg-indigo-50/50 text-indigo-700',
     },
     {
         role: 'STAFF_TECH',
         title: 'Kỹ thuật viên',
         desc: 'Lắp ráp & bảo hành',
         icon: Wrench,
-        color: 'border-cyan-200 bg-cyan-50/50 text-cyan-700',
     },
     {
         role: 'MANAGER',
         title: 'Quản lý',
         desc: 'Quản lý & báo cáo',
         icon: PieChart,
-        color: 'border-purple-200 bg-purple-50/50 text-purple-700',
     },
     {
         role: 'ADMIN',
         title: 'Quản trị viên',
         desc: 'Toàn quyền hệ thống',
         icon: Shield,
-        color: 'border-rose-200 bg-rose-50/50 text-rose-700',
     },
 ];
 
@@ -829,77 +831,80 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
         },
     ];
 
-    // Helper: Role badge rendering
+    // Helper: Role badge rendering (restrained 1px border badge, rounded-md)
     const renderRoleBadge = (role: string) => {
         switch (role) {
             case 'ADMIN':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        <Shield className="w-3.5 h-3.5 text-rose-600" /> ADMIN
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-900 border border-slate-300 whitespace-nowrap">
+                        Quản trị viên
                     </span>
                 );
             case 'MANAGER':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                        <PieChart className="w-3.5 h-3.5 text-purple-600" /> QUẢN LÝ
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-200 whitespace-nowrap">
+                        Quản lý
                     </span>
                 );
             case 'STAFF_WAREHOUSE':
             case 'WAREHOUSE':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        <Package className="w-3.5 h-3.5 text-indigo-600" /> THỦ KHO
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-200 whitespace-nowrap">
+                        Thủ kho
                     </span>
                 );
             case 'STAFF_SALES':
             case 'SALES':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <UserCheck className="w-3.5 h-3.5 text-amber-600" /> BÁN HÀNG
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-200 whitespace-nowrap">
+                        Bán hàng
                     </span>
                 );
             case 'STAFF_TECH':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
-                        <Wrench className="w-3.5 h-3.5 text-cyan-600" /> KỸ THUẬT
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-200 whitespace-nowrap">
+                        Kỹ thuật
                     </span>
                 );
             case 'STAFF':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> NHÂN VIÊN
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-white text-slate-700 border border-slate-200 whitespace-nowrap">
+                        Nhân viên
                     </span>
                 );
             default:
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        <User className="w-3.5 h-3.5 text-blue-600" /> KHÁCH HÀNG
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-600 border border-slate-200 whitespace-nowrap">
+                        Khách hàng
                     </span>
                 );
         }
     };
 
-    // Helper: Status badge rendering
+    // Helper: Status indicator rendering (small colored dot + neutral text)
     const renderStatusBadge = (status: string) => {
         switch (status) {
             case 'ACTIVE':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Hoạt động
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        Hoạt động
                     </span>
                 );
             case 'BANNED':
             case 'BLOCKED':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                        <XCircle className="w-3 h-3 text-rose-600" /> Bị khóa
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                        Đã khóa
                     </span>
                 );
             case 'INACTIVE':
             default:
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Clock className="w-3 h-3 text-amber-600" /> Chưa kích hoạt
+                    <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                        Chưa kích hoạt
                     </span>
                 );
         }
@@ -910,48 +915,53 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
         {
             key: 'user',
             header: 'Nhân viên',
+            align: 'left',
             render: (user) => (
-                <div className="flex items-center gap-3">
-                    <img
-                        src={user.avatar}
-                        alt={user.fullName}
-                        className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
-                    />
-                    <div>
-                        <p className="font-bold text-gray-900 text-xs sm:text-sm">{user.fullName}</p>
-                        <p className="text-[11px] text-gray-400 font-medium">@{user.username}</p>
+                <div className="flex items-center gap-2.5 min-w-0 max-w-[300px]">
+                    <div className="w-8 h-8 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                        {getUserInitials(user.fullName, user.username)}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-medium text-slate-900 text-[13px] leading-snug truncate" title={user.fullName}>
+                            {user.fullName}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate" title={user.email}>
+                            {user.email}
+                        </p>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'contact',
-            header: 'Liên hệ',
+            key: 'phone',
+            header: 'Số điện thoại',
+            align: 'right',
             render: (user) => (
-                <div>
-                    <p className="text-gray-800 flex items-center gap-1 text-xs">
-                        <Mail className="w-3 h-3 text-gray-400 shrink-0" /> {user.email}
-                    </p>
-                    <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-gray-400 shrink-0" /> {user.phone}
-                    </p>
-                </div>
+                <span className="text-xs text-slate-700 tabular-nums whitespace-nowrap">
+                    {user.phone !== 'Chưa cập nhật' ? (
+                        user.phone
+                    ) : (
+                        <span className="text-slate-400">—</span>
+                    )}
+                </span>
             ),
         },
         {
             key: 'role',
-            header: 'Vai trò / Chức vụ',
+            header: 'Vai trò',
+            align: 'left',
             render: (user) => renderRoleBadge(user.role),
         },
         {
             key: 'citizenIdentificationCard',
             header: 'Số CCCD',
+            align: 'right',
             render: (user) => (
-                <span className="text-xs font-mono text-gray-700">
+                <span className="text-xs font-mono text-slate-700 tabular-nums whitespace-nowrap">
                     {user.citizenIdentificationCard !== 'Chưa cập nhật' ? (
                         user.citizenIdentificationCard
                     ) : (
-                        <span className="text-gray-400 italic">Chưa có</span>
+                        <span className="text-slate-400 font-sans">—</span>
                     )}
                 </span>
             ),
@@ -959,13 +969,18 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
         {
             key: 'status',
             header: 'Trạng thái',
+            align: 'left',
             render: (user) => renderStatusBadge(user.status),
         },
         {
             key: 'createdAt',
             header: 'Ngày tham gia',
-            accessorKey: 'createdAt',
-            className: 'font-medium text-gray-600 text-xs',
+            align: 'right',
+            render: (user) => (
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                    {user.createdAt}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -1011,60 +1026,66 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
         {
             key: 'user',
             header: 'Khách hàng',
+            align: 'left',
             render: (user) => (
-                <div className="flex items-center gap-3">
-                    <img
-                        src={user.avatar}
-                        alt={user.fullName}
-                        className="w-9 h-9 rounded-full object-cover border border-gray-200 shrink-0"
-                    />
-                    <div>
-                        <p className="font-bold text-gray-900 text-xs sm:text-sm">{user.fullName}</p>
-                        <p className="text-[11px] text-gray-400 font-medium">@{user.username}</p>
+                <div className="flex items-center gap-2.5 min-w-0 max-w-[300px]">
+                    <div className="w-8 h-8 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                        {getUserInitials(user.fullName, user.username)}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-medium text-slate-900 text-[13px] leading-snug truncate" title={user.fullName}>
+                            {user.fullName}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate" title={user.email}>
+                            {user.email}
+                        </p>
                     </div>
                 </div>
             ),
         },
         {
-            key: 'contact',
-            header: 'Liên hệ',
+            key: 'phone',
+            header: 'Số điện thoại',
+            align: 'right',
             render: (user) => (
-                <div>
-                    <p className="text-gray-800 flex items-center gap-1 text-xs">
-                        <Mail className="w-3 h-3 text-gray-400 shrink-0" /> {user.email}
-                    </p>
-                    <p className="text-gray-500 text-[11px] flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-gray-400 shrink-0" /> {user.phone}
-                    </p>
-                </div>
+                <span className="text-xs text-slate-700 tabular-nums whitespace-nowrap">
+                    {user.phone !== 'Chưa cập nhật' ? (
+                        user.phone
+                    ) : (
+                        <span className="text-slate-400">—</span>
+                    )}
+                </span>
             ),
         },
         {
             key: 'address',
             header: 'Địa chỉ giao hàng',
+            align: 'left',
             render: (user) => (
-                <div className="max-w-xs truncate text-xs text-gray-700 flex items-center gap-1" title={user.address}>
-                    <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                    <span className="truncate">
-                        {user.address !== 'Chưa cập nhật' ? (
-                            user.address
-                        ) : (
-                            <span className="text-gray-400 italic">Chưa cập nhật</span>
-                        )}
-                    </span>
+                <div className="max-w-[260px] truncate text-xs text-slate-600" title={user.address}>
+                    {user.address !== 'Chưa cập nhật' ? (
+                        user.address
+                    ) : (
+                        <span className="text-slate-400">—</span>
+                    )}
                 </div>
             ),
         },
         {
             key: 'status',
             header: 'Trạng thái',
+            align: 'left',
             render: (user) => renderStatusBadge(user.status),
         },
         {
             key: 'createdAt',
             header: 'Ngày đăng ký',
-            accessorKey: 'createdAt',
-            className: 'font-medium text-gray-600 text-xs',
+            align: 'right',
+            render: (user) => (
+                <span className="text-xs text-slate-500 tabular-nums whitespace-nowrap">
+                    {user.createdAt}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -1121,22 +1142,36 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
 
     const isStaffTab = accountTab === 'STAFF';
 
+    const handleOpenAddUserModal = () => {
+        setFormData({
+            username: '',
+            fullName: '',
+            email: '',
+            phone: '',
+            password: '',
+            address: '',
+            citizenIdentificationCard: '',
+            role: isStaffTab ? 'STAFF_SALES' : 'CUSTOMER',
+            status: 'ACTIVE',
+        });
+        setIsAddModalOpen(true);
+    };
+
     return (
-        <div className="w-full space-y-6 min-w-0 font-sans">
-            {/* Header Title & Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
-                        <Users className="w-7 h-7 text-blue-600" />
-                        <span>Quản lý tài khoản</span>
+        <div className="w-full space-y-4 min-w-0 font-sans">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý tài khoản
                     </h1>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                         {isStaffTab
-                            ? 'Quản lý tài khoản nhân viên, phân quyền chức vụ và giám sát hoạt động nhân sự.'
-                            : 'Quản lý danh sách khách hàng, thông tin giao hàng và trạng thái tài khoản người dùng.'}
+                            ? 'Quản lý tài khoản nhân viên, phân quyền chức vụ và trạng thái truy cập.'
+                            : 'Quản lý danh sách khách hàng, thông tin liên hệ và trạng thái tài khoản.'}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                         type="button"
                         onClick={() => {
@@ -1144,57 +1179,36 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                             loadCounts();
                         }}
                         disabled={loading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors disabled:opacity-60 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-xs rounded-md border border-slate-200 transition-colors disabled:opacity-60 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                         title="Tải lại danh sách"
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">Làm mới</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleExportUsers}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs rounded-xl border border-gray-200 shadow-sm transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-medium text-xs rounded-md border border-slate-200 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                     >
-                        <Download className="w-3.5 h-3.5 text-gray-500" />
+                        <Download className="w-3.5 h-3.5 text-slate-500" />
                         <span className="hidden sm:inline">Xuất CSV</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setFormData({
-                                username: '',
-                                fullName: '',
-                                email: '',
-                                phone: '',
-                                password: '',
-                                address: '',
-                                citizenIdentificationCard: '',
-                                role: isStaffTab ? 'STAFF_SALES' : 'CUSTOMER',
-                                status: 'ACTIVE',
-                            });
-                            setIsAddModalOpen(true);
-                        }}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4 text-white" />
-                        <span>{isStaffTab ? 'Thêm nhân viên' : 'Thêm khách hàng'}</span>
                     </button>
                 </div>
             </div>
 
             {/* Error Alert Banner */}
             {apiError && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-800">
-                    <div className="flex items-center gap-2">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md flex items-center justify-between gap-3 text-xs text-amber-800">
+                    <div className="flex items-center gap-2 min-w-0">
                         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>{apiError}</span>
+                        <span className="truncate">{apiError}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         {apiError.includes('đăng nhập') || apiError.includes('hết hạn') ? (
                             <button
                                 type="button"
                                 onClick={() => navigate('/login')}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
                             >
                                 <Lock className="w-3.5 h-3.5" />
                                 <span>Đăng nhập lại</span>
@@ -1206,7 +1220,7 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                     loadUsers();
                                     loadCounts();
                                 }}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600/40"
                             >
                                 <RefreshCw className="w-3.5 h-3.5" />
                                 <span>Thử lại</span>
@@ -1216,22 +1230,28 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                 </div>
             )}
 
-            {/* TAB SWITCHER: 2 TABS NHÂN VIÊN & KHÁCH HÀNG */}
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-200/80 shadow-xs w-fit">
+            {/* Segmented Tab Switcher (Staff / Customer) */}
+            <div
+                role="tablist"
+                aria-label="Phân loại tài khoản"
+                className="inline-flex items-center p-1 bg-slate-100 rounded-md border border-slate-200"
+            >
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={isStaffTab}
                     onClick={() => handleTabChange('STAFF')}
-                    className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                         isStaffTab
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ? 'bg-white text-slate-900 font-semibold border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900 font-medium border border-transparent'
                     }`}
                 >
-                    <ShieldCheck className={`w-4 h-4 ${isStaffTab ? 'text-white' : 'text-blue-600'}`} />
+                    <ShieldCheck className={`w-3.5 h-3.5 ${isStaffTab ? 'text-blue-600' : 'text-slate-400'}`} />
                     <span>Nhân viên</span>
                     <span
-                        className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
-                            isStaffTab ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-medium tabular-nums ${
+                            isStaffTab ? 'bg-slate-100 text-slate-800' : 'bg-slate-200/70 text-slate-600'
                         }`}
                     >
                         {staffTotalCount}
@@ -1240,18 +1260,20 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
 
                 <button
                     type="button"
+                    role="tab"
+                    aria-selected={!isStaffTab}
                     onClick={() => handleTabChange('CUSTOMER')}
-                    className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                         !isStaffTab
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                            ? 'bg-white text-slate-900 font-semibold border border-slate-200'
+                            : 'text-slate-600 hover:text-slate-900 font-medium border border-transparent'
                     }`}
                 >
-                    <Users className={`w-4 h-4 ${!isStaffTab ? 'text-white' : 'text-emerald-600'}`} />
+                    <Users className={`w-3.5 h-3.5 ${!isStaffTab ? 'text-blue-600' : 'text-slate-400'}`} />
                     <span>Khách hàng</span>
                     <span
-                        className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
-                            !isStaffTab ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                        className={`px-1.5 py-0.5 rounded-md text-[11px] font-medium tabular-nums ${
+                            !isStaffTab ? 'bg-slate-100 text-slate-800' : 'bg-slate-200/70 text-slate-600'
                         }`}
                     >
                         {customerTotalCount}
@@ -1259,90 +1281,28 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                 </button>
             </div>
 
-            {/* STATS OVERVIEW CARDS */}
-            {isStaffTab ? (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Briefcase className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tổng nhân viên</p>
-                            <p className="text-xl font-bold text-gray-900 mt-0.5">{staffStats.total || staffTotalCount}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                            <PieChart className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Quản lý & Điều hành</p>
-                            <p className="text-xl font-bold text-purple-700 mt-0.5">{staffStats.managers}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center shrink-0">
-                            <Wrench className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Vận hành & Kỹ thuật</p>
-                            <p className="text-xl font-bold text-cyan-700 mt-0.5">{staffStats.operational}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Đang hoạt động</p>
-                            <p className="text-xl font-bold text-emerald-700 mt-0.5">{staffStats.active}</p>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Users className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tổng khách hàng</p>
-                            <p className="text-xl font-bold text-gray-900 mt-0.5">{customerStats.total || customerTotalCount}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Đang hoạt động</p>
-                            <p className="text-xl font-bold text-emerald-700 mt-0.5">{customerStats.active}</p>
-                        </div>
-                    </div>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                            <XCircle className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Tài khoản bị khóa</p>
-                            <p className="text-xl font-bold text-rose-700 mt-0.5">{customerStats.banned}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Reusable Admin Filter Toolbar */}
+            {/* Unified Toolbar: Search + Filter (Status & Staff Role) + Add Button */}
             <AdminFilter
                 searchQuery={searchQuery}
                 onSearchChange={handleSearchChange}
                 searchPlaceholder={
                     isStaffTab
-                        ? 'Tìm kiếm nhân viên (tên, username, email, SĐT)...'
-                        : 'Tìm kiếm khách hàng (tên, username, email, SĐT)...'
+                        ? 'Tìm nhân viên theo tên, username, email, SĐT...'
+                        : 'Tìm khách hàng theo tên, username, email, SĐT...'
                 }
                 fields={isStaffTab ? staffFilterFields : customerFilterFields}
                 values={filterValues}
                 onChange={handleFilterChange}
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleOpenAddUserModal}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-md border border-blue-600 transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                    >
+                        <Plus className="w-3.5 h-3.5 text-white" />
+                        <span>{isStaffTab ? 'Thêm nhân viên' : 'Thêm khách hàng'}</span>
+                    </button>
+                }
             />
 
             {/* Data Table */}
@@ -1461,13 +1421,13 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
 
                         {/* Tab 3: Phân quyền & Trạng thái */}
                         {activeTab === 'security' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
+                            <div className="space-y-4">
                                 {isStaffTab ? (
                                     <div>
-                                        <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                        <label className="block text-xs font-semibold text-slate-700 mb-2">
                                             Chọn vai trò nhân viên
                                         </label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                                             {STAFF_ROLE_OPTIONS.map((r) => {
                                                 const isSelected = formData.role === r.role;
                                                 const IconComp = r.icon;
@@ -1476,18 +1436,18 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                         key={r.role}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, role: r.role })}
-                                                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                        className={`p-3 rounded-md border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                                                             isSelected
-                                                                ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
-                                                                : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                                                                ? 'border-blue-600 bg-blue-50/50 text-slate-900'
+                                                                : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                                                         }`}
                                                     >
                                                         <div className="flex items-center justify-between mb-1">
-                                                            <IconComp className="w-4 h-4" />
+                                                            <IconComp className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
                                                             {isSelected && <Check className="w-4 h-4 text-blue-600" />}
                                                         </div>
-                                                        <div className="text-xs font-bold">{r.title}</div>
-                                                        <div className="text-[10px] text-gray-500 font-normal mt-0.5">
+                                                        <div className="text-xs font-semibold">{r.title}</div>
+                                                        <div className="text-[11px] text-slate-500 font-normal mt-0.5">
                                                             {r.desc}
                                                         </div>
                                                     </button>
@@ -1496,13 +1456,13 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 flex items-start gap-3">
-                                        <div className="p-2 bg-blue-100 text-blue-700 rounded-lg shrink-0">
-                                            <User className="w-5 h-5" />
+                                    <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50 flex items-start gap-3">
+                                        <div className="p-2 bg-white text-slate-600 rounded-md border border-slate-200 shrink-0">
+                                            <User className="w-4 h-4" />
                                         </div>
                                         <div>
-                                            <h4 className="text-xs font-bold text-blue-900">Vai trò: Khách hàng (CUSTOMER)</h4>
-                                            <p className="text-[11px] text-blue-700/80 mt-0.5">
+                                            <h4 className="text-xs font-semibold text-slate-900">Vai trò: Khách hàng (CUSTOMER)</h4>
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
                                                 Tài khoản sẽ được cấp quyền mua hàng trực tuyến, theo dõi đơn hàng và tra cứu bảo hành.
                                             </p>
                                         </div>
@@ -1510,33 +1470,33 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                 )}
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                                         Trạng thái ban đầu
                                     </label>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-3 gap-2.5">
                                         {[
                                             {
                                                 status: 'ACTIVE' as BackendStatus,
-                                                label: 'Hoạt động (ACTIVE)',
-                                                color: 'emerald',
+                                                label: 'Hoạt động',
+                                                dot: 'bg-emerald-500',
                                             },
                                             {
                                                 status: 'INACTIVE' as BackendStatus,
-                                                label: 'Ngưng (INACTIVE)',
-                                                color: 'amber',
+                                                label: 'Chưa kích hoạt',
+                                                dot: 'bg-amber-500',
                                             },
                                             {
                                                 status: 'BANNED' as BackendStatus,
-                                                label: 'Khóa (BANNED)',
-                                                color: 'rose',
+                                                label: 'Đã khóa',
+                                                dot: 'bg-rose-500',
                                             },
                                         ].map((s) => (
                                             <label
                                                 key={s.status}
-                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                                className={`flex items-center gap-2 p-2.5 rounded-md border cursor-pointer transition-colors ${
                                                     formData.status === s.status
-                                                        ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                                        ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium'
                                                 }`}
                                             >
                                                 <input
@@ -1546,6 +1506,7 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                     onChange={() => setFormData({ ...formData, status: s.status })}
                                                     className="sr-only"
                                                 />
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
                                                 <span className="text-xs">{s.label}</span>
                                             </label>
                                         ))}
@@ -1569,8 +1530,8 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                 footer={
                     detailUser && (
                         <div className="flex items-center justify-between w-full">
-                            <div className="text-xs text-gray-500 hidden sm:block">
-                                Ngày tham gia: <span className="font-semibold text-gray-700">{detailUser.createdAt}</span>
+                            <div className="text-xs text-slate-500 hidden sm:block tabular-nums">
+                                Ngày tham gia: <span className="font-semibold text-slate-700">{detailUser.createdAt}</span>
                             </div>
                             <div className="flex items-center gap-2 ml-auto">
                                 <AdminButton
@@ -1614,57 +1575,43 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                         <div>
                             {/* Tab 1: Thông tin cơ bản */}
                             {activeTab === 'info' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-purple-50/50 border border-blue-100/80">
-                                        <div className="relative group flex-shrink-0">
-                                            <img
-                                                src={detailUser.avatar}
-                                                alt={detailUser.fullName}
-                                                className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md"
-                                            />
-                                            <div className="absolute -bottom-1 -right-1 p-1 bg-white rounded-full shadow">
-                                                {detailUser.status === 'ACTIVE' ? (
-                                                    <span className="flex h-3 w-3 relative">
-                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="block h-3 w-3 rounded-full bg-rose-500"></span>
-                                                )}
-                                            </div>
+                                <div className="space-y-4">
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 pb-4 border-b border-slate-200">
+                                        <div className="w-12 h-12 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-base font-semibold flex items-center justify-center shrink-0 select-none">
+                                            {getUserInitials(detailUser.fullName, detailUser.username)}
                                         </div>
 
                                         <div className="flex-1 text-center sm:text-left min-w-0">
                                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                                <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                                                <h3 className="text-base font-semibold text-slate-900 tracking-tight">
                                                     {detailUser.fullName}
                                                 </h3>
                                                 {renderRoleBadge(detailUser.role)}
                                                 {renderStatusBadge(detailUser.status)}
                                             </div>
 
-                                            <p className="text-xs text-gray-500 mt-1 flex items-center justify-center sm:justify-start gap-1.5">
+                                            <p className="text-xs text-slate-500 mt-1 flex items-center justify-center sm:justify-start gap-1.5 tabular-nums">
                                                 <span>@{detailUser.username}</span>
-                                                <span>•</span>
-                                                <span>Mã ID: {detailUser.id}</span>
+                                                <span>·</span>
+                                                <span>ID: #{detailUser.id}</span>
                                             </p>
                                         </div>
                                     </div>
 
-                                    {/* Info grid */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                    {/* Flat Info Grid */}
+                                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Tên đăng nhập
-                                            </span>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-gray-900 font-mono">
+                                            </dt>
+                                            <dd className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 font-mono">
                                                     @{detailUser.username}
                                                 </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailUser.username, 'username', 'Tên đăng nhập')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
+                                                    className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép tên đăng nhập"
                                                 >
                                                     {copiedField === 'username' ? (
@@ -1673,21 +1620,21 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                         <Copy className="w-3.5 h-3.5" />
                                                     )}
                                                 </button>
-                                            </div>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Mã tài khoản (User ID)
-                                            </span>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-gray-900 font-mono">
+                                            </dt>
+                                            <dd className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 font-mono tabular-nums">
                                                     {detailUser.id}
                                                 </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyText(detailUser.id, 'id', 'Mã tài khoản')}
-                                                    className="p-1 text-gray-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
+                                                    className="p-1 text-slate-400 hover:text-blue-600 rounded-md transition-colors cursor-pointer"
                                                     title="Sao chép mã tài khoản"
                                                 >
                                                     {copiedField === 'id' ? (
@@ -1696,144 +1643,129 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                         <Copy className="w-3.5 h-3.5" />
                                                     )}
                                                 </button>
-                                            </div>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Số CCCD / CMND
-                                            </span>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-gray-900 font-mono">
+                                            </dt>
+                                            <dd className="pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 font-mono tabular-nums">
                                                     {detailUser.citizenIdentificationCard}
                                                 </span>
-                                            </div>
+                                            </dd>
                                         </div>
 
-                                        <div className="p-3.5 bg-gray-50/70 border border-gray-100 rounded-xl space-y-1">
-                                            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block">
+                                        <div className="space-y-1">
+                                            <dt className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">
                                                 Ngày tạo tài khoản
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                                                <span className="text-xs font-bold text-gray-900">
+                                            </dt>
+                                            <dd className="pb-2 border-b border-slate-100">
+                                                <span className="text-xs font-medium text-slate-900 tabular-nums">
                                                     {detailUser.createdAt}
                                                 </span>
-                                            </div>
+                                            </dd>
                                         </div>
-                                    </div>
+                                    </dl>
                                 </div>
                             )}
 
                             {/* Tab 2: Thông tin liên hệ */}
                             {activeTab === 'contact' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
-                                                    <Mail className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[11px] font-semibold text-gray-400">Địa chỉ Email</p>
-                                                    <p className="text-xs font-bold text-gray-900">{detailUser.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                {detailUser.email !== 'Chưa cập nhật' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleCopyText(detailUser.email, 'email', 'Địa chỉ Email')}
-                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors cursor-pointer"
-                                                    >
-                                                        {copiedField === 'email' ? (
-                                                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                                        ) : (
-                                                            <Copy className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>{copiedField === 'email' ? 'Đã chép' : 'Chép'}</span>
-                                                    </button>
-                                                )}
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md">
+                                    <div className="p-3.5 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-medium text-slate-500">Địa chỉ Email</p>
+                                                <p className="text-xs font-medium text-slate-900 truncate">{detailUser.email}</p>
                                             </div>
                                         </div>
+                                        {detailUser.email !== 'Chưa cập nhật' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyText(detailUser.email, 'email', 'Địa chỉ Email')}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0"
+                                            >
+                                                {copiedField === 'email' ? (
+                                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                                ) : (
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                )}
+                                                <span>{copiedField === 'email' ? 'Đã chép' : 'Chép'}</span>
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <div className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                                                    <Phone className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[11px] font-semibold text-gray-400">Số điện thoại</p>
-                                                    <p className="text-xs font-bold text-gray-900">{detailUser.phone}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                {detailUser.phone !== 'Chưa cập nhật' && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleCopyText(detailUser.phone, 'phone', 'Số điện thoại')}
-                                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-white rounded-lg border border-gray-200 transition-colors cursor-pointer"
-                                                    >
-                                                        {copiedField === 'phone' ? (
-                                                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                                        ) : (
-                                                            <Copy className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>{copiedField === 'phone' ? 'Đã chép' : 'Chép'}</span>
-                                                    </button>
-                                                )}
+                                    <div className="p-3.5 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-medium text-slate-500">Số điện thoại</p>
+                                                <p className="text-xs font-medium text-slate-900 tabular-nums">{detailUser.phone}</p>
                                             </div>
                                         </div>
+                                        {detailUser.phone !== 'Chưa cập nhật' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleCopyText(detailUser.phone, 'phone', 'Số điện thoại')}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0"
+                                            >
+                                                {copiedField === 'phone' ? (
+                                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                                ) : (
+                                                    <Copy className="w-3.5 h-3.5" />
+                                                )}
+                                                <span>{copiedField === 'phone' ? 'Đã chép' : 'Chép'}</span>
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <div className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl space-y-2">
-                                        <div className="flex items-center gap-2 text-xs font-bold text-gray-800">
-                                            <MapPin className="w-4 h-4 text-rose-500" />
-                                            <span>{isStaffTab ? 'Địa chỉ liên hệ' : 'Địa chỉ giao hàng'}</span>
+                                    <div className="p-3.5 flex items-start gap-3">
+                                        <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-medium text-slate-500">
+                                                {isStaffTab ? 'Địa chỉ liên hệ' : 'Địa chỉ giao hàng'}
+                                            </p>
+                                            <p className="text-xs text-slate-700 mt-0.5">
+                                                {detailUser.address}
+                                            </p>
                                         </div>
-                                        <p className="text-xs text-gray-600 pl-6">
-                                            {detailUser.address}
-                                        </p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Tab 3: Bảo mật & Trạng thái */}
                             {activeTab === 'security' && (
-                                <div className="space-y-4 animate-in fade-in duration-150">
-                                    <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/70 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h4 className="text-xs font-bold text-gray-900">Trạng thái kích hoạt</h4>
-                                                <p className="text-[11px] text-gray-500 mt-0.5">
-                                                    Khóa tài khoản sẽ vô hiệu hóa access token và thu hồi phiên đăng nhập
-                                                </p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleOpenToggleStatusModal(detailUser)}
-                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                                                    detailUser.status === 'ACTIVE'
-                                                        ? 'border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                                        : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-                                                }`}
-                                            >
-                                                {detailUser.status === 'ACTIVE' ? (
-                                                    <>
-                                                        <Lock className="w-3.5 h-3.5" />
-                                                        <span>Khóa tài khoản</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Unlock className="w-3.5 h-3.5" />
-                                                        <span>Mở khóa tài khoản</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                                <div className="p-4 rounded-md border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-slate-900">Trạng thái kích hoạt</h4>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                            Khóa tài khoản sẽ vô hiệu hóa access token và thu hồi phiên đăng nhập hiện tại.
+                                        </p>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleOpenToggleStatusModal(detailUser)}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
+                                            detailUser.status === 'ACTIVE'
+                                                ? 'border-rose-200 text-rose-700 bg-white hover:bg-rose-50'
+                                                : 'border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50'
+                                        }`}
+                                    >
+                                        {detailUser.status === 'ACTIVE' ? (
+                                            <>
+                                                <Lock className="w-3.5 h-3.5" />
+                                                <span>Khóa tài khoản</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Unlock className="w-3.5 h-3.5" />
+                                                <span>Mở khóa tài khoản</span>
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -1928,12 +1860,12 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
 
                         {/* Tab 3: Phân quyền & Trạng thái */}
                         {activeTab === 'security' && (
-                            <div className="space-y-4 animate-in fade-in duration-150">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-2">
                                         Chọn vai trò hệ thống
                                     </label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                                         {ROLE_OPTIONS.map((r) => {
                                             const isSelected = editFormData.role === r.role;
                                             const IconComp = r.icon;
@@ -1944,18 +1876,18 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                     onClick={() =>
                                                         setEditFormData({ ...editFormData, role: r.role })
                                                     }
-                                                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                                    className={`p-3 rounded-md border text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                                                         isSelected
-                                                            ? `${r.color} ring-2 ring-blue-500/20 shadow-sm font-bold`
-                                                            : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'
+                                                            ? 'border-blue-600 bg-blue-50/50 text-slate-900'
+                                                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                                                     }`}
                                                 >
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <IconComp className="w-4 h-4" />
+                                                        <IconComp className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
                                                         {isSelected && <Check className="w-4 h-4 text-blue-600" />}
                                                     </div>
-                                                    <div className="text-xs font-bold">{r.title}</div>
-                                                    <div className="text-[10px] text-gray-500 font-normal mt-0.5">
+                                                    <div className="text-xs font-semibold">{r.title}</div>
+                                                    <div className="text-[11px] text-slate-500 font-normal mt-0.5">
                                                         {r.desc}
                                                     </div>
                                                 </button>
@@ -1965,33 +1897,33 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                                         Trạng thái tài khoản
                                     </label>
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-3 gap-2.5">
                                         {[
                                             {
                                                 status: 'ACTIVE' as BackendStatus,
-                                                label: 'Hoạt động (ACTIVE)',
-                                                color: 'emerald',
+                                                label: 'Hoạt động',
+                                                dot: 'bg-emerald-500',
                                             },
                                             {
                                                 status: 'INACTIVE' as BackendStatus,
-                                                label: 'Ngưng (INACTIVE)',
-                                                color: 'amber',
+                                                label: 'Chưa kích hoạt',
+                                                dot: 'bg-amber-500',
                                             },
                                             {
                                                 status: 'BANNED' as BackendStatus,
-                                                label: 'Khóa (BANNED)',
-                                                color: 'rose',
+                                                label: 'Đã khóa',
+                                                dot: 'bg-rose-500',
                                             },
                                         ].map((s) => (
                                             <label
                                                 key={s.status}
-                                                className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                                className={`flex items-center gap-2 p-2.5 rounded-md border cursor-pointer transition-colors ${
                                                     editFormData.status === s.status
-                                                        ? `border-${s.color}-300 bg-${s.color}-50/60 font-semibold ring-2 ring-${s.color}-500/20`
-                                                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                                                        ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium'
                                                 }`}
                                             >
                                                 <input
@@ -2003,6 +1935,7 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                                                     }
                                                     className="sr-only"
                                                 />
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
                                                 <span className="text-xs">{s.label}</span>
                                             </label>
                                         ))}
@@ -2047,37 +1980,35 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
                     }
                 >
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-purple-50/60 border border-purple-100 rounded-xl">
-                            <img
-                                src={selectedUser.avatar}
-                                alt={selectedUser.fullName}
-                                className="w-10 h-10 rounded-full object-cover border border-purple-200"
-                            />
-                            <div>
-                                <h3 className="font-bold text-xs text-gray-900">{selectedUser.fullName}</h3>
-                                <p className="text-[11px] text-gray-500">{selectedUser.email}</p>
+                        <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
+                            <div className="w-9 h-9 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center justify-center shrink-0 select-none">
+                                {getUserInitials(selectedUser.fullName, selectedUser.username)}
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="font-semibold text-xs text-slate-900 truncate">{selectedUser.fullName}</h3>
+                                <p className="text-[11px] text-slate-500 truncate">{selectedUser.email}</p>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <AdminLabel>Chọn vai trò mới:</AdminLabel>
                             {ROLE_OPTIONS.map((r) => (
                                 <button
                                     key={r.role}
                                     type="button"
                                     onClick={() => setRoleFormRole(r.role)}
-                                    className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                                    className={`w-full p-2.5 rounded-md border text-left flex items-center justify-between transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${
                                         roleFormRole === r.role
-                                            ? 'border-purple-500 bg-purple-50 text-purple-900 font-bold'
-                                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                            ? 'border-blue-600 bg-blue-50/50 text-slate-900 font-semibold'
+                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 font-medium'
                                     }`}
                                 >
                                     <div className="flex items-center gap-2">
-                                        <r.icon className="w-4 h-4 text-purple-600" />
+                                        <r.icon className={`w-4 h-4 ${roleFormRole === r.role ? 'text-blue-600' : 'text-slate-400'}`} />
                                         <span className="text-xs">{r.title}</span>
                                     </div>
                                     {roleFormRole === r.role && (
-                                        <Check className="w-4 h-4 text-purple-600" />
+                                        <Check className="w-4 h-4 text-blue-600" />
                                     )}
                                 </button>
                             ))}

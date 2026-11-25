@@ -159,6 +159,7 @@ export const RECEIPT_STATUS_CONFIG: Record<
         color: string;
         bgColor: string;
         borderColor: string;
+        dotColor: string;
         icon: React.ElementType;
         badgeClass: string;
         description: string;
@@ -169,43 +170,48 @@ export const RECEIPT_STATUS_CONFIG: Record<
         color: 'text-slate-700',
         bgColor: 'bg-slate-100',
         borderColor: 'border-slate-300',
+        dotColor: 'bg-slate-400',
         badgeClass: 'bg-slate-50 text-slate-700 border-slate-300 ring-slate-500/10',
         icon: Clock,
         description: 'Phiếu đang trong quá trình soạn thảo và kiểm đếm nháp, có thể sửa hoặc xóa',
     },
     PENDING: {
-        label: 'Chờ xử lý / Đang kiểm hàng',
+        label: 'Đang kiểm hàng',
         color: 'text-amber-800',
         bgColor: 'bg-amber-100',
         borderColor: 'border-amber-300',
+        dotColor: 'bg-amber-500',
         badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 ring-amber-500/10',
         icon: Clock,
         description: 'Đã tạo phiếu tiếp nhận, đang tiến hành kiểm đếm số lượng và phân loại serial đạt chuẩn/lỗi',
     },
     CONFIRMED: {
-        label: 'Đã xác nhận nhập kho',
+        label: 'Đã nhập kho',
         color: 'text-emerald-800',
         bgColor: 'bg-emerald-100',
         borderColor: 'border-emerald-300',
+        dotColor: 'bg-emerald-500',
         badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-emerald-500/10',
         icon: CheckCircle2,
         description: 'Kho đã xác nhận hoàn tất. Serial đạt chuẩn chuyển thành Trong kho, tự động cập nhật số lượng nhận vào đơn hàng',
     },
     REJECTED: {
-        label: 'Từ chối nhận hàng',
+        label: 'Từ chối nhận',
         color: 'text-rose-800',
         bgColor: 'bg-rose-100',
         borderColor: 'border-rose-300',
+        dotColor: 'bg-rose-500',
         badgeClass: 'bg-rose-50 text-rose-700 border-rose-300 ring-rose-500/10',
         icon: XCircle,
         description: 'Lô hàng bị từ chối tiếp nhận do không đạt yêu cầu giao nhận. Các serial bị hủy hiệu lực',
     },
     CANCELLED: {
-        label: 'Đã hủy phiếu',
-        color: 'text-gray-700',
-        bgColor: 'bg-gray-100',
-        borderColor: 'border-gray-300',
-        badgeClass: 'bg-gray-50 text-gray-700 border-gray-300 ring-gray-500/10',
+        label: 'Đã hủy',
+        color: 'text-slate-700',
+        bgColor: 'bg-slate-100',
+        borderColor: 'border-slate-300',
+        dotColor: 'bg-slate-400',
+        badgeClass: 'bg-slate-50 text-slate-700 border-slate-300 ring-slate-500/10',
         icon: Ban,
         description: 'Phiếu nhập kho đã bị hủy bỏ',
     },
@@ -216,53 +222,53 @@ export const SERIAL_STATUS_CONFIG: Record<
     { label: string; badgeClass: string; icon: React.ElementType }
 > = {
     GOOD_CONDITION: {
-        label: 'Đạt chuẩn (Tốt)',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-emerald-500/20',
+        label: 'Đạt chuẩn',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         icon: CheckCircle2,
     },
     DEFECTIVE: {
         label: 'Lỗi / Hư hỏng',
-        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200 ring-rose-500/20',
+        badgeClass: 'bg-rose-50 text-rose-700 border-rose-200',
         icon: AlertTriangle,
     },
     IN_STOCK: {
         label: 'Trong kho',
-        badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 ring-blue-500/20',
+        badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
         icon: Warehouse,
     },
     PENDING_RETURN: {
         label: 'Chờ trả NCC',
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 ring-amber-500/20',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
         icon: RotateCcw,
     },
     RETURNING: {
         label: 'Đang trả NCC',
-        badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 ring-orange-500/20',
+        badgeClass: 'bg-orange-50 text-orange-700 border-orange-200',
         icon: RotateCcw,
     },
     RETURNED: {
         label: 'Đã hoàn trả NCC',
-        badgeClass: 'bg-gray-50 text-gray-700 border-gray-200 ring-gray-500/20',
+        badgeClass: 'bg-slate-50 text-slate-700 border-slate-200',
         icon: Check,
     },
     PACKING: {
         label: 'Đang đóng gói',
-        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 ring-indigo-500/20',
+        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
         icon: Package,
     },
     DELIVERING: {
         label: 'Đang giao hàng',
-        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200 ring-sky-500/20',
+        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
         icon: Send,
     },
     SOLD: {
         label: 'Đã bán',
-        badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 ring-purple-500/20',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
         icon: CheckSquare,
     },
     USING_BY_TECHNICAL: {
         label: 'Kỹ thuật mượn',
-        badgeClass: 'bg-teal-50 text-teal-700 border-teal-200 ring-teal-500/20',
+        badgeClass: 'bg-teal-50 text-teal-700 border-teal-200',
         icon: Sparkles,
     },
 };
@@ -1173,77 +1179,80 @@ export default function GoodsReceiptList() {
         setCurrentPage(1);
     };
 
-    // Quick status navigation tabs
-    const statusTabs = useMemo(
-        () => [
-            { key: 'ALL', label: 'Tất cả phiếu', icon: Ticket },
-            { key: 'PENDING', label: 'Chờ xử lý / Đang kiểm', icon: Clock },
-            { key: 'CONFIRMED', label: 'Đã nhập kho', icon: CheckCircle2 },
-            { key: 'DRAFT', label: 'Lưu nháp', icon: Edit },
-            { key: 'REJECTED', label: 'Từ chối nhận', icon: XCircle },
-            { key: 'CANCELLED', label: 'Đã hủy', icon: Ban },
-        ],
-        []
-    );
+    const renderReceiptStatusIndicator = (status: GoodsReceiptStatus) => {
+        const conf = RECEIPT_STATUS_CONFIG[status] || RECEIPT_STATUS_CONFIG.PENDING;
+        return (
+            <span
+                className="inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                title={conf.description}
+            >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${conf.dotColor}`} />
+                <span className={status === 'CANCELLED' ? 'text-slate-500' : 'text-slate-700'}>
+                    {conf.label}
+                </span>
+            </span>
+        );
+    };
 
     // Columns configuration for AdminTable
     const columns: Column<GoodsReceiptUI>[] = [
         {
             key: 'code',
-            header: 'Mã phiếu',
+            header: 'Mã phiếu nhập',
             render: (item) => (
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-                        <Ticket className="w-4 h-4" />
-                    </div>
-                    <div>
-                        <span className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer" onClick={() => handleViewDetail(item)}>
-                            {item.code}
-                        </span>
-                        <div className="text-xs text-gray-500 line-clamp-1">{item.name}</div>
+                <div className="space-y-0.5 min-w-0">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewDetail(item);
+                        }}
+                        className="font-mono text-xs font-semibold tabular-nums text-slate-900 hover:text-blue-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm text-left"
+                    >
+                        {item.code}
+                    </button>
+                    <div className="text-xs text-slate-500 truncate max-w-[230px]" title={item.name}>
+                        <span className="font-mono tabular-nums text-slate-600">{item.poCode}</span>
+                        <span className="mx-1.5 text-slate-300">·</span>
+                        <span>{item.name}</span>
                     </div>
                 </div>
             ),
         },
         {
             key: 'poCode',
-            header: 'Đơn đặt hàng (PO)',
+            header: 'Đơn nhập / NCC',
             render: (item) => (
-                <div>
-                    <div className="font-medium text-gray-800 flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{item.poCode}</span>
+                <div className="space-y-0.5 min-w-0">
+                    <div
+                        className="text-sm font-medium text-slate-900 truncate max-w-[210px]"
+                        title={item.supplierName}
+                    >
+                        {item.supplierName}
                     </div>
-                    <div className="text-xs text-gray-500">{item.supplierName}</div>
-                </div>
-            ),
-        },
-        {
-            key: 'receivedAt',
-            header: 'Thời gian nhận',
-            render: (item) => (
-                <div className="text-xs text-gray-700 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    <span>{item.receivedAt}</span>
+                    <div className="text-xs font-mono tabular-nums text-slate-500">
+                        {item.poCode}
+                    </div>
                 </div>
             ),
         },
         {
             key: 'quantities',
-            header: 'Số lượng thực nhận',
+            header: 'SL thực nhập',
+            align: 'right',
             render: (item) => (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs">
-                        <span className="font-semibold text-gray-900">{item.totalQuantityReceived} sản phẩm</span>
-                        <span className="text-gray-400">({item.totalItems} mặt hàng)</span>
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div className="text-xs font-medium text-slate-900">
+                        {item.totalQuantityReceived} SP
+                        <span className="text-slate-400 font-normal"> · {item.totalItems} mã</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[11px]">
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            ✓ {item.totalQuantityAccepted} tốt
+                    <div className="text-[11px] flex items-center justify-end gap-2">
+                        <span className="text-emerald-700 font-medium">
+                            {item.totalQuantityAccepted} đạt
                         </span>
                         {item.totalQuantityDefective > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                                ⚠ {item.totalQuantityDefective} lỗi
+                            <span className="text-rose-600 font-medium">
+                                {item.totalQuantityDefective} lỗi
                             </span>
                         )}
                     </div>
@@ -1252,28 +1261,28 @@ export default function GoodsReceiptList() {
         },
         {
             key: 'totalAmount',
-            header: 'Tổng giá trị',
+            header: 'Tổng tiền nhập',
             align: 'right',
             render: (item) => (
-                <div className="font-bold text-gray-900 text-sm">{formatVND(item.totalAmount)}</div>
+                <div className="text-sm font-semibold text-slate-900 text-right tabular-nums whitespace-nowrap">
+                    {formatVND(item.totalAmount)}
+                </div>
             ),
         },
         {
             key: 'status',
             header: 'Trạng thái',
-            align: 'center',
-            render: (item) => {
-                const conf = RECEIPT_STATUS_CONFIG[item.status] || RECEIPT_STATUS_CONFIG.PENDING;
-                const IconComponent = conf.icon;
-                return (
-                    <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-xs ${conf.badgeClass}`}
-                    >
-                        <IconComponent className="w-3.5 h-3.5" />
-                        {conf.label}
-                    </span>
-                );
-            },
+            render: (item) => renderReceiptStatusIndicator(item.status),
+        },
+        {
+            key: 'receivedAt',
+            header: 'Thời gian nhập kho',
+            align: 'right',
+            render: (item) => (
+                <div className="text-xs text-slate-600 text-right tabular-nums whitespace-nowrap">
+                    {item.receivedAt}
+                </div>
+            ),
         },
         {
             key: 'actions',
@@ -1387,235 +1396,102 @@ export default function GoodsReceiptList() {
     }, [allDetailSerials, serialSearchFilter, serialStatusFilter]);
 
     return (
-        <div className="space-y-6">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-md shadow-blue-500/20">
-                            <Ticket className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý phiếu nhập hàng (Goods Receipt)
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                Tiếp nhận hàng hóa thực tế từ NCC, quét kiểm đếm phân loại Serial (Đạt chuẩn / Lỗi hỏng) và xác nhận nhập kho
-                            </p>
-                        </div>
-                    </div>
+        <div className="space-y-4">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý phiếu nhập hàng
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-0.5 tabular-nums">
+                        {kpiStats.total.toLocaleString('vi-VN')} phiếu nhập · {kpiStats.pending} đang kiểm · {kpiStats.confirmed} đã nhập kho · {kpiStats.draft} lưu nháp
+                    </p>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2.5">
+                {/* Header Utility Action */}
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => loadReceipts(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleOpenAddModal}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all cursor-pointer shadow-sm shadow-blue-600/30"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Tạo phiếu nhập mới</span>
+                        <RefreshCw className={`w-4 h-4 text-slate-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+                        <span>Làm mới</span>
                     </button>
                 </div>
-            </div>
-
-            {/* KPI Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <div
-                    onClick={() => {
-                        setStatusFilter('ALL');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md flex items-center gap-3.5 ${statusFilter === 'ALL'
-                        ? 'border-blue-500 ring-2 ring-blue-100 shadow-xs'
-                        : 'border-gray-100 shadow-xs'
-                        }`}
-                    title="Hiển thị tất cả phiếu"
-                >
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <Ticket className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Tổng số phiếu</div>
-                        <div className="text-xl font-bold text-gray-900">{kpiStats.total}</div>
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('PENDING');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md flex items-center gap-3.5 ${statusFilter === 'PENDING'
-                        ? 'border-amber-500 ring-2 ring-amber-100 shadow-xs'
-                        : 'border-gray-100 shadow-xs'
-                        }`}
-                    title="Lọc phiếu chờ kiểm đếm"
-                >
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                        <Clock className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Chờ kiểm đếm</div>
-                        <div className="text-xl font-bold text-amber-700">{kpiStats.pending}</div>
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('CONFIRMED');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md flex items-center gap-3.5 ${statusFilter === 'CONFIRMED'
-                        ? 'border-emerald-500 ring-2 ring-emerald-100 shadow-xs'
-                        : 'border-gray-100 shadow-xs'
-                        }`}
-                    title="Lọc phiếu đã nhập kho"
-                >
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Đã nhập kho</div>
-                        <div className="text-xl font-bold text-emerald-700">{kpiStats.confirmed}</div>
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('DRAFT');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md flex items-center gap-3.5 ${statusFilter === 'DRAFT'
-                        ? 'border-slate-500 ring-2 ring-slate-100 shadow-xs'
-                        : 'border-gray-100 shadow-xs'
-                        }`}
-                    title="Lọc phiếu lưu nháp"
-                >
-                    <div className="p-3 bg-slate-50 text-slate-600 rounded-lg">
-                        <Edit className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">Lưu nháp (DRAFT)</div>
-                        <div className="text-xl font-bold text-slate-700">{kpiStats.draft}</div>
-                    </div>
-                </div>
-
-                <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-gray-100 shadow-xs flex items-center gap-3.5">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <Boxes className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <div className="text-xs text-gray-500 font-medium">SP tốt / SP lỗi</div>
-                        <div className="text-sm font-bold text-gray-900">
-                            <span className="text-emerald-600">{kpiStats.totalAcceptedQty} đạt</span>
-                            <span className="text-gray-400 mx-1">/</span>
-                            <span className="text-rose-600">{kpiStats.totalDefectiveQty} lỗi</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Status Tabs & Filter Section */}
-            <div className="space-y-3">
-                {/* Horizontal Quick Status Pills */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {statusTabs.map((tab) => {
-                        const isActive = statusFilter === tab.key;
-                        const IconComponent = tab.icon;
-                        return (
-                            <button
-                                key={tab.key}
-                                type="button"
-                                onClick={() => {
-                                    setStatusFilter(tab.key);
-                                    setCurrentPage(1);
-                                }}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${isActive
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900 shadow-2xs'
-                                    }`}
-                            >
-                                <IconComponent className="w-3.5 h-3.5" />
-                                <span>{tab.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Filter Toolbar */}
-                <AdminFilter
-                    searchQuery={searchQuery}
-                    onSearchChange={(q) => {
-                        setSearchQuery(q);
-                        setCurrentPage(1);
-                    }}
-                    searchPlaceholder="Tìm kiếm theo mã phiếu nhập (GR-...), tên phiếu..."
-                    fields={filterFields}
-                    values={filterValues}
-                    onFilterChange={handleFilterChange}
-                    onReset={handleResetFilters}
-                />
             </div>
 
             {/* Error Banner */}
             {error && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-rose-700 text-sm">
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-md flex items-center justify-between gap-3 text-rose-800 text-sm">
                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                         <span>{error}</span>
                     </div>
                     <button
                         type="button"
                         onClick={() => loadReceipts(true)}
-                        className="px-3 py-1 bg-rose-600 text-white rounded-lg text-xs font-semibold hover:bg-rose-700 transition-colors"
+                        className="px-3 py-1.5 bg-rose-600 text-white rounded-md text-xs font-medium hover:bg-rose-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
                     >
                         Thử lại
                     </button>
                 </div>
             )}
 
-            {/* Main Data Table */}
-            <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-                <AdminTable<GoodsReceiptUI>
-                    columns={columns}
-                    data={receipts}
-                    rowKey="id"
-                    loading={isLoading}
-                    emptyText="Chưa có phiếu nhập hàng nào phù hợp với bộ lọc."
-                    emptyIcon={Ticket}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20]}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={(sz) => {
-                        setPageSize(sz);
-                        setCurrentPage(1);
-                    }}
-                    showPageSizeSelector={true}
-                    itemUnitName="phiếu nhập"
-                    onRowClick={(item) => {
-                        if (item.status === 'DRAFT' || item.status === 'PENDING') {
-                            handleOpenScanModal(item);
-                        } else {
-                            handleViewDetail(item);
-                        }
-                    }}
-                />
-            </div>
+            {/* Single-row Toolbar: Search + Filters + Primary CTA */}
+            <AdminFilter
+                searchQuery={searchQuery}
+                onSearchChange={(q) => {
+                    setSearchQuery(q);
+                    setCurrentPage(1);
+                }}
+                searchPlaceholder="Tìm theo mã phiếu nhập (GR-...), mã đơn nhập, nhà cung cấp..."
+                fields={filterFields}
+                values={filterValues}
+                onFilterChange={handleFilterChange}
+                onReset={handleResetFilters}
+                actions={
+                    <button
+                        type="button"
+                        onClick={handleOpenAddModal}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Tạo phiếu nhập hàng</span>
+                    </button>
+                }
+            />
+
+            {/* Main Data Table (Border-first, no outer card-in-card) */}
+            <AdminTable<GoodsReceiptUI>
+                columns={columns}
+                data={receipts}
+                rowKey="id"
+                loading={isLoading}
+                emptyText="Chưa có phiếu nhập hàng nào phù hợp với bộ lọc."
+                emptyIcon={Ticket}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20]}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(sz) => {
+                    setPageSize(sz);
+                    setCurrentPage(1);
+                }}
+                showPageSizeSelector={true}
+                itemUnitName="phiếu nhập"
+                onRowClick={(item) => {
+                    if (item.status === 'DRAFT' || item.status === 'PENDING') {
+                        handleOpenScanModal(item);
+                    } else {
+                        handleViewDetail(item);
+                    }
+                }}
+            />
 
             {/* ======================================================== */}
             {/* 1. TẠO PHIẾU NHẬP MỚI (TÁCH BIỆT - CHỈ TẠO ĐƠN)          */}
@@ -1623,24 +1499,24 @@ export default function GoodsReceiptList() {
             <AdminModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
-                title="Tạo mới phiếu nhập hàng (Goods Receipt)"
-                subtitle="Bước 1: Chọn Đơn đặt hàng (PO) cần nhập kho và thiết lập thông tin ban đầu"
+                title="Tạo phiếu nhập hàng mới"
+                subtitle="Chọn đơn đặt hàng (PO) đã duyệt và thiết lập thông tin tiếp nhận ban đầu"
                 icon={Ticket}
                 size="lg"
                 onSubmit={handleCreateReceipt}
                 isSubmitting={isSubmitting}
                 submitText="Tạo phiếu nhập"
             >
-                <div className="space-y-5 p-2">
+                <div className="space-y-4">
                     {/* Select PO */}
                     <div>
-                        <AdminLabel required>Đơn đặt hàng liên kết</AdminLabel>
+                        <AdminLabel required>Đơn đặt hàng liên kết (PO)</AdminLabel>
                         <AdminSelect
                             value={formPoId}
                             onChange={(e) => handleSelectPO(Number(e.target.value))}
                             required
                         >
-                            <option value={0}>-- Vui lòng chọn Đơn đặt hàng (PO) cần nhập kho --</option>
+                            <option value={0}>-- Chọn Đơn đặt hàng (PO) đã duyệt cần nhập kho --</option>
                             {purchaseOrders
                                 .filter((po) => po.status === 'APPROVED')
                                 .map((po) => (
@@ -1649,28 +1525,34 @@ export default function GoodsReceiptList() {
                                     </option>
                                 ))}
                         </AdminSelect>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Hệ thống sẽ lấy danh sách các mặt hàng, số lượng và đơn giá từ đơn PO đã duyệt này.
+                        <p className="text-xs text-slate-500 mt-1">
+                            Hệ thống tự động đối chiếu danh sách mặt hàng, số lượng còn lại và đơn giá từ đơn PO đã duyệt.
                         </p>
                     </div>
 
-                    {/* PO Summary Card if selected */}
+                    {/* Flat PO Summary Strip if selected */}
                     {formPoId > 0 && poMap.get(formPoId) && (
-                        <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 flex flex-col md:flex-row justify-between gap-4 text-xs">
-                            <div>
-                                <span className="font-semibold text-blue-900">Chi tiết Đơn PO:</span>{' '}
-                                <span className="font-mono font-bold text-blue-900">{poMap.get(formPoId)?.code}</span>
-                                <div className="text-gray-600 mt-1">
-                                    Tên đơn / Nhà cung cấp:{' '}
-                                    <span className="font-semibold text-gray-900">{poMap.get(formPoId)?.name || '---'}</span>
+                        <div className="p-3.5 bg-slate-50 rounded-md border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div className="space-y-1">
+                                <div className="text-slate-500">
+                                    Mã đơn PO:{' '}
+                                    <span className="font-mono font-semibold text-slate-900 tabular-nums">
+                                        {poMap.get(formPoId)?.code}
+                                    </span>
+                                </div>
+                                <div className="text-slate-500">
+                                    Tên đơn / NCC:{' '}
+                                    <span className="font-medium text-slate-900">{poMap.get(formPoId)?.name || '---'}</span>
                                 </div>
                             </div>
-                            <div>
-                                <span className="font-semibold text-blue-900">Tổng giá trị đơn:</span>{' '}
-                                <span className="font-bold text-gray-900">{formatVND(poMap.get(formPoId)?.totalAmount)}</span>
-                                <div className="text-gray-600 mt-1">
+                            <div className="space-y-1 sm:text-right tabular-nums">
+                                <div className="text-slate-500">
+                                    Tổng giá trị PO:{' '}
+                                    <span className="font-semibold text-slate-900">{formatVND(poMap.get(formPoId)?.totalAmount)}</span>
+                                </div>
+                                <div className="text-slate-500">
                                     Trạng thái PO:{' '}
-                                    <span className="font-semibold text-blue-700">{poMap.get(formPoId)?.status}</span>
+                                    <span className="font-medium text-slate-800">{poMap.get(formPoId)?.status}</span>
                                 </div>
                             </div>
                         </div>
@@ -1679,41 +1561,41 @@ export default function GoodsReceiptList() {
                     {/* Preview of PO Items */}
                     {formPoId > 0 && (
                         <div className="space-y-2">
-                            <AdminLabel className="uppercase tracking-wider">
+                            <AdminLabel className="uppercase tracking-wider tabular-nums">
                                 Danh sách mặt hàng trong PO ({formItems.length})
                             </AdminLabel>
                             {isLoadingPoItems ? (
-                                <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl flex items-center justify-center gap-2">
+                                <div className="p-5 text-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center gap-2">
                                     <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
                                     <span>Đang nạp thông tin mặt hàng trong đơn PO...</span>
                                 </div>
                             ) : formItems.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+                                <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md">
                                     Đơn PO này không có mặt hàng nào cần nhập.
                                 </div>
                             ) : (
-                                <div className="border border-gray-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+                                <div className="border border-slate-200 rounded-md overflow-x-auto max-h-48 overflow-y-auto">
                                     <table className="w-full text-left text-xs">
-                                        <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+                                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0">
                                             <tr>
                                                 <th className="px-3 py-2">Mặt hàng</th>
-                                                <th className="px-3 py-2 text-center">Đặt mua</th>
-                                                <th className="px-3 py-2 text-center">Đã nhận trước</th>
-                                                <th className="px-3 py-2 text-center">Còn lại cần nhận</th>
+                                                <th className="px-3 py-2 text-right">Đặt mua</th>
+                                                <th className="px-3 py-2 text-right">Đã nhận</th>
+                                                <th className="px-3 py-2 text-right">Còn lại</th>
                                                 <th className="px-3 py-2 text-right">Đơn giá</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-slate-200/80 bg-white">
                                             {formItems.map((item) => (
-                                                <tr key={item.purchaseOrderItemId} className="hover:bg-gray-50">
+                                                <tr key={item.purchaseOrderItemId} className="hover:bg-slate-50">
                                                     <td className="px-3 py-2">
-                                                        <div className="font-semibold text-gray-900 line-clamp-1">{item.productName}</div>
-                                                        <div className="text-[11px] font-mono text-gray-500">{item.productCode}</div>
+                                                        <div className="font-medium text-slate-900 line-clamp-1">{item.productName}</div>
+                                                        <div className="text-[11px] font-mono tabular-nums text-slate-500">{item.productCode}</div>
                                                     </td>
-                                                    <td className="px-3 py-2 text-center font-medium text-gray-800">{item.quantityOrder}</td>
-                                                    <td className="px-3 py-2 text-center text-gray-600">{item.quantityReceivedBefore}</td>
-                                                    <td className="px-3 py-2 text-center font-bold text-blue-700">{item.remainingQuantity}</td>
-                                                    <td className="px-3 py-2 text-right text-gray-800">{formatVND(item.actualUnitCost)}</td>
+                                                    <td className="px-3 py-2 text-right text-slate-800 tabular-nums">{item.quantityOrder}</td>
+                                                    <td className="px-3 py-2 text-right text-slate-600 tabular-nums">{item.quantityReceivedBefore}</td>
+                                                    <td className="px-3 py-2 text-right font-semibold text-slate-900 tabular-nums">{item.remainingQuantity}</td>
+                                                    <td className="px-3 py-2 text-right text-slate-800 tabular-nums whitespace-nowrap">{formatVND(item.actualUnitCost)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -1733,7 +1615,7 @@ export default function GoodsReceiptList() {
                                     value={formCode}
                                     onChange={(e) => setFormCode(e.target.value)}
                                     placeholder="Ví dụ: GR-20261028-001"
-                                    className="font-mono"
+                                    className="font-mono tabular-nums"
                                     required
                                 />
                                 <AdminButton
@@ -1767,15 +1649,16 @@ export default function GoodsReceiptList() {
                                 type="datetime-local"
                                 value={formReceivedAt}
                                 onChange={(e) => setFormReceivedAt(e.target.value)}
+                                className="tabular-nums"
                             />
                         </div>
                     </div>
 
-                    {/* Notice */}
-                    <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
-                        <Barcode className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                    {/* Subtle Workflow Note */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-600 flex items-start gap-2">
+                        <Barcode className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
                         <div>
-                            <span className="font-bold">Quy trình nhập hàng:</span> Tạo đơn xong, bấm vào đơn tồn tại trong danh sách để nhập Serial. Khi hoàn thành phiếu nhập, hệ thống sẽ tự động cập nhật đơn nhập hàng (PO) tương ứng sang trạng thái <b>ĐÃ NHẬN</b>.
+                            Sau khi tạo phiếu, cửa sổ quét Serial sẽ tự động mở để kiểm đếm linh kiện. Khi hoàn thành nhập kho, đơn PO liên kết sẽ chuyển sang trạng thái <strong className="text-slate-800">Đã nhận đủ</strong>.
                         </div>
                     </div>
                 </div>
@@ -1795,14 +1678,14 @@ export default function GoodsReceiptList() {
                 isSubmitting={isSubmitting}
                 submitText="Lưu thay đổi"
             >
-                <div className="space-y-4 p-2">
+                <div className="space-y-4">
                     <div>
                         <AdminLabel required>Mã phiếu nhập</AdminLabel>
                         <AdminInput
                             type="text"
                             value={formCode}
                             onChange={(e) => setFormCode(e.target.value)}
-                            className="font-mono"
+                            className="font-mono tabular-nums"
                             required
                         />
                     </div>
@@ -1820,6 +1703,7 @@ export default function GoodsReceiptList() {
                             type="datetime-local"
                             value={formReceivedAt}
                             onChange={(e) => setFormReceivedAt(e.target.value)}
+                            className="tabular-nums"
                         />
                     </div>
                 </div>
@@ -1833,35 +1717,42 @@ export default function GoodsReceiptList() {
                     isOpen={isScanModalOpen}
                     onClose={() => setIsScanModalOpen(false)}
                     title={
-                        <div className="flex items-center gap-2">
-                            <Barcode className="w-5 h-5 text-blue-600" />
-                            <span>Quét & Nhập Serial: {scanningReceipt.code}</span>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="font-mono tabular-nums">{scanningReceipt.code}</span>
+                            <span className="text-slate-300">·</span>
+                            {renderReceiptStatusIndicator(scanningReceipt.status)}
                         </div>
                     }
-                    subtitle={`${scanningReceipt.name} • Đơn PO: ${scanningReceipt.poCode} • NCC: ${scanningReceipt.supplierName}`}
+                    subtitle={`${scanningReceipt.name} • PO: ${scanningReceipt.poCode} • ${scanningReceipt.supplierName}`}
                     icon={Barcode}
                     size="2xl"
                     showFooter={true}
                     footer={
-                        <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-3 pt-1">
-                            <div className="flex items-center gap-2 text-xs">
-                                <span className="font-semibold text-gray-700">Tổng Serial:</span>
-                                <span className="px-2.5 py-1 rounded-full font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                    {totalScannedSerials} sản phẩm
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3">
+                            <div className="flex items-center gap-3 text-xs text-slate-600 tabular-nums flex-wrap">
+                                <span>
+                                    Tổng Serial: <strong className="text-slate-900">{totalScannedSerials}</strong>
                                 </span>
-                                <span className="px-2.5 py-1 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    ✓ {goodConditionCount} đạt chuẩn
+                                <span className="text-slate-300">·</span>
+                                <span className="inline-flex items-center gap-1.5 text-emerald-700 font-medium">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    {goodConditionCount} đạt chuẩn
                                 </span>
                                 {defectiveCount > 0 && (
-                                    <span className="px-2.5 py-1 rounded-full font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                        ⚠ {defectiveCount} lỗi hỏng
-                                    </span>
+                                    <>
+                                        <span className="text-slate-300">·</span>
+                                        <span className="inline-flex items-center gap-1.5 text-rose-700 font-medium">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                            {defectiveCount} lỗi hỏng
+                                        </span>
+                                    </>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <AdminButton
                                     type="button"
                                     variant="secondary"
+                                    size="sm"
                                     onClick={() => setIsScanModalOpen(false)}
                                 >
                                     Đóng
@@ -1870,59 +1761,61 @@ export default function GoodsReceiptList() {
                                     <AdminButton
                                         type="button"
                                         variant="secondary"
+                                        size="sm"
                                         onClick={handleSaveAllSerials}
                                         disabled={isSavingSerials || isCompletingReceipt}
                                         isLoading={isSavingSerials}
                                         icon={Save}
                                         title="Lưu lại toàn bộ Serial đã quét và trạng thái"
                                     >
-                                        Lưu tất cả Serial & Trạng thái
+                                        Lưu danh sách Serial
                                     </AdminButton>
                                 )}
                                 <AdminButton
                                     type="button"
                                     variant="primary"
+                                    size="sm"
                                     onClick={handleCompleteReceipt}
                                     disabled={isSavingSerials || isCompletingReceipt || totalScannedSerials === 0}
                                     isLoading={isCompletingReceipt}
                                     icon={CheckCircle2}
-                                    className="!bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-600/20"
+                                    className="!bg-emerald-600 hover:!bg-emerald-700"
                                     title="Xác nhận hoàn tất phiếu nhập và chuyển trạng thái đơn PO sang ĐÃ NHẬN"
                                 >
-                                    Hoàn thành phiếu nhập (Nhập kho)
+                                    Hoàn thành nhập kho
                                 </AdminButton>
                             </div>
                         </div>
                     }
                 >
-                    <div className="space-y-4 p-2">
+                    <div className="space-y-4">
                         {scanningReceipt.status !== 'DRAFT' && (
-                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-800 text-xs flex items-center gap-2">
                                 <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
                                 <span>
-                                    Phiếu nhập đang ở trạng thái <b>{RECEIPT_STATUS_CONFIG[scanningReceipt.status]?.label || scanningReceipt.status}</b>.
-                                    Danh sách Serial đã được khóa từ bước kiểm đếm. Bấm <b>"Hoàn thành phiếu nhập (Nhập kho)"</b> để duyệt xác nhận hoàn tất.
+                                    Phiếu đang ở trạng thái <strong>{RECEIPT_STATUS_CONFIG[scanningReceipt.status]?.label || scanningReceipt.status}</strong>.
+                                    Danh sách Serial đã khóa. Bấm <strong>Hoàn thành nhập kho</strong> để duyệt xác nhận hoàn tất.
                                 </span>
                             </div>
                         )}
                         {isLoadingPoItems ? (
-                            <div className="p-12 text-center text-gray-500">
-                                <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
+                            <div className="p-10 text-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md">
+                                <RefreshCw className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
                                 Đang tải danh sách mặt hàng và serial...
                             </div>
                         ) : formItems.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-xl">
+                            <div className="p-8 text-center text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md">
                                 Đơn PO này chưa có mặt hàng nào cần nhập.
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                {/* Left column: List of items in PO */}
-                                <div className="lg:col-span-5 space-y-3">
-                                    <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                        <span>Danh sách mặt hàng ({formItems.length})</span>
-                                        <span>Click chọn để quét</span>
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                {/* Left column: Flat divide-y list of PO items */}
+                                <div className="lg:col-span-5 space-y-2">
+                                    <div className="flex items-center justify-between text-xs font-medium text-slate-500 tabular-nums">
+                                        <span>Mặt hàng trong PO ({formItems.length})</span>
+                                        <span>Chọn dòng để quét</span>
                                     </div>
-                                    <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+                                    <div className="border border-slate-200 rounded-md bg-white divide-y divide-slate-200/80 max-h-[460px] overflow-y-auto">
                                         {formItems.map((item, idx) => {
                                             const totalScanned = item.serials.length;
                                             const goodCount = item.serials.filter((s) => s.status === 'GOOD_CONDITION').length;
@@ -1930,80 +1823,82 @@ export default function GoodsReceiptList() {
                                             const isSelected = activeItemIndex === idx;
 
                                             return (
-                                                <div
+                                                <button
                                                     key={item.purchaseOrderItemId}
+                                                    type="button"
                                                     onClick={() => setActiveItemIndex(idx)}
-                                                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${isSelected
-                                                        ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/10 shadow-xs'
-                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                    className={`w-full text-left p-3 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40 ${isSelected
+                                                        ? 'bg-blue-50/70'
+                                                        : 'bg-white hover:bg-slate-50'
                                                         }`}
                                                 >
                                                     <div className="flex justify-between items-start gap-2">
-                                                        <div className="font-semibold text-sm text-gray-900 line-clamp-1">
+                                                        <div className={`font-medium text-xs line-clamp-1 ${isSelected ? 'text-blue-900' : 'text-slate-900'}`}>
                                                             {item.productName}
                                                         </div>
-                                                        <span className="text-xs font-mono text-gray-500 shrink-0">
+                                                        <span className="text-[11px] font-mono tabular-nums text-slate-500 shrink-0">
                                                             {item.productCode}
                                                         </span>
                                                     </div>
 
-                                                    <div className="mt-2 text-xs text-gray-600 flex justify-between">
+                                                    <div className="mt-1.5 text-[11px] text-slate-600 flex items-center justify-between tabular-nums">
                                                         <span>
-                                                            Đặt: <b>{item.quantityOrder}</b> | Còn lại: <b>{item.remainingQuantity}</b>
+                                                            Đặt: <strong className="text-slate-800">{item.quantityOrder}</strong> · Còn: <strong className="text-slate-800">{item.remainingQuantity}</strong>
                                                         </span>
-                                                        <span className="font-medium text-blue-600">
-                                                            Đã quét: <b>{totalScanned}</b>
+                                                        <span className="font-semibold text-blue-700">
+                                                            Đã quét: {totalScanned}
                                                         </span>
                                                     </div>
 
-                                                    <div className="mt-2 flex items-center gap-1.5 text-[11px]">
-                                                        <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">
-                                                            {goodCount} chuẩn
-                                                        </span>
-                                                        {defCount > 0 && (
-                                                            <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-medium">
-                                                                {defCount} lỗi
+                                                    {(goodCount > 0 || defCount > 0) && (
+                                                        <div className="mt-1 flex items-center gap-2 text-[11px] tabular-nums">
+                                                            <span className="text-emerald-700 font-medium">
+                                                                {goodCount} đạt
                                                             </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                            {defCount > 0 && (
+                                                                <span className="text-rose-600 font-medium">
+                                                                    {defCount} lỗi
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </button>
                                             );
                                         })}
                                     </div>
                                 </div>
 
-                                {/* Right column: Serial Scanning Workspace for the selected item */}
-                                <div className="lg:col-span-7 bg-gray-50/60 p-4 rounded-2xl border border-gray-200 space-y-4">
+                                {/* Right column: Flat Serial Scanning Workspace */}
+                                <div className="lg:col-span-7 border border-slate-200 rounded-md bg-white p-4 space-y-3.5">
                                     {formItems[activeItemIndex] && (
                                         <>
-                                            <div className="flex justify-between items-start gap-2 border-b border-gray-200 pb-3">
-                                                <div>
-                                                    <div className="text-xs text-blue-600 font-semibold uppercase tracking-wider">
-                                                        Đang quét Serial cho mặt hàng:
-                                                    </div>
-                                                    <div className="font-bold text-gray-900 text-base">
+                                            <div className="flex justify-between items-start gap-3 border-b border-slate-200 pb-3">
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-slate-900 text-sm truncate">
                                                         {formItems[activeItemIndex].productName}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        Mã SP: {formItems[activeItemIndex].productCode} | Đơn giá: {formatVND(formItems[activeItemIndex].actualUnitCost)}
+                                                    <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                                        <span className="font-mono">{formItems[activeItemIndex].productCode}</span>
+                                                        <span className="mx-1.5 text-slate-300">·</span>
+                                                        <span>Đơn giá: {formatVND(formItems[activeItemIndex].actualUnitCost)}</span>
                                                     </div>
                                                 </div>
 
-                                                <div className="text-right">
-                                                    <div className="text-xl font-bold text-blue-700">
+                                                <div className="text-right shrink-0 tabular-nums">
+                                                    <div className="text-base font-semibold text-slate-900">
                                                         {formItems[activeItemIndex].serials.length}
-                                                        <span className="text-xs font-normal text-gray-500">
-                                                            {' '}/ cần {formItems[activeItemIndex].remainingQuantity}
+                                                        <span className="text-xs font-normal text-slate-500">
+                                                            {' '}/ {formItems[activeItemIndex].remainingQuantity}
                                                         </span>
                                                     </div>
-                                                    <div className="text-[11px] text-gray-500">Số serial đã nhập</div>
+                                                    <div className="text-[11px] text-slate-500">Serial đã nhập</div>
                                                 </div>
                                             </div>
 
-                                            {/* Barcode input row (Chỉ hiển thị khi ở trạng thái DRAFT) */}
+                                            {/* Barcode input row (Only in DRAFT) */}
                                             {scanningReceipt.status === 'DRAFT' && (
                                                 <div className="space-y-2">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                                         <div className="flex-1">
                                                             <AdminInput
                                                                 type="text"
@@ -2017,7 +1912,7 @@ export default function GoodsReceiptList() {
                                                                 }}
                                                                 placeholder="Quét Barcode hoặc nhập Serial rồi nhấn Enter..."
                                                                 prefixIcon={Barcode}
-                                                                className="font-mono"
+                                                                className="font-mono tabular-nums"
                                                                 autoFocus
                                                             />
                                                         </div>
@@ -2025,13 +1920,10 @@ export default function GoodsReceiptList() {
                                                         <AdminSelect
                                                             value={barcodeStatus}
                                                             onChange={(e) => setBarcodeStatus(e.target.value as any)}
-                                                            className={`!w-auto font-semibold ${barcodeStatus === 'GOOD_CONDITION'
-                                                                ? 'text-emerald-700 border-emerald-300'
-                                                                : 'text-rose-700 border-rose-300'
-                                                                }`}
+                                                            className="!w-auto font-medium"
                                                         >
-                                                            <option value="GOOD_CONDITION">Đạt chuẩn (Tốt)</option>
-                                                            <option value="DEFECTIVE">Hàng lỗi / Hư hỏng</option>
+                                                            <option value="GOOD_CONDITION">Đạt chuẩn</option>
+                                                            <option value="DEFECTIVE">Hàng lỗi</option>
                                                         </AdminSelect>
 
                                                         <AdminButton
@@ -2044,24 +1936,22 @@ export default function GoodsReceiptList() {
                                                     </div>
 
                                                     {/* Tool buttons: Bulk paste, Clear */}
-                                                    <div className="flex items-center justify-between gap-2 pt-1">
-                                                        <div className="flex items-center gap-2 text-xs">
-                                                            <AdminButton
-                                                                type="button"
-                                                                variant="secondary"
-                                                                size="sm"
-                                                                onClick={() => setIsBulkModalOpen(true)}
-                                                                icon={FileText}
-                                                            >
-                                                                Dán nhiều serial (Paste)
-                                                            </AdminButton>
-                                                        </div>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <AdminButton
+                                                            type="button"
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={() => setIsBulkModalOpen(true)}
+                                                            icon={FileText}
+                                                        >
+                                                            Dán nhiều serial
+                                                        </AdminButton>
 
                                                         {formItems[activeItemIndex].serials.length > 0 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleClearAllSerials(activeItemIndex)}
-                                                                className="text-xs text-rose-600 hover:underline cursor-pointer"
+                                                                className="text-xs text-rose-600 hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40 rounded-sm"
                                                             >
                                                                 Xóa hết serial
                                                             </button>
@@ -2070,65 +1960,71 @@ export default function GoodsReceiptList() {
                                                 </div>
                                             )}
 
-                                            {/* Serials table in form */}
+                                            {/* Serials list */}
                                             <div className="space-y-1.5">
-                                                <div className="text-xs font-semibold text-gray-700 flex justify-between">
-                                                    <span>Danh sách Serial ({formItems[activeItemIndex].serials.length}):</span>
-                                                    <span className="text-gray-500 font-normal">
+                                                <div className="text-xs text-slate-600 flex justify-between tabular-nums">
+                                                    <span className="font-medium text-slate-800">
+                                                        Danh sách Serial ({formItems[activeItemIndex].serials.length})
+                                                    </span>
+                                                    <span className="text-slate-500">
                                                         {scanningReceipt.status === 'DRAFT'
-                                                            ? 'Click vào nhãn để đổi trạng thái Tốt ⮂ Lỗi'
+                                                            ? 'Bấm trạng thái để chuyển Đạt / Lỗi'
                                                             : 'Danh sách serial đã cố định'}
                                                     </span>
                                                 </div>
 
-                                                <div className="max-h-[260px] overflow-y-auto border border-gray-200 rounded-xl bg-white divide-y divide-gray-100">
+                                                <div className="max-h-[260px] overflow-y-auto border border-slate-200 rounded-md bg-white divide-y divide-slate-200/80">
                                                     {formItems[activeItemIndex].serials.length === 0 ? (
-                                                        <div className="p-6 text-center text-xs text-gray-400">
+                                                        <div className="p-6 text-center text-xs text-slate-400">
                                                             Chưa có serial nào được quét.
                                                         </div>
                                                     ) : (
                                                         formItems[activeItemIndex].serials.map((ser, sIdx) => (
                                                             <div
                                                                 key={`${ser.serialNumber}-${sIdx}`}
-                                                                className="px-3 py-2 flex items-center justify-between text-xs hover:bg-gray-50 transition-colors"
+                                                                className="px-3 py-2 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors"
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-gray-400 w-5 font-mono">{sIdx + 1}.</span>
-                                                                    <span className="font-mono font-medium text-gray-900">{ser.serialNumber}</span>
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <span className="text-slate-400 w-5 font-mono tabular-nums shrink-0">{sIdx + 1}.</span>
+                                                                    <span className="font-mono font-medium tabular-nums text-slate-900 truncate">{ser.serialNumber}</span>
                                                                 </div>
 
-                                                                <div className="flex items-center gap-2">
+                                                                <div className="flex items-center gap-2 shrink-0">
                                                                     {scanningReceipt.status === 'DRAFT' ? (
                                                                         <>
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => handleToggleSerialStatus(activeItemIndex, sIdx)}
-                                                                                className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${ser.status === 'GOOD_CONDITION'
-                                                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                                                                    : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                                                                                    }`}
+                                                                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                                                                                 title="Bấm để đổi trạng thái giữa Đạt chuẩn và Lỗi hỏng"
                                                                             >
-                                                                                {ser.status === 'GOOD_CONDITION' ? '✓ Đạt chuẩn' : '⚠ Hàng lỗi'}
+                                                                                <span
+                                                                                    className={`w-1.5 h-1.5 rounded-full ${ser.status === 'GOOD_CONDITION'
+                                                                                        ? 'bg-emerald-500'
+                                                                                        : 'bg-rose-500'
+                                                                                        }`}
+                                                                                />
+                                                                                {ser.status === 'GOOD_CONDITION' ? 'Đạt chuẩn' : 'Hàng lỗi'}
                                                                             </button>
 
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => handleRemoveSerial(activeItemIndex, sIdx)}
-                                                                                className="p-1 text-gray-400 hover:text-rose-600 rounded transition-colors"
+                                                                                className="p-1 text-slate-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
                                                                                 title="Xóa serial"
                                                                             >
                                                                                 <Trash2 className="w-3.5 h-3.5" />
                                                                             </button>
                                                                         </>
                                                                     ) : (
-                                                                        <span
-                                                                            className={`px-2 py-0.5 rounded text-[11px] font-semibold border ${ser.status === 'GOOD_CONDITION'
-                                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                                                : 'bg-rose-50 text-rose-700 border-rose-200'
-                                                                                }`}
-                                                                        >
-                                                                            {ser.status === 'GOOD_CONDITION' ? '✓ Đạt chuẩn' : '⚠ Hàng lỗi'}
+                                                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700">
+                                                                            <span
+                                                                                className={`w-1.5 h-1.5 rounded-full ${ser.status === 'GOOD_CONDITION'
+                                                                                    ? 'bg-emerald-500'
+                                                                                    : 'bg-rose-500'
+                                                                                    }`}
+                                                                            />
+                                                                            {ser.status === 'GOOD_CONDITION' ? 'Đạt chuẩn' : 'Hàng lỗi'}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -2162,13 +2058,13 @@ export default function GoodsReceiptList() {
                     />
                 }
             >
-                <div className="p-2 space-y-4">
+                <div className="space-y-3">
                     <AdminTextarea
                         rows={6}
                         value={bulkSerialsInput}
                         onChange={(e) => setBulkSerialsInput(e.target.value)}
                         placeholder="SN-20261028-0001&#10;SN-20261028-0002&#10;SN-20261028-0003..."
-                        className="font-mono text-xs"
+                        className="font-mono tabular-nums text-xs"
                     />
                 </div>
             </AdminModal>
@@ -2180,54 +2076,54 @@ export default function GoodsReceiptList() {
                 <AdminModal
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
-                    title={`Chi tiết phiếu nhập: ${selectedReceipt.code}`}
+                    title={
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="font-mono tabular-nums text-slate-900">{selectedReceipt.code}</span>
+                            <span className="text-slate-300">·</span>
+                            {renderReceiptStatusIndicator(selectedReceipt.status)}
+                        </div>
+                    }
                     subtitle={`${selectedReceipt.name} • ${selectedReceipt.receivedAt}`}
                     icon={Ticket}
                     size="2xl"
                     tabs={detailTabs}
                     activeTab={activeDetailTab}
                     onTabChange={(t) => setActiveDetailTab(t as any)}
-                    showFooter={false}
-                >
-                    {/* Tab 1: Overview */}
-                    {activeDetailTab === 'overview' && (
-                        <div className="space-y-6 p-2">
-                            {/* Status Banner */}
-                            <div
-                                className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${RECEIPT_STATUS_CONFIG[selectedReceipt.status].bgColor
-                                    } ${RECEIPT_STATUS_CONFIG[selectedReceipt.status].borderColor}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    {React.createElement(RECEIPT_STATUS_CONFIG[selectedReceipt.status].icon, {
-                                        className: `w-6 h-6 ${RECEIPT_STATUS_CONFIG[selectedReceipt.status].color}`,
-                                    })}
-                                    <div>
-                                        <div className={`font-bold text-sm ${RECEIPT_STATUS_CONFIG[selectedReceipt.status].color}`}>
-                                            Trạng thái hiện tại: {RECEIPT_STATUS_CONFIG[selectedReceipt.status].label}
-                                        </div>
-                                        <div className="text-xs text-gray-600">
-                                            {RECEIPT_STATUS_CONFIG[selectedReceipt.status].description}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Status actions right on banner */}
-                                <div className="flex items-center gap-2">
-                                    {(selectedReceipt.status === 'DRAFT' || selectedReceipt.status === 'PENDING') && (
+                    showFooter={true}
+                    footer={
+                        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                            <div className="text-xs text-slate-500 tabular-nums">
+                                Tổng giá trị phiếu:{' '}
+                                <strong className="text-sm font-semibold text-slate-900">
+                                    {formatVND(selectedReceipt.totalAmount)}
+                                </strong>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {(selectedReceipt.status === 'DRAFT' || selectedReceipt.status === 'PENDING') && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => {
+                                            setIsDetailModalOpen(false);
+                                            handleOpenScanModal(selectedReceipt);
+                                        }}
+                                        icon={Barcode}
+                                    >
+                                        Quét & Nhập Serial
+                                    </AdminButton>
+                                )}
+                                {selectedReceipt.status === 'PENDING' && (
+                                    <>
                                         <AdminButton
                                             type="button"
                                             size="sm"
-                                            variant="primary"
-                                            onClick={() => {
-                                                setIsDetailModalOpen(false);
-                                                handleOpenScanModal(selectedReceipt);
-                                            }}
-                                            icon={Barcode}
+                                            variant="danger"
+                                            onClick={() => handleRequestStatusAction(selectedReceipt, 'REJECTED')}
+                                            icon={XCircle}
                                         >
-                                            Quét & Nhập Serial
+                                            Từ chối nhận
                                         </AdminButton>
-                                    )}
-                                    {selectedReceipt.status === 'PENDING' && (
                                         <AdminButton
                                             type="button"
                                             size="sm"
@@ -2238,105 +2134,118 @@ export default function GoodsReceiptList() {
                                         >
                                             Xác nhận nhập kho
                                         </AdminButton>
-                                    )}
-                                    {selectedReceipt.status === 'PENDING' && (
-                                        <AdminButton
-                                            type="button"
-                                            size="sm"
-                                            variant="danger"
-                                            onClick={() => handleRequestStatusAction(selectedReceipt, 'REJECTED')}
-                                            icon={XCircle}
-                                        >
-                                            Từ chối nhận
-                                        </AdminButton>
-                                    )}
-                                    {selectedReceipt.status === 'DRAFT' && (
-                                        <AdminButton
-                                            type="button"
-                                            size="sm"
-                                            variant="primary"
-                                            onClick={() => handleRequestStatusAction(selectedReceipt, 'PENDING')}
-                                            icon={Send}
-                                        >
-                                            Gửi kiểm đếm
-                                        </AdminButton>
-                                    )}
+                                    </>
+                                )}
+                                {selectedReceipt.status === 'DRAFT' && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => handleRequestStatusAction(selectedReceipt, 'PENDING')}
+                                        icon={Send}
+                                    >
+                                        Gửi kiểm đếm
+                                    </AdminButton>
+                                )}
+                                <AdminButton
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setIsDetailModalOpen(false)}
+                                >
+                                    Đóng
+                                </AdminButton>
+                            </div>
+                        </div>
+                    }
+                >
+                    {/* Tab 1: Overview */}
+                    {activeDetailTab === 'overview' && (
+                        <div className="space-y-4">
+                            {/* Flat Status Description Bar */}
+                            <div className="p-3.5 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-600 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2.5">
+                                    {renderReceiptStatusIndicator(selectedReceipt.status)}
+                                    <span className="text-slate-300">|</span>
+                                    <span>{RECEIPT_STATUS_CONFIG[selectedReceipt.status].description}</span>
                                 </div>
                             </div>
 
-                            {/* Summary Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="text-xs text-gray-500 font-medium">Tổng số lượng nhận</div>
-                                    <div className="text-2xl font-bold text-gray-900 mt-1">
+                            {/* Flat 4-column Summary Strip */}
+                            <div className="border border-slate-200 rounded-md bg-white grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x divide-slate-200 tabular-nums">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Tổng SL thực nhận</div>
+                                    <div className="text-lg font-semibold text-slate-900 mt-0.5">
                                         {selectedReceipt.totalQuantityReceived}{' '}
-                                        <span className="text-xs font-normal text-gray-500">sản phẩm</span>
+                                        <span className="text-xs font-normal text-slate-500">SP</span>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-emerald-50/70 rounded-xl border border-emerald-100">
-                                    <div className="text-xs text-emerald-700 font-medium">Hàng đạt chuẩn (Tốt)</div>
-                                    <div className="text-2xl font-bold text-emerald-800 mt-1">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Đạt chuẩn vào kho</div>
+                                    <div className="text-lg font-semibold text-emerald-700 mt-0.5">
                                         {selectedReceipt.totalQuantityAccepted}{' '}
-                                        <span className="text-xs font-normal text-emerald-600">vào kho</span>
+                                        <span className="text-xs font-normal text-slate-500">SP</span>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-rose-50/70 rounded-xl border border-rose-100">
-                                    <div className="text-xs text-rose-700 font-medium">Hàng lỗi / Hư hỏng</div>
-                                    <div className="text-2xl font-bold text-rose-800 mt-1">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Lỗi / Chờ trả NCC</div>
+                                    <div className="text-lg font-semibold text-rose-700 mt-0.5">
                                         {selectedReceipt.totalQuantityDefective}{' '}
-                                        <span className="text-xs font-normal text-rose-600">chờ trả NCC</span>
+                                        <span className="text-xs font-normal text-slate-500">SP</span>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-100">
-                                    <div className="text-xs text-blue-700 font-medium">Tổng giá trị phiếu</div>
-                                    <div className="text-xl font-bold text-blue-900 mt-1">
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Tổng giá trị phiếu</div>
+                                    <div className="text-lg font-semibold text-slate-900 mt-0.5">
                                         {formatVND(selectedReceipt.totalAmount)}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Info Fields Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2.5">
-                                    <div className="font-semibold text-gray-900 text-sm border-b pb-1.5 flex items-center gap-1.5">
-                                        <Ticket className="w-4 h-4 text-blue-600" />
-                                        <span>Thông tin phiếu nhập</span>
+                            {/* Flat 2-column Specification Grid */}
+                            <div className="border border-slate-200 rounded-md bg-white grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 text-xs">
+                                <div className="p-4 space-y-2.5">
+                                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Thông tin phiếu nhập
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Mã phiếu:</span>
-                                        <span className="font-mono font-bold text-gray-900">{selectedReceipt.code}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Tên phiếu:</span>
-                                        <span className="font-medium text-gray-900">{selectedReceipt.name}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Thời gian nhận hàng:</span>
-                                        <span className="font-medium text-gray-900">{selectedReceipt.receivedAt}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-500">Ngày tạo phiếu:</span>
-                                        <span className="text-gray-700">{selectedReceipt.createdDate}</span>
-                                    </div>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Mã phiếu</dt>
+                                            <dd className="font-mono font-semibold text-slate-900 tabular-nums">{selectedReceipt.code}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Tên phiếu</dt>
+                                            <dd className="font-medium text-slate-900 text-right">{selectedReceipt.name}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Thời gian nhận hàng</dt>
+                                            <dd className="text-slate-800 tabular-nums">{selectedReceipt.receivedAt}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Ngày tạo phiếu</dt>
+                                            <dd className="text-slate-600 tabular-nums">{selectedReceipt.createdDate}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
 
-                                <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2.5">
-                                    <div className="font-semibold text-gray-900 text-sm border-b pb-1.5 flex items-center gap-1.5">
-                                        <Package className="w-4 h-4 text-blue-600" />
-                                        <span>Đơn đặt hàng (PO) liên kết</span>
+                                <div className="p-4 space-y-2.5">
+                                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Đơn đặt hàng (PO) liên kết
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Mã Đơn PO:</span>
-                                        <span className="font-mono font-bold text-blue-600">{selectedReceipt.poCode}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Tên Đơn / NCC:</span>
-                                        <span className="font-medium text-gray-900">{selectedReceipt.supplierName}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-500">Cập nhật lần cuối:</span>
-                                        <span className="text-gray-700">{selectedReceipt.lastModifiedDate}</span>
-                                    </div>
+                                    <dl className="space-y-2">
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Mã Đơn PO</dt>
+                                            <dd className="font-mono font-semibold text-slate-900 tabular-nums">{selectedReceipt.poCode}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Tên Đơn / NCC</dt>
+                                            <dd className="font-medium text-slate-900 text-right">{selectedReceipt.supplierName}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Cập nhật lần cuối</dt>
+                                            <dd className="text-slate-600 tabular-nums">{selectedReceipt.lastModifiedDate}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
                             </div>
                         </div>
@@ -2344,59 +2253,59 @@ export default function GoodsReceiptList() {
 
                     {/* Tab 2: Items list */}
                     {activeDetailTab === 'items' && (
-                        <div className="space-y-4 p-2">
-                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                        <div className="space-y-3">
+                            <div className="border border-slate-200 rounded-md overflow-x-auto bg-white">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+                                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                                         <tr>
-                                            <th className="px-4 py-3">#</th>
-                                            <th className="px-4 py-3">Mặt hàng</th>
-                                            <th className="px-4 py-3 text-right">Đơn giá thực nhận</th>
-                                            <th className="px-4 py-3 text-center">Tổng nhận</th>
-                                            <th className="px-4 py-3 text-center">Đạt chuẩn</th>
-                                            <th className="px-4 py-3 text-center">Lỗi hỏng</th>
-                                            <th className="px-4 py-3 text-right">Thành tiền</th>
+                                            <th className="px-3.5 py-2.5 w-10 text-center">#</th>
+                                            <th className="px-3.5 py-2.5">Mặt hàng</th>
+                                            <th className="px-3.5 py-2.5 text-right">Đơn giá nhập</th>
+                                            <th className="px-3.5 py-2.5 text-right">Tổng nhận</th>
+                                            <th className="px-3.5 py-2.5 text-right">Đạt chuẩn</th>
+                                            <th className="px-3.5 py-2.5 text-right">Lỗi hỏng</th>
+                                            <th className="px-3.5 py-2.5 text-right">Thành tiền</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-200/80">
                                         {(selectedReceipt.items || []).map((it, idx) => (
-                                            <tr key={it.id || idx} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3 text-gray-400 font-mono">{idx + 1}</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="font-semibold text-gray-900">
+                                            <tr key={it.id || idx} className="hover:bg-slate-50/80">
+                                                <td className="px-3.5 py-2.5 text-center text-slate-400 font-mono tabular-nums">{idx + 1}</td>
+                                                <td className="px-3.5 py-2.5">
+                                                    <div className="font-medium text-slate-900">
                                                         Mặt hàng PO #{it.purchaseOrderItemId}
                                                     </div>
-                                                    <div className="text-gray-400 text-[11px]">
+                                                    <div className="text-slate-500 text-[11px] tabular-nums">
                                                         {it.productSerials?.length || 0} serial được định danh
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-medium text-gray-800">
+                                                <td className="px-3.5 py-2.5 text-right text-slate-700 tabular-nums whitespace-nowrap">
                                                     {formatVND(it.actualUnitCost)}
                                                 </td>
-                                                <td className="px-4 py-3 text-center font-bold text-gray-900">
+                                                <td className="px-3.5 py-2.5 text-right font-medium text-slate-900 tabular-nums">
                                                     {it.quantityReceived}
                                                 </td>
-                                                <td className="px-4 py-3 text-center font-bold text-emerald-700">
+                                                <td className="px-3.5 py-2.5 text-right font-medium text-emerald-700 tabular-nums">
                                                     {it.quantityAccepted}
                                                 </td>
-                                                <td className="px-4 py-3 text-center font-bold text-rose-700">
+                                                <td className="px-3.5 py-2.5 text-right font-medium text-rose-700 tabular-nums">
                                                     {it.quantityDefective}
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-bold text-gray-900">
+                                                <td className="px-3.5 py-2.5 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                                                     {formatVND((it.actualUnitCost || 0) * (it.quantityReceived || 0))}
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
-                                    <tfoot className="bg-gray-50 font-bold border-t border-gray-200 text-gray-900">
+                                    <tfoot className="bg-slate-50 font-semibold border-t border-slate-200 text-slate-900 tabular-nums">
                                         <tr>
-                                            <td colSpan={3} className="px-4 py-3 text-right uppercase tracking-wider">
-                                                Tổng cộng:
+                                            <td colSpan={3} className="px-3.5 py-2.5 text-right text-slate-600">
+                                                Tổng cộng
                                             </td>
-                                            <td className="px-4 py-3 text-center">{selectedReceipt.totalQuantityReceived}</td>
-                                            <td className="px-4 py-3 text-center text-emerald-700">{selectedReceipt.totalQuantityAccepted}</td>
-                                            <td className="px-4 py-3 text-center text-rose-700">{selectedReceipt.totalQuantityDefective}</td>
-                                            <td className="px-4 py-3 text-right text-blue-700">{formatVND(selectedReceipt.totalAmount)}</td>
+                                            <td className="px-3.5 py-2.5 text-right">{selectedReceipt.totalQuantityReceived}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-emerald-700">{selectedReceipt.totalQuantityAccepted}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-rose-700">{selectedReceipt.totalQuantityDefective}</td>
+                                            <td className="px-3.5 py-2.5 text-right text-sm whitespace-nowrap">{formatVND(selectedReceipt.totalAmount)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -2406,17 +2315,17 @@ export default function GoodsReceiptList() {
 
                     {/* Tab 3: Serials List */}
                     {activeDetailTab === 'serials' && (
-                        <div className="space-y-4 p-2">
+                        <div className="space-y-3">
                             {/* Filter Serials */}
-                            <div className="flex flex-col sm:flex-row justify-between gap-3">
+                            <div className="flex flex-col sm:flex-row justify-between gap-2.5">
                                 <div className="relative flex-1">
-                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="text"
                                         value={serialSearchFilter}
                                         onChange={(e) => setSerialSearchFilter(e.target.value)}
                                         placeholder="Tra cứu số Serial..."
-                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-mono"
+                                        className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-md text-xs font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                                     />
                                 </div>
 
@@ -2424,7 +2333,7 @@ export default function GoodsReceiptList() {
                                     <select
                                         value={serialStatusFilter}
                                         onChange={(e) => setSerialStatusFilter(e.target.value)}
-                                        className="px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white"
+                                        className="px-3 py-2 border border-slate-200 rounded-md text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                                     >
                                         <option value="ALL">Tất cả tình trạng serial</option>
                                         <option value="GOOD_CONDITION">Đạt chuẩn (GOOD_CONDITION)</option>
@@ -2440,31 +2349,31 @@ export default function GoodsReceiptList() {
                                                 setIsDetailModalOpen(false);
                                                 handleOpenScanModal(selectedReceipt);
                                             }}
-                                            className="px-3.5 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-xs hover:bg-blue-700 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                            className="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                                         >
                                             <Barcode className="w-3.5 h-3.5" />
-                                            <span>Quét & Nhập Serial</span>
+                                            <span>Quét Serial</span>
                                         </button>
                                     )}
                                 </div>
                             </div>
 
                             {/* Serials Table */}
-                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white max-h-[420px] overflow-y-auto">
+                            <div className="border border-slate-200 rounded-md overflow-x-auto bg-white max-h-[420px] overflow-y-auto">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200 sticky top-0 z-10">
+                                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 sticky top-0 z-10">
                                         <tr>
-                                            <th className="px-4 py-2.5">#</th>
-                                            <th className="px-4 py-2.5">Số Serial (Mã duy nhất)</th>
-                                            <th className="px-4 py-2.5">Trạng thái vòng đời</th>
-                                            <th className="px-4 py-2.5">Mặt hàng PO</th>
-                                            <th className="px-4 py-2.5 text-right">Hiệu lực</th>
+                                            <th className="px-3.5 py-2.5 w-10 text-center">#</th>
+                                            <th className="px-3.5 py-2.5">Số Serial</th>
+                                            <th className="px-3.5 py-2.5">Trạng thái vòng đời</th>
+                                            <th className="px-3.5 py-2.5">Mặt hàng PO</th>
+                                            <th className="px-3.5 py-2.5 text-right">Hiệu lực</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-200/80">
                                         {filteredDetailSerials.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
                                                     Không tìm thấy Serial nào phù hợp.
                                                 </td>
                                             </tr>
@@ -2472,33 +2381,31 @@ export default function GoodsReceiptList() {
                                             filteredDetailSerials.map(({ serial, purchaseOrderItemId }, sIdx) => {
                                                 const conf = SERIAL_STATUS_CONFIG[serial.status] || {
                                                     label: serial.status,
-                                                    badgeClass: 'bg-gray-50 text-gray-700 border-gray-200',
+                                                    badgeClass: 'bg-slate-50 text-slate-700 border-slate-200',
                                                     icon: CheckCircle2,
                                                 };
-                                                const IconComp = conf.icon;
 
                                                 return (
-                                                    <tr key={serial.id || sIdx} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2.5 text-gray-400 font-mono">{sIdx + 1}</td>
-                                                        <td className="px-4 py-2.5 font-mono font-bold text-gray-900">
+                                                    <tr key={serial.id || sIdx} className="hover:bg-slate-50">
+                                                        <td className="px-3.5 py-2.5 text-center text-slate-400 font-mono tabular-nums">{sIdx + 1}</td>
+                                                        <td className="px-3.5 py-2.5 font-mono font-medium tabular-nums text-slate-900">
                                                             {serial.serialNumber}
                                                         </td>
-                                                        <td className="px-4 py-2.5">
+                                                        <td className="px-3.5 py-2.5">
                                                             <span
-                                                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border ${conf.badgeClass}`}
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${conf.badgeClass}`}
                                                             >
-                                                                <IconComp className="w-3 h-3" />
                                                                 {conf.label}
                                                             </span>
                                                         </td>
-                                                        <td className="px-4 py-2.5 text-gray-600">
+                                                        <td className="px-3.5 py-2.5 text-slate-600 tabular-nums">
                                                             PO Item #{purchaseOrderItemId}
                                                         </td>
-                                                        <td className="px-4 py-2.5 text-right">
+                                                        <td className="px-3.5 py-2.5 text-right">
                                                             {serial.isTerminated || serial.terminated ? (
                                                                 <span className="text-rose-600 text-[11px] font-medium">Đã hủy</span>
                                                             ) : (
-                                                                <span className="text-emerald-600 text-[11px] font-medium">Hoạt động</span>
+                                                                <span className="text-emerald-700 text-[11px] font-medium">Hoạt động</span>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -2513,44 +2420,44 @@ export default function GoodsReceiptList() {
 
                     {/* Tab 4: Defective goods return memo */}
                     {activeDetailTab === 'defective' && (
-                        <div className="space-y-4 p-2">
-                            <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
-                                <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
-                                    <ShieldAlert className="w-5 h-5 text-rose-600" />
+                        <div className="space-y-3">
+                            <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-md space-y-1">
+                                <div className="flex items-center gap-2 text-rose-800 font-semibold text-xs">
+                                    <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
                                     <span>Biên bản ghi nhận sản phẩm lỗi / không đạt chuẩn kỹ thuật</span>
                                 </div>
                                 <p className="text-xs text-rose-700">
-                                    Theo quy trình nhập hàng, các sản phẩm sau đây không đạt tiêu chuẩn kỹ thuật hoặc bị hư hại trong quá trình vận chuyển. Danh sách này được gán trạng thái <b>Hàng lỗi (DEFECTIVE / PENDING_RETURN)</b> để lập hồ sơ đổi trả hoặc yêu cầu nhà cung cấp bồi hoàn.
+                                    Các sản phẩm sau được gán trạng thái <strong>DEFECTIVE / PENDING_RETURN</strong> để lập hồ sơ đổi trả hoặc yêu cầu nhà cung cấp bồi hoàn.
                                 </p>
                             </div>
 
-                            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                            <div className="border border-slate-200 rounded-md overflow-x-auto bg-white">
                                 <table className="w-full text-left text-xs">
-                                    <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
+                                    <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                                         <tr>
-                                            <th className="px-4 py-3">#</th>
-                                            <th className="px-4 py-3">Số Serial bị lỗi</th>
-                                            <th className="px-4 py-3">Mặt hàng</th>
-                                            <th className="px-4 py-3">Tình trạng ghi nhận</th>
-                                            <th className="px-4 py-3 text-right">Hướng xử lý</th>
+                                            <th className="px-3.5 py-2.5 w-10 text-center">#</th>
+                                            <th className="px-3.5 py-2.5">Số Serial bị lỗi</th>
+                                            <th className="px-3.5 py-2.5">Mặt hàng</th>
+                                            <th className="px-3.5 py-2.5">Tình trạng ghi nhận</th>
+                                            <th className="px-3.5 py-2.5 text-right">Hướng xử lý</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-slate-200/80">
                                         {allDetailSerials
                                             .filter(({ serial }) => serial.status === 'DEFECTIVE' || serial.status === 'PENDING_RETURN')
                                             .map(({ serial, purchaseOrderItemId }, dIdx) => (
-                                                <tr key={serial.id || dIdx} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-mono text-gray-400">{dIdx + 1}</td>
-                                                    <td className="px-4 py-3 font-mono font-bold text-rose-700">
+                                                <tr key={serial.id || dIdx} className="hover:bg-slate-50">
+                                                    <td className="px-3.5 py-2.5 text-center font-mono tabular-nums text-slate-400">{dIdx + 1}</td>
+                                                    <td className="px-3.5 py-2.5 font-mono font-semibold tabular-nums text-rose-700">
                                                         {serial.serialNumber}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-700">
+                                                    <td className="px-3.5 py-2.5 text-slate-700 tabular-nums">
                                                         Mặt hàng PO #{purchaseOrderItemId}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-600">
+                                                    <td className="px-3.5 py-2.5 text-slate-600">
                                                         Ngoại quan lỗi / Không lên nguồn / Sai tem kiểm định
                                                     </td>
-                                                    <td className="px-4 py-3 text-right font-semibold text-amber-700">
+                                                    <td className="px-3.5 py-2.5 text-right font-medium text-amber-700">
                                                         Hoàn trả Nhà cung cấp
                                                     </td>
                                                 </tr>
@@ -2563,20 +2470,21 @@ export default function GoodsReceiptList() {
 
                     {/* Tab 5: Print View */}
                     {activeDetailTab === 'print' && (
-                        <div className="space-y-4 p-2">
-                            <div className="flex justify-end gap-2">
+                        <div className="space-y-3">
+                            <div className="flex justify-end">
                                 <AdminButton
                                     type="button"
                                     variant="primary"
+                                    size="sm"
                                     onClick={() => window.print()}
                                     icon={Printer}
                                 >
-                                    In phiếu này (Print)
+                                    In phiếu nhập kho
                                 </AdminButton>
                             </div>
 
                             {/* Printable Paper Canvas */}
-                            <div className="p-8 bg-white border border-gray-300 rounded-xl shadow-xs text-black font-serif space-y-6">
+                            <div className="p-6 sm:p-8 bg-white border border-slate-300 rounded-md text-black font-serif space-y-6">
                                 <div className="text-center space-y-1">
                                     <div className="font-bold text-sm uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                                     <div className="text-xs italic underline">Độc lập - Tự do - Hạnh phúc</div>
@@ -2584,53 +2492,53 @@ export default function GoodsReceiptList() {
 
                                 <div className="text-center pt-2">
                                     <h2 className="text-xl font-bold uppercase tracking-wider">PHIẾU NHẬP KHO THỰC TẾ</h2>
-                                    <div className="text-xs text-gray-600 font-sans mt-0.5">Số: {selectedReceipt.code}</div>
+                                    <div className="text-xs text-slate-600 font-sans tabular-nums mt-0.5">Số: {selectedReceipt.code}</div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 text-xs font-sans">
                                     <div>
-                                        <div><b>Đơn đặt hàng (PO):</b> {selectedReceipt.poCode}</div>
+                                        <div><b>Đơn đặt hàng (PO):</b> <span className="tabular-nums">{selectedReceipt.poCode}</span></div>
                                         <div><b>Nhà cung cấp:</b> {selectedReceipt.supplierName}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div><b>Thời gian nhận hàng:</b> {selectedReceipt.receivedAt}</div>
+                                        <div><b>Thời gian nhận hàng:</b> <span className="tabular-nums">{selectedReceipt.receivedAt}</span></div>
                                         <div><b>Trạng thái phiếu:</b> {selectedReceipt.status}</div>
                                     </div>
                                 </div>
 
-                                <table className="w-full text-xs border-collapse border border-gray-400 font-sans">
+                                <table className="w-full text-xs border-collapse border border-slate-400 font-sans tabular-nums">
                                     <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="border border-gray-400 p-2 text-center">STT</th>
-                                            <th className="border border-gray-400 p-2 text-left">Tên hàng hóa</th>
-                                            <th className="border border-gray-400 p-2 text-center">Tổng nhận</th>
-                                            <th className="border border-gray-400 p-2 text-center">Đạt chuẩn</th>
-                                            <th className="border border-gray-400 p-2 text-center">Lỗi hỏng</th>
-                                            <th className="border border-gray-400 p-2 text-right">Đơn giá (VND)</th>
-                                            <th className="border border-gray-400 p-2 text-right">Thành tiền</th>
+                                        <tr className="bg-slate-100">
+                                            <th className="border border-slate-400 p-2 text-center">STT</th>
+                                            <th className="border border-slate-400 p-2 text-left">Tên hàng hóa</th>
+                                            <th className="border border-slate-400 p-2 text-right">Tổng nhận</th>
+                                            <th className="border border-slate-400 p-2 text-right">Đạt chuẩn</th>
+                                            <th className="border border-slate-400 p-2 text-right">Lỗi hỏng</th>
+                                            <th className="border border-slate-400 p-2 text-right">Đơn giá (VND)</th>
+                                            <th className="border border-slate-400 p-2 text-right">Thành tiền</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {(selectedReceipt.items || []).map((it, idx) => (
                                             <tr key={idx}>
-                                                <td className="border border-gray-400 p-2 text-center">{idx + 1}</td>
-                                                <td className="border border-gray-400 p-2">Mặt hàng PO #{it.purchaseOrderItemId}</td>
-                                                <td className="border border-gray-400 p-2 text-center font-bold">{it.quantityReceived}</td>
-                                                <td className="border border-gray-400 p-2 text-center text-emerald-700 font-bold">{it.quantityAccepted}</td>
-                                                <td className="border border-gray-400 p-2 text-center text-rose-700 font-bold">{it.quantityDefective}</td>
-                                                <td className="border border-gray-400 p-2 text-right">{formatVND(it.actualUnitCost)}</td>
-                                                <td className="border border-gray-400 p-2 text-right font-bold">
+                                                <td className="border border-slate-400 p-2 text-center">{idx + 1}</td>
+                                                <td className="border border-slate-400 p-2">Mặt hàng PO #{it.purchaseOrderItemId}</td>
+                                                <td className="border border-slate-400 p-2 text-right font-semibold">{it.quantityReceived}</td>
+                                                <td className="border border-slate-400 p-2 text-right text-emerald-700 font-semibold">{it.quantityAccepted}</td>
+                                                <td className="border border-slate-400 p-2 text-right text-rose-700 font-semibold">{it.quantityDefective}</td>
+                                                <td className="border border-slate-400 p-2 text-right">{formatVND(it.actualUnitCost)}</td>
+                                                <td className="border border-slate-400 p-2 text-right font-semibold">
                                                     {formatVND((it.actualUnitCost || 0) * (it.quantityReceived || 0))}
                                                 </td>
                                             </tr>
                                         ))}
-                                        <tr className="font-bold bg-gray-50">
-                                            <td colSpan={2} className="border border-gray-400 p-2 text-center uppercase">Tổng cộng</td>
-                                            <td className="border border-gray-400 p-2 text-center">{selectedReceipt.totalQuantityReceived}</td>
-                                            <td className="border border-gray-400 p-2 text-center text-emerald-700">{selectedReceipt.totalQuantityAccepted}</td>
-                                            <td className="border border-gray-400 p-2 text-center text-rose-700">{selectedReceipt.totalQuantityDefective}</td>
-                                            <td className="border border-gray-400 p-2"></td>
-                                            <td className="border border-gray-400 p-2 text-right text-blue-900">{formatVND(selectedReceipt.totalAmount)}</td>
+                                        <tr className="font-bold bg-slate-50">
+                                            <td colSpan={2} className="border border-slate-400 p-2 text-center uppercase">Tổng cộng</td>
+                                            <td className="border border-slate-400 p-2 text-right">{selectedReceipt.totalQuantityReceived}</td>
+                                            <td className="border border-slate-400 p-2 text-right text-emerald-700">{selectedReceipt.totalQuantityAccepted}</td>
+                                            <td className="border border-slate-400 p-2 text-right text-rose-700">{selectedReceipt.totalQuantityDefective}</td>
+                                            <td className="border border-slate-400 p-2"></td>
+                                            <td className="border border-slate-400 p-2 text-right text-slate-900">{formatVND(selectedReceipt.totalAmount)}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -2638,15 +2546,15 @@ export default function GoodsReceiptList() {
                                 <div className="grid grid-cols-3 gap-4 pt-12 text-center text-xs font-sans">
                                     <div className="space-y-16">
                                         <div className="font-bold">Người giao hàng (NCC)</div>
-                                        <div className="italic text-gray-500">(Ký và ghi rõ họ tên)</div>
+                                        <div className="italic text-slate-500">(Ký và ghi rõ họ tên)</div>
                                     </div>
                                     <div className="space-y-16">
                                         <div className="font-bold">Nhân viên kiểm kho</div>
-                                        <div className="italic text-gray-500">(Ký và ghi rõ họ tên)</div>
+                                        <div className="italic text-slate-500">(Ký và ghi rõ họ tên)</div>
                                     </div>
                                     <div className="space-y-16">
                                         <div className="font-bold">Quản lý duyệt nhập</div>
-                                        <div className="italic text-gray-500">(Ký và ghi rõ họ tên)</div>
+                                        <div className="italic text-slate-500">(Ký và ghi rõ họ tên)</div>
                                     </div>
                                 </div>
                             </div>

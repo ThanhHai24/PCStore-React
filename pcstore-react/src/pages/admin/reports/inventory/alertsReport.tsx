@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  AlertTriangle,
-  Clock,
-  ShieldAlert,
   Package,
-  Calendar,
   RefreshCw,
-  Building,
   PlusCircle,
   Download,
-  Sparkles,
+  Search,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { adminAnalyticsService } from '../../../../services/adminAnalyticsService';
@@ -115,160 +110,201 @@ export default function InventoryAlertsReportPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-2 sm:px-4 py-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] space-y-5 pb-8">
+      {/* ==================== PAGE HEADER ==================== */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Trung Tâm Cảnh Báo Rủi Ro Tồn Kho
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-              <Sparkles className="w-3 h-3 text-rose-600" /> Early Warning
-            </span>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">Báo cáo kho hàng</span>
+            <span className="text-slate-300">/</span>
+            <span>Cảnh báo định mức &amp; tồn đọng</span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Chủ động phát hiện hàng sắp đứt gãy tồn kho và sản phẩm ứ đọng không phát sinh đơn bán
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
+            Cảnh báo rủi ro tồn kho
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Phát hiện sớm các sản phẩm chạm định mức tối thiểu và mặt hàng bán chậm không phát sinh đơn.
           </p>
         </div>
 
-        <button
-          onClick={loadAlerts}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 self-start md:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Làm mới</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>Xuất CSV</span>
+          </button>
+          <button
+            type="button"
+            onClick={loadAlerts}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium transition-colors disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </button>
+        </div>
       </div>
 
-      {/* Tabs Switcher */}
-      <div className="flex items-center gap-3 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('LOW_STOCK')}
-          className={`flex items-center gap-2 pb-3 px-2 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'LOW_STOCK'
-              ? 'border-rose-600 text-rose-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <ShieldAlert className="w-4 h-4" />
-          <span>Cảnh Báo Sắp Hết Hàng ({lowStockList.length})</span>
-        </button>
+      {/* ==================== COMPACT TOOLBAR & SEGMENTED TABS ==================== */}
+      <div className="bg-white border border-slate-200 rounded-md p-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        {/* Segmented Control Tabs */}
+        <div className="inline-flex rounded-md bg-slate-100 p-0.5 border border-slate-200 self-start">
+          <button
+            type="button"
+            onClick={() => setActiveTab('LOW_STOCK')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer tabular-nums ${
+              activeTab === 'LOW_STOCK'
+                ? 'bg-white text-slate-900 border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 border border-transparent'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+            <span>Sắp hết hàng</span>
+            <span className="text-[11px] text-slate-500">({formatNumber(lowStockList.length)})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('SLOW_MOVING')}
-          className={`flex items-center gap-2 pb-3 px-2 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'SLOW_MOVING'
-              ? 'border-amber-600 text-amber-600'
-              : 'border-transparent text-gray-500 hover:text-gray-800'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>Sản Phẩm Bán Chậm / Tồn Đọng ({slowMovingList.length})</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('SLOW_MOVING')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer tabular-nums ${
+              activeTab === 'SLOW_MOVING'
+                ? 'bg-white text-slate-900 border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900 border border-transparent'
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            <span>Bán chậm / Tồn đọng</span>
+            <span className="text-[11px] text-slate-500">({formatNumber(slowMovingList.length)})</span>
+          </button>
+        </div>
 
-      {/* Filter and Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-xs">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="Tìm theo mã SKU, tên SP..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs w-60 focus:outline-blue-500"
-          />
+        {/* Search & Threshold Controls */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Tìm mã SKU, tên sản phẩm, danh mục..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 bg-white border border-slate-200 rounded-md text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
+            />
+          </div>
 
           {activeTab === 'LOW_STOCK' ? (
-            <div className="flex items-center gap-1.5 text-xs text-gray-600">
-              <span>Ngưỡng tồn &le;:</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 shrink-0">
+              <span>Ngưỡng tồn &le;</span>
               <input
                 type="number"
                 min={1}
                 max={50}
                 value={minThreshold}
                 onChange={(e) => setMinThreshold(Number(e.target.value))}
-                className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-blue-500"
+                className="w-16 h-8 px-2 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 text-right tabular-nums focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
               />
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs text-gray-600">
-              <span>Ngưỡng không bán &ge;:</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 shrink-0">
+              <span>Không bán &ge;</span>
               <input
                 type="number"
                 min={7}
                 max={365}
                 value={thresholdDays}
                 onChange={(e) => setThresholdDays(Number(e.target.value))}
-                className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-blue-500"
+                className="w-16 h-8 px-2 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 text-right tabular-nums focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600/20"
               />
               <span>ngày</span>
             </div>
           )}
         </div>
-
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors self-start"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Xuất CSV</span>
-        </button>
       </div>
 
-      {/* Main Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ==================== MAIN TABLE ==================== */}
+      <div className="bg-white rounded-md border border-slate-200 overflow-hidden">
         {activeTab === 'LOW_STOCK' ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+              <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4">Mã SKU</th>
-                  <th className="py-3 px-4">Tên Sản Phẩm</th>
-                  <th className="py-3 px-4">Danh Mục</th>
-                  <th className="py-3 px-4 text-center">Tồn Khả Dụng</th>
-                  <th className="py-3 px-4 text-center">Ngưỡng Tối Thiểu</th>
-                  <th className="py-3 px-4">Nhà Cung Cấp Gợi Ý</th>
-                  <th className="py-3 px-4 text-center">Hành Động</th>
+                  <th className="py-2.5 px-4 min-w-[280px]">Sản phẩm</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Mức cảnh báo</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Tồn khả dụng</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Định mức tối thiểu</th>
+                  <th className="py-2.5 px-4 whitespace-nowrap">Nhà cung cấp gợi ý</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-800">
+              <tbody className="divide-y divide-slate-100 text-slate-800">
                 {filteredLowStock.length > 0 ? (
-                  filteredLowStock.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-rose-50/20 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-rose-600">{item.productCode}</td>
-                      <td className="py-3 px-4 font-medium text-gray-900 max-w-[280px] truncate" title={item.productName}>
-                        {item.productName}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{item.categoryName || 'N/A'}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-block px-2.5 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800">
-                          {item.sellableQuantity}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center font-bold text-gray-500">{item.minimumThreshold}</td>
-                      <td className="py-3 px-4 text-gray-700">
-                        <span className="inline-flex items-center gap-1 text-gray-600">
-                          <Building className="w-3.5 h-3.5 text-gray-400" />
-                          {item.suggestedSupplier || 'NCC mặc định'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <Link
-                          to="/admin/import"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                  filteredLowStock.map((item, idx) => {
+                    const isOutOfStock = item.sellableQuantity <= 0;
+                    return (
+                      <tr key={item.productId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3 min-w-0 max-w-[360px]">
+                            <div className="w-9 h-9 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 text-slate-400">
+                              <Package className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div
+                                className="font-medium text-slate-900 truncate"
+                                title={item.productName}
+                              >
+                                {item.productName}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate">
+                                <span className="font-medium text-blue-600 tabular-nums shrink-0">
+                                  {item.productCode}
+                                </span>
+                                <span className="text-slate-300">•</span>
+                                <span className="truncate">{item.categoryName || 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                isOutOfStock ? 'bg-rose-500' : 'bg-amber-500'
+                              }`}
+                            />
+                            <span>{isOutOfStock ? 'Hết hàng' : 'Dưới định mức'}</span>
+                          </span>
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-right font-semibold tabular-nums whitespace-nowrap ${
+                            isOutOfStock ? 'text-rose-600' : 'text-slate-900'
+                          }`}
                         >
-                          <PlusCircle className="w-3.5 h-3.5" />
-                          <span>Tạo đơn nhập</span>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                          {formatNumber(item.sellableQuantity)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                          {formatNumber(item.minimumThreshold)}
+                        </td>
+                        <td className="py-3 px-4 text-slate-700 whitespace-nowrap">
+                          {item.suggestedSupplier || 'NCC mặc định'}
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <Link
+                            to="/admin/import"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-blue-600 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40"
+                          >
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            <span>Tạo đơn nhập</span>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
-                      Không có sản phẩm nào chạm ngưỡng cảnh báo hết hàng!
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      Không có sản phẩm nào chạm ngưỡng cảnh báo hết hàng.
                     </td>
                   </tr>
                 )}
@@ -278,35 +314,55 @@ export default function InventoryAlertsReportPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-gray-50 text-gray-600 uppercase text-[10px] font-bold border-b border-gray-200">
+              <thead className="bg-slate-50 text-slate-500 text-[11px] font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4">Mã SKU</th>
-                  <th className="py-3 px-4">Tên Sản Phẩm</th>
-                  <th className="py-3 px-4">Danh Mục</th>
-                  <th className="py-3 px-4 text-center">Tồn Khả Dụng</th>
-                  <th className="py-3 px-4">Lần Bán Thành Công Cuối</th>
-                  <th className="py-3 px-4 text-center">Số Ngày Tồn Đọng</th>
-                  <th className="py-3 px-4 text-center">Đề Xuất Xử Lý</th>
+                  <th className="py-2.5 px-4 min-w-[280px]">Sản phẩm</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Tồn khả dụng</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Lần bán gần nhất</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Số ngày tồn đọng</th>
+                  <th className="py-2.5 px-4 text-right whitespace-nowrap">Đề xuất xử lý</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-gray-800">
+              <tbody className="divide-y divide-slate-100 text-slate-800">
                 {filteredSlowMoving.length > 0 ? (
                   filteredSlowMoving.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-amber-50/20 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-amber-600">{item.productCode}</td>
-                      <td className="py-3 px-4 font-medium text-gray-900 max-w-[280px] truncate" title={item.productName}>
-                        {item.productName}
+                    <tr key={item.productId ?? idx} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3 min-w-0 max-w-[360px]">
+                          <div className="w-9 h-9 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 text-slate-400">
+                            <Package className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div
+                              className="font-medium text-slate-900 truncate"
+                              title={item.productName}
+                            >
+                              {item.productName}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate">
+                              <span className="font-medium text-blue-600 tabular-nums shrink-0">
+                                {item.productCode}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="truncate">{item.categoryName || 'N/A'}</span>
+                            </div>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{item.categoryName || 'N/A'}</td>
-                      <td className="py-3 px-4 text-center font-bold text-gray-900">{item.sellableQuantity}</td>
-                      <td className="py-3 px-4 text-gray-600">{formatDate(item.lastSoldDate)}</td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-block px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900">
-                          {item.daysWithoutSale} ngày
+                      <td className="py-3 px-4 text-right font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                        {formatNumber(item.sellableQuantity)}
+                      </td>
+                      <td className="py-3 px-4 text-right text-slate-600 tabular-nums whitespace-nowrap">
+                        {formatDate(item.lastSoldDate)}
+                      </td>
+                      <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                        <span className="inline-flex items-center justify-end gap-1.5 font-semibold text-amber-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                          <span>{formatNumber(item.daysWithoutSale)} ngày</span>
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-slate-700 text-[11px] font-medium">
                           Giảm giá / Bundle PC
                         </span>
                       </td>
@@ -314,8 +370,8 @@ export default function InventoryAlertsReportPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-gray-400">
-                      Không có sản phẩm nào tồn đọng lâu vượt ngưỡng!
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      Không có sản phẩm nào tồn đọng lâu vượt ngưỡng.
                     </td>
                   </tr>
                 )}

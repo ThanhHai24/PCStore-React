@@ -423,20 +423,40 @@ export default function HandoverList() {
         }
     };
 
+    // Status dot indicator (restrained border-first style, no saturated pill clutter)
+    const renderFulfillmentStatusIndicator = (status: OrderFulfillmentStatus) => {
+        const conf = FULFILLMENT_STATUS_MAP[status];
+        let dotClass = 'bg-slate-400';
+        if (status === 'PACKED_WAITING_HANDOVER' || status === 'OUT_FOR_DELIVERY') {
+            dotClass = 'bg-amber-500';
+        } else if (status === 'HANDED_OVER_TO_CARRIER' || status === 'SHIPPING_IN_TRANSIT') {
+            dotClass = 'bg-blue-600';
+        } else if (status === 'DELIVERED_SUCCESS' || status === 'COMPLETED') {
+            dotClass = 'bg-emerald-600';
+        }
+
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+                <span>{conf.label}</span>
+            </span>
+        );
+    };
+
     // Columns cho AdminTable
     const columns: Column<OrderFulfillmentRecord>[] = [
         {
             key: 'orderCode',
-            header: 'Mã đơn & Thời gian',
+            header: 'Mã đơn hàng',
             render: (rec) => (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold text-gray-900 font-mono">
-                        <Package className="w-4 h-4 text-purple-600" />
-                        <span>{rec.orderCode}</span>
+                <div className="space-y-0.5">
+                    <div className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                        {rec.orderCode}
                     </div>
-                    <div className="text-[11px] text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span>Đóng gói: {formatDateTime(rec.packedAt)}</span>
+                    <div className="text-xs text-slate-500 tabular-nums">
+                        {rec.carrierInfo?.handoverAt
+                            ? `Bàn giao: ${formatDateTime(rec.carrierInfo.handoverAt)}`
+                            : `Đóng gói: ${formatDateTime(rec.packedAt)}`}
                     </div>
                 </div>
             ),
@@ -445,63 +465,66 @@ export default function HandoverList() {
             key: 'customer',
             header: 'Thông tin giao hàng',
             render: (rec) => (
-                <div className="space-y-1 max-w-xs">
-                    <div className="font-semibold text-gray-800 flex items-center gap-1.5 text-xs">
-                        <User className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{rec.recipientName}</span>
-                        <span className="text-gray-400">({rec.recipientPhone})</span>
+                <div className="space-y-0.5 max-w-[260px]">
+                    <div className="flex items-center gap-1.5 text-xs">
+                        <span className="font-medium text-slate-900 truncate">{rec.recipientName}</span>
+                        <span className="text-slate-500 tabular-nums shrink-0">{rec.recipientPhone}</span>
                     </div>
-                    <div className="text-[11px] text-gray-500 line-clamp-1 flex items-start gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400 shrink-0 mt-0.5" />
-                        <span>{rec.address}</span>
+                    <div className="text-xs text-slate-500 truncate" title={rec.address}>
+                        {rec.address}
                     </div>
                 </div>
             ),
         },
         {
             key: 'carrier',
-            header: 'Thông tin vận chuyển',
+            header: 'Đơn vị vận chuyển',
             render: (rec) => {
                 if (!rec.carrierInfo) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                            <Clock className="w-3 h-3" />
-                            <span>Chờ bàn giao ĐVVC</span>
-                        </span>
-                    );
+                    return <span className="text-xs text-slate-400">Chưa bàn giao</span>;
                 }
 
                 return (
                     <div className="space-y-1">
-                        <div className="font-bold text-xs text-indigo-900 flex items-center gap-1">
-                            <Truck className="w-3.5 h-3.5 text-indigo-600" />
-                            <span>{rec.carrierInfo.carrierName}</span>
+                        <div className="text-xs font-medium text-slate-900">
+                            {rec.carrierInfo.carrierName}
                         </div>
-                        <div className="flex items-center gap-1 font-mono text-[11px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded border border-purple-200 w-fit">
-                            <span>{rec.carrierInfo.trackingNumber}</span>
+                        <div className="inline-flex items-center font-mono text-[11px] font-medium text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-200 tabular-nums">
+                            {rec.carrierInfo.trackingNumber}
                         </div>
-
                     </div>
                 );
             },
         },
-
+        {
+            key: 'serialCount',
+            header: 'Serial',
+            align: 'right',
+            render: (rec) => (
+                <div className="space-y-0.5 text-right tabular-nums">
+                    <div className="text-xs font-medium text-slate-900">
+                        {rec.assignedSerials.length} mã
+                    </div>
+                    {rec.boxWeightKg ? (
+                        <div className="text-xs text-slate-500">{rec.boxWeightKg} kg</div>
+                    ) : null}
+                </div>
+            ),
+        },
+        {
+            key: 'amount',
+            header: 'Giá trị đơn',
+            align: 'right',
+            render: (rec) => (
+                <span className="text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
+                    {formatVND(rec.finalAmount)}
+                </span>
+            ),
+        },
         {
             key: 'status',
-            header: 'Trạng thái quy trình',
-            render: (rec) => {
-                const conf = FULFILLMENT_STATUS_MAP[rec.fulfillmentStatus];
-                return (
-                    <div className="space-y-1">
-                        <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${conf.badgeClass}`}
-                        >
-                            <Box className="w-3 h-3" />
-                            <span>{conf.label}</span>
-                        </span>
-                    </div>
-                );
-            },
+            header: 'Trạng thái',
+            render: (rec) => renderFulfillmentStatusIndicator(rec.fulfillmentStatus),
         },
         {
             key: 'actions',
@@ -662,151 +685,40 @@ export default function HandoverList() {
         setCurrentPage(1);
     };
 
+    const handedOverTotal = stats.handedOver + stats.outForDelivery + stats.completed;
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* ======================================================== */}
             {/* HEADER                                                   */}
             {/* ======================================================== */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-purple-600 text-white rounded-xl shadow-md shadow-purple-500/20">
-                            <Truck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý đơn bàn giao
-                            </h1>
-
-                        </div>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý đơn bàn giao
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.waitingHandover} chờ bàn giao · {handedOverTotal} đã bàn giao ĐVVC
+                    </p>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2.5 flex-wrap">
-
-
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => loadData(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer disabled:opacity-50"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-purple-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
+                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
+                        <span>Làm mới</span>
                     </button>
-                </div>
-            </div>
-
-            {/* ======================================================== */}
-            {/* STAT CARDS (CLICK TO FILTER)                             */}
-            {/* ======================================================== */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div
-                    onClick={() => {
-                        setActiveTab('waiting_handover');
-                        setStatusFilter('ALL');
-                        setCurrentPage(1);
-                    }}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'waiting_handover'
-                        ? 'bg-purple-50/70 border-purple-300 ring-2 ring-purple-500/20'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
-                        }`}
-                    title="Bấm để lọc đơn chờ bàn giao cho ĐVVC"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Chờ bàn giao ĐVVC</p>
-                        <p className="text-2xl font-bold text-purple-700">{stats.waitingHandover}</p>
-                        <p className="text-[11px] text-gray-400">Kiện hàng đã đóng gói niêm phong</p>
-                    </div>
-                    <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
-                        <Package className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setActiveTab('handed_over');
-                        setStatusFilter(
-                            activeTab === 'handed_over' && statusFilter === 'HANDED_OVER_TO_CARRIER'
-                                ? 'ALL'
-                                : 'HANDED_OVER_TO_CARRIER'
-                        );
-                        setCurrentPage(1);
-                    }}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && (statusFilter === 'HANDED_OVER_TO_CARRIER' || statusFilter === 'ALL')
-                        ? 'bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-500/20'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
-                        }`}
-                    title="Bấm để lọc đơn đã bàn giao cho ĐVVC"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đã bàn giao ĐVVC ngoài</p>
-                        <p className="text-2xl font-bold text-indigo-700">{stats.handedOver}</p>
-                        <p className="text-[11px] text-gray-400">Đang trung chuyển trên lộ trình</p>
-                    </div>
-                    <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl">
-                        <Truck className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setActiveTab('handed_over');
-                        setStatusFilter(
-                            activeTab === 'handed_over' && statusFilter === 'OUT_FOR_DELIVERY'
-                                ? 'ALL'
-                                : 'OUT_FOR_DELIVERY'
-                        );
-                        setCurrentPage(1);
-                    }}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && statusFilter === 'OUT_FOR_DELIVERY'
-                        ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-500/20'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
-                        }`}
-                    title="Bấm để lọc đơn đang phát hàng tới khách"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Đang phát hàng tới khách</p>
-                        <p className="text-2xl font-bold text-amber-600">{stats.outForDelivery}</p>
-                        <p className="text-[11px] text-gray-400">Shipper ĐVVC đang đi phát</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setActiveTab('handed_over');
-                        setStatusFilter(
-                            activeTab === 'handed_over' && statusFilter === 'COMPLETED'
-                                ? 'ALL'
-                                : 'COMPLETED'
-                        );
-                        setCurrentPage(1);
-                    }}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${activeTab === 'handed_over' && statusFilter === 'COMPLETED'
-                        ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-500/20'
-                        : 'bg-white border-gray-100 hover:border-gray-200'
-                        }`}
-                    title="Bấm để lọc đơn đã giao thành công & hoàn tất"
-                >
-                    <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Giao thành công & Hoàn tất</p>
-                        <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
-                        <p className="text-[11px] text-gray-400">Khách hàng đã nhận hàng</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
                 </div>
             </div>
 
             {/* ======================================================== */}
             {/* TABS CHUYỂN ĐỔI                                          */}
             {/* ======================================================== */}
-            <div className="flex border-b border-gray-200 gap-4">
+            <div className="flex border-b border-slate-200 gap-6">
                 <button
                     type="button"
                     onClick={() => {
@@ -814,14 +726,20 @@ export default function HandoverList() {
                         setStatusFilter('ALL');
                         setCurrentPage(1);
                     }}
-                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'waiting_handover'
-                        ? 'border-purple-600 text-purple-700'
-                        : 'border-transparent text-gray-500 hover:text-gray-800'
-                        }`}
+                    className={`pb-2.5 text-sm font-medium flex items-center gap-2 border-b-2 -mb-px transition-colors cursor-pointer ${
+                        activeTab === 'waiting_handover'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-900'
+                    }`}
                 >
-                    <Package className="w-4 h-4" />
                     <span>Đơn chờ bàn giao</span>
-                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                    <span
+                        className={`text-xs px-1.5 py-0.5 rounded-md font-medium tabular-nums ${
+                            activeTab === 'waiting_handover'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'bg-slate-100 text-slate-600'
+                        }`}
+                    >
                         {stats.waitingHandover}
                     </span>
                 </button>
@@ -833,15 +751,21 @@ export default function HandoverList() {
                         setStatusFilter('ALL');
                         setCurrentPage(1);
                     }}
-                    className={`pb-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'handed_over'
-                        ? 'border-purple-600 text-purple-700'
-                        : 'border-transparent text-gray-500 hover:text-gray-800'
-                        }`}
+                    className={`pb-2.5 text-sm font-medium flex items-center gap-2 border-b-2 -mb-px transition-colors cursor-pointer ${
+                        activeTab === 'handed_over'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-900'
+                    }`}
                 >
-                    <Truck className="w-4 h-4" />
                     <span>Đã bàn giao</span>
-                    <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-bold">
-                        {stats.handedOver + stats.outForDelivery + stats.completed}
+                    <span
+                        className={`text-xs px-1.5 py-0.5 rounded-md font-medium tabular-nums ${
+                            activeTab === 'handed_over'
+                                ? 'bg-blue-50 text-blue-700'
+                                : 'bg-slate-100 text-slate-600'
+                        }`}
+                    >
+                        {handedOverTotal}
                     </span>
                 </button>
             </div>
@@ -849,7 +773,7 @@ export default function HandoverList() {
             {/* ======================================================== */}
             {/* FILTER & TABLE                                           */}
             {/* ======================================================== */}
-            <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-100 space-y-4">
+            <div className="space-y-4">
                 <AdminFilter
                     searchQuery={searchQuery}
                     onSearchChange={(q) => {
@@ -900,7 +824,7 @@ export default function HandoverList() {
                 title={`Bàn giao đơn hàng cho ĐVVC: ${targetRecord?.orderCode || ''}`}
                 subtitle="Đơn vị vận chuyển là đối tác dịch vụ bên ngoài hệ thống"
                 icon={Truck}
-                size="xl"
+                size="lg"
                 footer={
                     <div className="flex items-center justify-end gap-2 w-full">
                         <AdminButton
@@ -915,7 +839,6 @@ export default function HandoverList() {
                             variant="primary"
                             onClick={handleConfirmHandover}
                             isLoading={isSubmitting}
-                            className="!bg-purple-600 hover:!bg-purple-700 shadow-purple-600/30"
                         >
                             Xác nhận bàn giao
                         </AdminButton>
@@ -924,17 +847,46 @@ export default function HandoverList() {
             >
                 {targetRecord && (
                     <div className="space-y-4 text-xs">
+                        {/* Tóm tắt kiện hàng bàn giao */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200 rounded-md px-3.5 py-2.5">
+                            <div>
+                                <div className="text-[11px] text-slate-500">Người nhận</div>
+                                <div className="font-medium text-slate-900 truncate">
+                                    {targetRecord.recipientName}
+                                </div>
+                                <div className="text-slate-500 tabular-nums">{targetRecord.recipientPhone}</div>
+                            </div>
+                            <div>
+                                <div className="text-[11px] text-slate-500">Kiện hàng & Serial</div>
+                                <div className="font-medium text-slate-900 tabular-nums">
+                                    {targetRecord.assignedSerials.length} mã serial niêm phong
+                                </div>
+                                <div className="text-slate-500 tabular-nums">
+                                    Trọng lượng: {targetRecord.boxWeightKg || 3} kg
+                                </div>
+                            </div>
+                            <div className="sm:text-right">
+                                <div className="text-[11px] text-slate-500">Giá trị đơn hàng</div>
+                                <div className="font-semibold text-slate-900 tabular-nums">
+                                    {formatVND(targetRecord.finalAmount)}
+                                </div>
+                                <div className="text-slate-500 tabular-nums">
+                                    Đóng gói: {formatDateTime(targetRecord.packedAt)}
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Chọn ĐVVC ngoài hệ thống - Thẻ select */}
                         <div>
                             <AdminSelect
-                                label="Chọn Đơn vị vận chuyển:"
+                                label="Đơn vị vận chuyển"
                                 required
                                 value={selectedCarrier}
                                 onChange={(e) => handleCarrierChange(e.target.value)}
-                                className="font-semibold"
+                                className="font-medium"
                                 helperText={(() => {
                                     const c = POPULAR_LOGISTICS_CARRIERS.find((item) => item.name === selectedCarrier);
-                                    return c ? `Hotline đối tác: ${c.hotline} • Thời gian toàn trình ước tính: ${c.estimatedHours}` : undefined;
+                                    return c ? `Hotline đối tác: ${c.hotline} · Thời gian toàn trình ước tính: ${c.estimatedHours}` : undefined;
                                 })()}
                             >
                                 {POPULAR_LOGISTICS_CARRIERS.map((c) => (
@@ -947,35 +899,35 @@ export default function HandoverList() {
 
                         {/* Mã vận đơn (Tracking Code) */}
                         <div>
-                            <AdminLabel required className="!text-purple-950 !font-bold">
-                                Mã vận đơn:
+                            <AdminLabel required>
+                                Mã vận đơn
                             </AdminLabel>
                             <AdminInput
                                 type="text"
                                 value={trackingNumber}
                                 onChange={(e) => setTrackingNumber(e.target.value)}
                                 placeholder="Nhập mã vận đơn (VD: VTP-8849201948VN, GHTK-990142851)..."
-                                className="font-mono font-bold"
+                                className="font-mono font-semibold tabular-nums"
                             />
                         </div>
 
                         {/* Thông tin thủ kho bàn giao */}
                         <div>
                             <AdminLabel>
-                                Nhân viên kho thực hiện bàn giao:
+                                Nhân viên kho thực hiện bàn giao
                             </AdminLabel>
                             <AdminInput
                                 type="text"
                                 value={handoverStaff}
                                 onChange={(e) => setHandoverStaff(e.target.value)}
-                                className="font-semibold bg-gray-50 text-gray-700"
+                                className="font-medium bg-slate-50 text-slate-700"
                                 helperText="Tự động cập nhật theo tài khoản nhân viên đang đăng nhập"
                             />
                         </div>
 
                         <div>
                             <AdminLabel>
-                                Ghi chú biên bản bàn giao:
+                                Ghi chú biên bản bàn giao
                             </AdminLabel>
                             <AdminTextarea
                                 rows={2}
@@ -991,91 +943,99 @@ export default function HandoverList() {
             {/* MODAL IN BIÊN BẢN BÀN GIAO HÀNG HÓA CHO ĐVVC             */}
             {/* ======================================================== */}
             {isPrintModalOpen && printRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-3xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title={`Biên bản bàn giao hàng hóa cho ĐVVC: ${printRecord.orderCode}`}
+                            title={`Biên bản bàn giao hàng hóa: ${printRecord.orderCode}`}
                             icon={Printer}
                             onClose={() => setIsPrintModalOpen(false)}
                         />
 
                         {/* Mẫu biên bản bàn giao in ấn */}
-                        <div className="p-6 bg-white space-y-5 text-gray-900 border-2 border-dashed border-gray-300 m-4 rounded-xl overflow-y-auto flex-1">
-                            <div className="text-center space-y-1 border-b pb-4">
-                                <h2 className="text-lg font-black text-gray-900 uppercase">
-                                    BIÊN BẢN BÀN GIAO HÀNG HÓA CHO ĐƠN VỊ VẬN CHUYỂN
+                        <div className="p-6 bg-white space-y-5 text-slate-900 border border-dashed border-slate-300 m-4 rounded-md overflow-y-auto flex-1">
+                            <div className="text-center space-y-1 border-b border-slate-200 pb-4">
+                                <h2 className="text-base font-semibold text-slate-900 uppercase tracking-tight">
+                                    Biên bản bàn giao hàng hóa cho đơn vị vận chuyển
                                 </h2>
-                                <p className="text-xs text-gray-500">
-                                    (Áp dụng dịch vụ vận chuyển bên thứ ba - 3PL)
+                                <p className="text-xs text-slate-500">
+                                    Áp dụng dịch vụ vận chuyển bên thứ ba (3PL)
                                 </p>
-                                <div className="flex justify-center gap-4 text-xs font-mono text-gray-700 mt-2">
-                                    <span>Mã đơn: <strong>{printRecord.orderCode}</strong></span>
-                                    <span>•</span>
-                                    <span>Mã vận đơn: <strong className="text-purple-700">{printRecord.carrierInfo?.trackingNumber}</strong></span>
+                                <div className="flex flex-wrap justify-center gap-3 text-xs font-mono text-slate-700 mt-2 tabular-nums">
+                                    <span>Mã đơn: <strong className="text-slate-900">{printRecord.orderCode}</strong></span>
+                                    <span className="text-slate-300">|</span>
+                                    <span>Mã vận đơn: <strong className="text-slate-900">{printRecord.carrierInfo?.trackingNumber}</strong></span>
                                 </div>
                             </div>
 
                             {/* Thông tin 2 bên */}
-                            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-3 rounded-lg border">
-                                <div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase">Bên giao (Cửa hàng):</div>
-                                    <div className="font-bold text-gray-900">PCStore Việt Nam Center</div>
-                                    <div>Thủ kho: {printRecord.carrierInfo?.handoverStaffName}</div>
-                                    <div>Thời gian: {formatDateTime(printRecord.carrierInfo?.handoverAt)}</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-slate-50 p-3.5 rounded-md border border-slate-200">
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] font-medium text-slate-500 uppercase">Bên giao (Cửa hàng)</div>
+                                    <div className="font-semibold text-slate-900">PCStore Việt Nam Center</div>
+                                    <div className="text-slate-600">Thủ kho: {printRecord.carrierInfo?.handoverStaffName}</div>
+                                    <div className="text-slate-600 tabular-nums">Thời gian: {formatDateTime(printRecord.carrierInfo?.handoverAt)}</div>
                                 </div>
-                                <div>
-                                    <div className="text-[10px] font-bold text-gray-400 uppercase">Bên nhận (ĐVVC ngoài):</div>
-                                    <div className="font-bold text-purple-700">{printRecord.carrierInfo?.carrierName}</div>
-                                    <div>Tài xế: {printRecord.carrierInfo?.driverName}</div>
-                                    <div>SĐT: {printRecord.carrierInfo?.driverPhone} • Xe: {printRecord.carrierInfo?.licensePlate}</div>
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] font-medium text-slate-500 uppercase">Bên nhận (ĐVVC ngoài)</div>
+                                    <div className="font-semibold text-slate-900">{printRecord.carrierInfo?.carrierName}</div>
+                                    <div className="text-slate-600">Tài xế: {printRecord.carrierInfo?.driverName}</div>
+                                    <div className="text-slate-600 tabular-nums">
+                                        SĐT: {printRecord.carrierInfo?.driverPhone} · Xe: {printRecord.carrierInfo?.licensePlate}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Danh sách linh kiện kèm serial */}
                             <div className="space-y-2">
-                                <div className="text-xs font-bold text-gray-800">Chi tiết kiện hàng bàn giao:</div>
-                                <table className="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
-                                    <thead className="bg-gray-100 text-gray-700">
-                                        <tr>
-                                            <th className="p-2 text-left border-b">#</th>
-                                            <th className="p-2 text-left border-b">Tên sản phẩm</th>
-                                            <th className="p-2 text-left border-b">Mã Serial niêm phong</th>
-                                            <th className="p-2 text-right border-b">Giá trị</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 font-mono text-[11px]">
-                                        {printRecord.assignedSerials.map((s, idx) => (
-                                            <tr key={s.serialNumber}>
-                                                <td className="p-2 font-sans">{idx + 1}</td>
-                                                <td className="p-2 font-sans font-medium text-gray-900">{s.productName}</td>
-                                                <td className="p-2 font-bold text-purple-700">{s.serialNumber}</td>
-                                                <td className="p-2 text-right font-sans">{formatVND(s.productPrice)}</td>
+                                <div className="text-xs font-semibold text-slate-900">Chi tiết kiện hàng bàn giao</div>
+                                <div className="border border-slate-200 rounded-md overflow-hidden">
+                                    <table className="w-full text-xs">
+                                        <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-3 py-2 text-left font-medium w-10">#</th>
+                                                <th className="px-3 py-2 text-left font-medium">Tên sản phẩm</th>
+                                                <th className="px-3 py-2 text-left font-medium">Mã Serial niêm phong</th>
+                                                <th className="px-3 py-2 text-right font-medium">Giá trị</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-200">
+                                            {printRecord.assignedSerials.map((s, idx) => (
+                                                <tr key={s.serialNumber}>
+                                                    <td className="px-3 py-2 text-slate-500 tabular-nums">{idx + 1}</td>
+                                                    <td className="px-3 py-2 font-medium text-slate-900">{s.productName}</td>
+                                                    <td className="px-3 py-2 font-mono font-medium text-slate-700 tabular-nums">{s.serialNumber}</td>
+                                                    <td className="px-3 py-2 text-right text-slate-900 tabular-nums">{formatVND(s.productPrice)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
                             {/* Quy cách và cam kết */}
-                            <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded border space-y-1">
-                                <div><strong>Quy cách:</strong> Đóng thùng xốp, dán tem niêm phong PCStore. Trọng lượng: {printRecord.boxWeightKg || 3} kg.</div>
-                                <div><strong>Cam kết:</strong> ĐVVC ngoài xác nhận kiện hàng còn nguyên vẹn tem niêm phong, không cấn móp, cam kết giao đến đúng địa chỉ người nhận.</div>
+                            <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-md border border-slate-200 space-y-1">
+                                <div className="tabular-nums">
+                                    <strong className="text-slate-900">Quy cách:</strong> Đóng thùng xốp, dán tem niêm phong PCStore. Trọng lượng: {printRecord.boxWeightKg || 3} kg.
+                                </div>
+                                <div>
+                                    <strong className="text-slate-900">Cam kết:</strong> ĐVVC ngoài xác nhận kiện hàng còn nguyên vẹn tem niêm phong, không cấn móp, cam kết giao đến đúng địa chỉ người nhận.
+                                </div>
                             </div>
 
                             {/* Chữ ký 2 bên */}
-                            <div className="grid grid-cols-2 gap-8 pt-4 border-t text-xs text-center">
+                            <div className="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs text-center">
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Đại diện bên giao (Thủ kho)</p>
-                                    <p className="font-bold text-gray-900">{printRecord.carrierInfo?.handoverStaffName}</p>
+                                    <p className="font-medium text-slate-600">Đại diện bên giao (Thủ kho)</p>
+                                    <p className="font-semibold text-slate-900">{printRecord.carrierInfo?.handoverStaffName}</p>
                                 </div>
                                 <div className="space-y-10">
-                                    <p className="font-semibold text-gray-700">Đại diện bên nhận</p>
-                                    <p className="font-bold text-purple-700">{printRecord.carrierInfo?.driverName}</p>
+                                    <p className="font-medium text-slate-600">Đại diện bên nhận</p>
+                                    <p className="font-semibold text-slate-900">{printRecord.carrierInfo?.driverName}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -1088,7 +1048,6 @@ export default function HandoverList() {
                                 variant="primary"
                                 onClick={() => window.print()}
                                 icon={Printer}
-                                className="!bg-purple-600 hover:!bg-purple-700"
                             >
                                 In biên bản bàn giao
                             </AdminButton>
@@ -1101,73 +1060,83 @@ export default function HandoverList() {
             {/* MODAL THEO DÕI LỘ TRÌNH ĐVVC NGOÀI HỆ THỐNG              */}
             {/* ======================================================== */}
             {isTrackingModalOpen && trackingRecord && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-3xl w-full max-h-[90vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title={`Lộ trình vận chuyển ngoài hệ thống: ${trackingRecord.carrierInfo?.carrierName}`}
-                            subtitle={`Mã vận đơn: ${trackingRecord.carrierInfo?.trackingNumber} • Đơn: ${trackingRecord.orderCode}`}
+                            title={`Lộ trình vận chuyển: ${trackingRecord.carrierInfo?.carrierName}`}
+                            subtitle={`Mã vận đơn: ${trackingRecord.carrierInfo?.trackingNumber} · Đơn: ${trackingRecord.orderCode}`}
                             icon={Truck}
                             onClose={() => setIsTrackingModalOpen(false)}
                         />
 
-                        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-                            {/* Card thông tin đối tác ĐVVC */}
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                    <div className="text-gray-400 text-[10px] uppercase font-bold">Đối tác vận chuyển:</div>
-                                    <div className="font-bold text-indigo-900 text-sm">
+                        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+                            {/* Thông tin đối tác ĐVVC */}
+                            <div className="bg-slate-50 p-3.5 rounded-md border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] text-slate-500 uppercase font-medium">Đối tác vận chuyển</div>
+                                    <div className="font-semibold text-slate-900 text-sm">
                                         {trackingRecord.carrierInfo?.carrierName}
                                     </div>
-                                    <div className="text-gray-500">Mã vận đơn: <strong>{trackingRecord.carrierInfo?.trackingNumber}</strong></div>
-                                    <div className="text-gray-500">Hotline: {trackingRecord.carrierInfo?.carrierHotline || '1900 8095'}</div>
+                                    <div className="text-slate-600 font-mono tabular-nums">
+                                        Mã vận đơn: <strong className="text-slate-900">{trackingRecord.carrierInfo?.trackingNumber}</strong>
+                                    </div>
+                                    <div className="text-slate-600 tabular-nums">
+                                        Hotline: {trackingRecord.carrierInfo?.carrierHotline || '1900 8095'}
+                                    </div>
                                 </div>
-                                <div>
-                                    <div className="text-gray-400 text-[10px] uppercase font-bold">Thông tin tài xế giao nhận:</div>
-                                    <div className="font-bold text-gray-900">{trackingRecord.carrierInfo?.driverName}</div>
-                                    <div className="text-gray-600">SĐT: {trackingRecord.carrierInfo?.driverPhone}</div>
-                                    <div className="text-gray-600">Biển số: {trackingRecord.carrierInfo?.licensePlate || 'Chưa cập nhật'}</div>
+                                <div className="space-y-0.5">
+                                    <div className="text-[11px] text-slate-500 uppercase font-medium">Tài xế giao nhận</div>
+                                    <div className="font-semibold text-slate-900">{trackingRecord.carrierInfo?.driverName}</div>
+                                    <div className="text-slate-600 tabular-nums">SĐT: {trackingRecord.carrierInfo?.driverPhone}</div>
+                                    <div className="text-slate-600 tabular-nums">
+                                        Biển số: {trackingRecord.carrierInfo?.licensePlate || 'Chưa cập nhật'}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Lộ trình Timeline */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between border-b pb-2">
-                                    <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
-                                        <Clock className="w-4 h-4 text-purple-600" />
-                                        Tiến trình giao hàng
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-semibold text-sm text-slate-900">
+                                        Tiến trình giao hàng ({trackingRecord.carrierTimeline.length})
                                     </h3>
                                     <AdminButton
                                         type="button"
                                         size="sm"
                                         variant="secondary"
                                         onClick={() => setIsSimulateEventModalOpen(true)}
-                                        className="!text-xs !font-semibold !text-purple-600 !bg-purple-50 !border-purple-200 hover:!bg-purple-100"
                                     >
                                         + Cập nhật tiến độ ĐVVC
                                     </AdminButton>
                                 </div>
 
-                                <div className="space-y-4 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-indigo-200">
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
                                     {trackingRecord.carrierTimeline.map((evt, idx) => (
-                                        <div key={evt.id || idx} className="relative flex items-start gap-3 pl-8 text-xs">
-                                            <div className="absolute left-2 top-1 w-3 h-3 rounded-full bg-indigo-600 border-2 border-white ring-2 ring-indigo-200" />
-                                            <div className="bg-white p-3 rounded-xl border border-gray-200 w-full shadow-2xs space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="font-bold text-gray-900">{evt.statusTitle}</span>
-                                                    <span className="text-[10px] text-gray-400 font-mono">
-                                                        {formatDateTime(evt.timestamp)}
-                                                    </span>
+                                        <div key={evt.id || idx} className="p-3.5 text-xs space-y-1">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                                            idx === 0 ? 'bg-blue-600' : 'bg-slate-300'
+                                                        }`}
+                                                    />
+                                                    <span className="font-semibold text-slate-900">{evt.statusTitle}</span>
                                                 </div>
-                                                <p className="text-gray-600">{evt.description}</p>
+                                                <span className="text-[11px] text-slate-500 font-mono tabular-nums shrink-0">
+                                                    {formatDateTime(evt.timestamp)}
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-600 pl-3.5">{evt.description}</p>
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pl-3.5 text-[11px] text-slate-500">
                                                 {evt.location && (
-                                                    <div className="text-[11px] text-indigo-700 flex items-center gap-1 font-medium">
-                                                        <MapPin className="w-3 h-3" />
+                                                    <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
+                                                        <MapPin className="w-3 h-3 text-slate-400" />
                                                         <span>{evt.location}</span>
-                                                    </div>
+                                                    </span>
                                                 )}
-                                                <div className="text-[10px] text-gray-400 italic">
+                                                <span>
                                                     Ghi nhận bởi: {evt.actorRole} {evt.actorName ? `(${evt.actorName})` : ''}
-                                                </div>
+                                                </span>
                                             </div>
                                         </div>
                                     ))}
@@ -1175,15 +1144,15 @@ export default function HandoverList() {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-2 shrink-0">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2 shrink-0">
                             {trackingRecord.fulfillmentStatus !== 'COMPLETED' && (
                                 <AdminButton
                                     type="button"
                                     variant="primary"
                                     onClick={() => handleConfirmCustomerDelivery(trackingRecord)}
-                                    className="!bg-emerald-600 hover:!bg-emerald-700 flex items-center gap-1.5"
+                                    className="!bg-emerald-600 hover:!bg-emerald-700"
                                 >
-                                    <span>Hoàn tất đơn hàng</span>
+                                    Hoàn tất đơn hàng
                                 </AdminButton>
                             )}
                             <AdminButton
@@ -1202,22 +1171,22 @@ export default function HandoverList() {
             {/* MODAL MÔ PHỎNG CẬP NHẬT TIẾN ĐỘ TỪ ĐVVC NGOÀI (WEBHOOK)  */}
             {/* ======================================================== */}
             {isSimulateEventModalOpen && trackingRecord && (
-                <div className="fixed inset-0 z-60 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white w-[80vw] h-[80vh] rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                <div className="fixed inset-0 z-60 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-xl w-full max-h-[88vh] rounded-md border border-slate-200 overflow-hidden flex flex-col">
                         <AdminModalHeader
-                            title="Cập nhật tiến độ từ ĐVVC ngoài hệ thống"
+                            title="Cập nhật tiến độ từ ĐVVC ngoài"
                             icon={Send}
                             onClose={() => setIsSimulateEventModalOpen(false)}
                         />
 
-                        <div className="p-5 space-y-3 text-xs overflow-y-auto flex-1">
-                            <p className="text-gray-500">
+                        <div className="p-5 space-y-3.5 text-xs overflow-y-auto flex-1">
+                            <p className="text-slate-600">
                                 Mô phỏng thông điệp phản hồi / webhook từ hệ thống bưu cục của{' '}
-                                <strong className="text-gray-900">{trackingRecord.carrierInfo?.carrierName}</strong>.
+                                <strong className="text-slate-900">{trackingRecord.carrierInfo?.carrierName}</strong>.
                             </p>
 
                             <div>
-                                <AdminLabel>Tiêu đề trạng thái:</AdminLabel>
+                                <AdminLabel>Tiêu đề trạng thái</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={simEventTitle}
@@ -1226,7 +1195,7 @@ export default function HandoverList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Vị trí hiện tại:</AdminLabel>
+                                <AdminLabel>Vị trí hiện tại</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={simEventLocation}
@@ -1235,7 +1204,7 @@ export default function HandoverList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Mô tả chi tiết:</AdminLabel>
+                                <AdminLabel>Mô tả chi tiết</AdminLabel>
                                 <AdminTextarea
                                     rows={2}
                                     value={simEventDesc}
@@ -1244,7 +1213,7 @@ export default function HandoverList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Cập nhật trạng thái đơn:</AdminLabel>
+                                <AdminLabel>Cập nhật trạng thái đơn</AdminLabel>
                                 <AdminSelect
                                     value={simEventStatus}
                                     onChange={(e) => setSimEventStatus(e.target.value as OrderFulfillmentStatus)}
@@ -1256,7 +1225,7 @@ export default function HandoverList() {
                             </div>
                         </div>
 
-                        <div className="p-4 bg-gray-50 border-t flex justify-end gap-2">
+                        <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -1268,7 +1237,6 @@ export default function HandoverList() {
                                 type="button"
                                 variant="primary"
                                 onClick={handleAddSimulatedEvent}
-                                className="!bg-purple-600 hover:!bg-purple-700"
                             >
                                 Lưu sự kiện
                             </AdminButton>

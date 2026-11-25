@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .env
+
+# Agent & skill files
+.agents/
+.taste-skill/
+skills-lock.json

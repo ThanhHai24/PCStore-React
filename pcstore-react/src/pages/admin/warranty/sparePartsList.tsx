@@ -163,54 +163,79 @@ export default function SparePartsList() {
         addToast({ type: 'success', title: 'Thành công', message: 'Đã xuất file linh kiện thay thế' });
     };
 
+    // Restrained 6px status dot indicator (no colorful rounded-full pills)
+    const renderPartStatusIndicator = (st: SparePartItem['status']) => {
+        if (st === 'PENDING' || st === 0) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                    <span>Chờ duyệt xuất</span>
+                </span>
+            );
+        }
+        if (st === 'RESERVED' || st === 1) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>Đã giữ kho</span>
+                </span>
+            );
+        }
+        if (st === 'INSTALLED' || st === 2) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span>Đã lắp vào máy</span>
+                </span>
+            );
+        }
+        if (st === 'RETURNED' || st === 3) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                    <span>Đã hoàn kho</span>
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span>Đã hủy</span>
+            </span>
+        );
+    };
+
     // Table Columns
     const columns: Column<SparePartItem>[] = [
         {
             key: 'productName',
-            header: 'Tên linh kiện phụ tùng',
+            header: 'Linh kiện & Mã',
             render: (item) => (
-                <div className="max-w-xs">
-                    <div className="font-semibold text-slate-900 line-clamp-1">{item.productName}</div>
-                    <div className="text-xs text-slate-500 font-mono mt-0.5">Mã: {item.productCode}</div>
+                <div className="max-w-[260px] space-y-0.5">
+                    <div className="text-xs font-medium text-slate-900 truncate" title={item.productName}>
+                        {item.productName}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                        Mã: {item.productCode}
+                    </div>
                 </div>
             ),
         },
         {
             key: 'requestCode',
-            header: 'Phiếu bảo hành áp dụng',
+            header: 'Phiếu BH & Serial',
             render: (item) => (
-                <div className="flex items-center gap-1 font-mono text-xs font-bold text-indigo-700">
-                    <ClipboardList className="w-3.5 h-3.5" />
-                    <span>{item.requestCode}</span>
-                </div>
-            ),
-        },
-        {
-            key: 'serialNumbers',
-            header: 'Serial linh kiện thay',
-            render: (item) => (
-                <div className="font-mono text-xs text-slate-700">
+                <div className="space-y-1 min-w-[160px]">
+                    <div className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                        {item.requestCode}
+                    </div>
                     {item.serialNumbers && item.serialNumbers.length > 0 ? (
-                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="inline-block font-mono text-[11px] text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-200 tabular-nums">
                             {item.serialNumbers.join(', ')}
                         </span>
                     ) : (
-                        <span className="text-slate-400 italic">Chưa gắn serial</span>
+                        <span className="text-[11px] text-slate-400">Chưa gắn serial</span>
                     )}
-                </div>
-            ),
-        },
-        {
-            key: 'quantity',
-            header: 'Số lượng & Chi phí',
-            render: (item) => (
-                <div className="text-xs">
-                    <div className="font-bold text-slate-900">
-                        {item.quantity} cái x {formatVND(item.unitCost)}
-                    </div>
-                    <div className="text-emerald-700 font-semibold mt-0.5">
-                        Tổng: {formatVND(item.totalCost)}
-                    </div>
                 </div>
             ),
         },
@@ -218,52 +243,40 @@ export default function SparePartsList() {
             key: 'assignedTechnician',
             header: 'Kỹ thuật thực hiện',
             render: (item) => (
-                <span className="text-xs text-slate-800 font-medium">{item.assignedTechnician || 'Chưa phân công'}</span>
+                <span className="text-xs text-slate-800 whitespace-nowrap">
+                    {item.assignedTechnician || <span className="text-slate-400">Chưa phân công</span>}
+                </span>
+            ),
+        },
+        {
+            key: 'quantity',
+            header: 'SL',
+            align: 'right',
+            render: (item) => (
+                <span className="font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                    {item.quantity}
+                </span>
+            ),
+        },
+        {
+            key: 'totalCost',
+            header: 'Đơn giá / Thành tiền',
+            align: 'right',
+            render: (item) => (
+                <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                    <div className="font-mono text-xs font-semibold text-slate-900">
+                        {formatVND(item.totalCost)}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                        {formatVND(item.unitCost)} / cái
+                    </div>
+                </div>
             ),
         },
         {
             key: 'status',
             header: 'Trạng thái',
-            render: (item) => {
-                if (item.status === 'PENDING' || item.status === 0) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-300">
-                            <Clock className="w-3 h-3" />
-                            Chờ duyệt xuất
-                        </span>
-                    );
-                }
-                if (item.status === 'RESERVED' || item.status === 1) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
-                            <Clock className="w-3 h-3" />
-                            Đã giữ kho
-                        </span>
-                    );
-                }
-                if (item.status === 'INSTALLED' || item.status === 2) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-300">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Đã lắp vào máy
-                        </span>
-                    );
-                }
-                if (item.status === 'RETURNED' || item.status === 3) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-300">
-                            <RotateCcw className="w-3 h-3" />
-                            Đã hoàn kho
-                        </span>
-                    );
-                }
-                return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-300">
-                        <XCircle className="w-3 h-3" />
-                        Đã hủy
-                    </span>
-                );
-            },
+            render: (item) => renderPartStatusIndicator(item.status),
         },
         {
             key: 'actions',
@@ -321,26 +334,21 @@ export default function SparePartsList() {
     };
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                            <Component className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">Quản lý linh kiện thay thế</h1>
-                            <p className="text-sm text-slate-500 mt-0.5">
-                                Theo dõi xuất kho linh kiện dự phòng, số serial thay thế và đối soát chi phí vật tư bảo hành
-                            </p>
-                        </div>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý linh kiện thay thế
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.total} linh kiện · {stats.reserved} đang giữ kho · {stats.installed} đã lắp · {formatVND(stats.totalCost)}
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <AdminButton
                         variant="secondary"
-                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />}
                         onClick={fetchParts}
                     >
                         Làm mới
@@ -358,66 +366,26 @@ export default function SparePartsList() {
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng linh kiện xuất</p>
-                        <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
-                    </div>
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <Boxes className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đang giữ chờ thay</p>
-                        <p className="text-2xl font-bold text-amber-600 mt-1">{stats.reserved}</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đã lắp ráp hoàn tất</p>
-                        <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.installed}</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng giá trị linh kiện</p>
-                        <p className="text-xl font-bold text-slate-900 mt-1">{formatVND(stats.totalCost)}</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <DollarSign className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
             {/* Quick Status Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-6 overflow-x-auto border-b border-slate-200">
                 {quickTabs.map((tab) => {
                     const isActive = quickStatusTab === tab.key;
                     return (
                         <button
                             key={tab.key}
+                            type="button"
                             onClick={() => handleTabChange(tab.key)}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${isActive
-                                    ? 'bg-indigo-600 text-white shadow-sm'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                                }`}
+                            className={`pb-2.5 text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 border-b-2 -mb-px cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
+                                isActive
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                            }`}
                         >
                             <span>{tab.label}</span>
                             <span
-                                className={`px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-indigo-700/60 text-white' : 'bg-slate-100 text-slate-600'
-                                    }`}
+                                className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
+                                    isActive ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+                                }`}
                             >
                                 {tab.count}
                             </span>
@@ -426,48 +394,49 @@ export default function SparePartsList() {
                 })}
             </div>
 
-            {/* Filter */}
-            <AdminFilter
-                fields={filterFields}
-                searchPlaceholder="Tìm theo tên linh kiện, mã linh kiện, mã phiếu WR, serial..."
-                searchQuery={searchQuery}
-                onSearchChange={(v) => {
-                    setSearchQuery(v);
-                    setPage(1);
-                }}
-                values={filters}
-                onFilterChange={(vals) => {
-                    const nextFilters = { ...filters, ...vals };
-                    setFilters(nextFilters);
-                    setQuickStatusTab(nextFilters.status || 'ALL');
-                    setPage(1);
-                }}
-                onReset={() => {
-                    setSearchQuery('');
-                    setFilters({ status: '' });
-                    setQuickStatusTab('ALL');
-                    setPage(1);
-                }}
-            />
+            {/* Filter & Table */}
+            <div className="space-y-4">
+                <AdminFilter
+                    fields={filterFields}
+                    searchPlaceholder="Tìm theo tên linh kiện, mã linh kiện, mã phiếu WR, serial..."
+                    searchQuery={searchQuery}
+                    onSearchChange={(v) => {
+                        setSearchQuery(v);
+                        setPage(1);
+                    }}
+                    values={filters}
+                    onFilterChange={(vals) => {
+                        const nextFilters = { ...filters, ...vals };
+                        setFilters(nextFilters);
+                        setQuickStatusTab(nextFilters.status || 'ALL');
+                        setPage(1);
+                    }}
+                    onReset={() => {
+                        setSearchQuery('');
+                        setFilters({ status: '' });
+                        setQuickStatusTab('ALL');
+                        setPage(1);
+                    }}
+                />
 
-            {/* Table */}
-            <AdminTable
-                columns={columns}
-                data={parts}
-                rowKey="id"
-                loading={loading}
-                totalItems={totalElements}
-                currentPage={page}
-                pageSize={pageSize}
-                totalPages={totalPages}
-                pageSizeOptions={[5, 10, 15, 20, 50]}
-                onPageChange={(p) => setPage(p)}
-                onPageSizeChange={(s) => {
-                    setPageSize(s);
-                    setPage(1);
-                }}
-                emptyText="Chưa có linh kiện thay thế nào trong danh sách"
-            />
+                <AdminTable
+                    columns={columns}
+                    data={parts}
+                    rowKey="id"
+                    loading={loading}
+                    totalItems={totalElements}
+                    currentPage={page}
+                    pageSize={pageSize}
+                    totalPages={totalPages}
+                    pageSizeOptions={[5, 10, 15, 20, 50]}
+                    onPageChange={(p) => setPage(p)}
+                    onPageSizeChange={(s) => {
+                        setPageSize(s);
+                        setPage(1);
+                    }}
+                    emptyText="Chưa có linh kiện thay thế nào trong danh sách"
+                />
+            </div>
 
             {/* Modal Update Part Status */}
             <AdminModal
@@ -487,16 +456,24 @@ export default function SparePartsList() {
                 }
             >
                 <div className="space-y-4">
-                    <div className="p-3 bg-slate-50 rounded-lg text-xs space-y-1">
+                    <dl className="p-3.5 bg-slate-50 border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
-                            <span className="text-slate-500">Linh kiện:</span>{' '}
-                            <span className="font-bold text-slate-900">{selectedPart?.productName}</span>
+                            <dt className="text-slate-500">Linh kiện</dt>
+                            <dd className="font-medium text-slate-900 mt-0.5">{selectedPart?.productName}</dd>
+                            <dd className="font-mono text-[11px] text-slate-500 tabular-nums">
+                                {selectedPart?.productCode}
+                            </dd>
                         </div>
                         <div>
-                            <span className="text-slate-500">Phiếu bảo hành:</span>{' '}
-                            <span className="font-mono font-bold text-indigo-700">{selectedPart?.requestCode}</span>
+                            <dt className="text-slate-500">Phiếu bảo hành</dt>
+                            <dd className="font-mono font-semibold text-slate-900 tabular-nums mt-0.5">
+                                {selectedPart?.requestCode}
+                            </dd>
+                            <dd className="font-mono text-[11px] text-slate-500 tabular-nums">
+                                SL: {selectedPart?.quantity} · {formatVND(selectedPart?.totalCost)}
+                            </dd>
                         </div>
-                    </div>
+                    </dl>
 
                     <div>
                         <AdminLabel required>Trạng thái mới của linh kiện</AdminLabel>

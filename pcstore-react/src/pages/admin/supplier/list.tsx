@@ -13,9 +13,6 @@ import {
     RefreshCw,
     Loader2,
     AlertCircle,
-    User,
-    Calendar,
-    Clock,
     XCircle,
     ArrowUpDown,
 } from 'lucide-react';
@@ -30,7 +27,6 @@ import {
     AdminInput,
     AdminSelect,
     AdminButton,
-    AdminLabel,
     AdminTextarea,
     type AdminSelectOption,
     type ModalTab,
@@ -175,10 +171,6 @@ export default function SupplierList() {
     const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'orders'>('overview');
     const [supplierOrders, setSupplierOrders] = useState<any[]>([]);
     const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(false);
-
-    // Add / Edit Modal Active Tab
-    const [activeAddTab, setActiveAddTab] = useState('basic');
-    const [activeEditTab, setActiveEditTab] = useState('basic');
 
     // Add Form State
     const initialAddFormState = {
@@ -502,7 +494,6 @@ export default function SupplierList() {
             taxCode: supplier.taxCode === '---' ? '' : supplier.taxCode,
             status: supplier.status,
         });
-        setActiveEditTab('basic');
         setIsEditModalOpen(true);
     };
 
@@ -689,39 +680,84 @@ export default function SupplierList() {
         toast.info(`Đã sao chép ${label}: ${text}`, 'Sao chép');
     };
 
+    const getInitials = (name: string, code: string) =>
+        (name || code || 'NC')
+            .split(' ')
+            .map((w) => w[0])
+            .filter(Boolean)
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+
+    const renderOrderStatusIndicator = (status?: string) => {
+        const s = (status || '').toUpperCase();
+        if (s === 'RECEIVED') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    Đã nhập kho
+                </span>
+            );
+        }
+        if (s === 'APPROVED') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                    Đã duyệt
+                </span>
+            );
+        }
+        if (s === 'CANCELLED') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                    Đã hủy
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                {status || 'Chờ xử lý'}
+            </span>
+        );
+    };
+
     // Columns Configuration for AdminTable
     const columns: Column<SupplierItem>[] = [
         {
             key: 'supplier',
             header: 'Nhà cung cấp',
             render: (sup) => (
-                <div className="flex items-center gap-3.5 py-1">
-                    <div className="relative group shrink-0">
-                        <div className="w-11 h-11 rounded-xl bg-white border border-gray-200 shadow-xs p-0.5 flex items-center justify-center overflow-hidden transition-all duration-200 group-hover:scale-105 group-hover:shadow-md">
-                            <img
-                                src={sup.logo}
-                                alt={sup.name}
-                                className="w-full h-full object-cover rounded-lg"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src =
-                                        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=160&q=80';
-                                }}
-                            />
-                        </div>
+                <div className="flex items-center gap-3 py-0.5 min-w-0">
+                    <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center shrink-0">
+                        {getInitials(sup.name, sup.code)}
                     </div>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors text-sm truncate max-w-[240px]">
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span
+                                className="font-medium text-slate-900 text-sm truncate max-w-[240px]"
+                                title={sup.name}
+                            >
                                 {sup.name}
                             </span>
-                            <span className="px-1.5 py-0.5 text-[11px] font-mono font-bold rounded bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="px-1.5 py-0.5 text-[11px] font-mono tabular-nums font-medium rounded-md bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                                 {sup.code}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-400">
-                            <span>
-                                MST: <strong className="font-mono text-gray-600">{sup.taxCode}</strong>
+                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 min-w-0">
+                            <span className="tabular-nums shrink-0">
+                                MST: <span className="text-slate-700 font-medium">{sup.taxCode}</span>
                             </span>
+                            <span className="text-slate-300">·</span>
+                            <a
+                                href={`mailto:${sup.email}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="truncate max-w-[180px] text-slate-500 hover:text-blue-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm"
+                                title={sup.email}
+                            >
+                                {sup.email}
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -729,63 +765,38 @@ export default function SupplierList() {
         },
         {
             key: 'contact',
-            header: 'Người đại diện & Liên hệ',
+            header: 'Liên hệ',
             render: (sup) => (
-                <div className="space-y-1 text-xs">
-                    <div className="font-semibold text-gray-900 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>{sup.contactPerson.name}</span>
+                <div className="space-y-0.5 text-xs">
+                    <div className="font-medium text-slate-800 truncate max-w-[160px]" title={sup.contactPerson.name}>
+                        {sup.contactPerson.name}
                     </div>
-                    <div className="flex items-center gap-3 text-gray-500">
+                    <div>
                         {sup.phone !== '---' ? (
                             <a
                                 href={`tel:${sup.phone}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-blue-600 hover:underline font-mono text-[11px]"
+                                className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 hover:underline font-mono tabular-nums text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm"
                             >
-                                <Phone className="w-3 h-3 text-blue-500" />
+                                <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                                 {sup.phone}
                             </a>
                         ) : (
-                            <span className="text-[11px] text-gray-400">Chưa có SĐT</span>
+                            <span className="text-slate-400">Chưa có SĐT</span>
                         )}
-                        <a
-                            href={`mailto:${sup.email}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-gray-600 hover:text-blue-600 hover:underline text-[11px] truncate max-w-[160px]"
-                            title={sup.email}
-                        >
-                            <Mail className="w-3 h-3 text-gray-400" />
-                            {sup.email}
-                        </a>
                     </div>
                 </div>
             ),
         },
         {
             key: 'address',
-            header: 'Địa chỉ trụ sở',
+            header: 'Địa chỉ',
             render: (sup) => (
-                <div className="text-xs text-gray-600 max-w-[240px] truncate" title={sup.address}>
+                <div
+                    className="text-xs text-slate-600 max-w-[230px] line-clamp-2 leading-relaxed"
+                    title={sup.address}
+                >
                     {sup.address}
-                </div>
-            ),
-        },
-        {
-            key: 'dates',
-            header: 'Thời gian',
-            render: (sup) => (
-                <div className="space-y-0.5 text-[11px] text-gray-500">
-                    <div className="flex items-center gap-1" title="Ngày tạo">
-                        <Calendar className="w-3 h-3 text-gray-400" />
-                        <span>{sup.createdDate}</span>
-                    </div>
-                    {sup.lastModifiedDate && sup.lastModifiedDate !== sup.createdDate && (
-                        <div className="flex items-center gap-1 text-gray-400 text-[10px]" title="Cập nhật gần nhất">
-                            <Clock className="w-2.5 h-2.5" />
-                            <span>Sửa: {sup.lastModifiedDate}</span>
-                        </div>
-                    )}
                 </div>
             ),
         },
@@ -799,26 +810,36 @@ export default function SupplierList() {
                     <button
                         type="button"
                         onClick={(e) => handleToggleStatus(sup, e)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer hover:shadow-xs ${isActive
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
-                            }`}
+                        className="inline-flex items-center gap-1.5 px-2 py-1 -mx-2 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 whitespace-nowrap"
                         title="Click để đổi nhanh trạng thái"
                     >
-                        {isActive ? (
-                            <>
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Đang hợp tác
-                            </>
-                        ) : (
-                            <>
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                                Ngừng hợp tác
-                            </>
-                        )}
+                        <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                                }`}
+                        />
+                        <span className={isActive ? 'text-slate-700' : 'text-slate-500'}>
+                            {isActive ? 'Đang hợp tác' : 'Ngừng hợp tác'}
+                        </span>
                     </button>
                 );
             },
+        },
+        {
+            key: 'dates',
+            header: 'Ngày tạo',
+            align: 'right',
+            render: (sup) => (
+                <div className="space-y-0.5 text-right tabular-nums">
+                    <div className="text-xs text-slate-700 whitespace-nowrap" title="Ngày tạo">
+                        {sup.createdDate}
+                    </div>
+                    {sup.lastModifiedDate && sup.lastModifiedDate !== sup.createdDate && (
+                        <div className="text-[11px] text-slate-400 whitespace-nowrap" title="Cập nhật gần nhất">
+                            Sửa: {sup.lastModifiedDate}
+                        </div>
+                    )}
+                </div>
+            ),
         },
         {
             key: 'actions',
@@ -861,12 +882,6 @@ export default function SupplierList() {
         },
     ];
 
-    // Tabs for Add / Edit Modal
-    const modalFormTabs: ModalTab[] = [
-        { id: 'basic', label: '1. Thông tin doanh nghiệp', icon: Building2 },
-        { id: 'contact', label: '2. Đại diện & Địa chỉ', icon: User },
-    ];
-
     // Tabs for Detail Modal
     const detailModalTabs: ModalTab[] = [
         { id: 'overview', label: 'Hồ sơ pháp lý & Liên hệ', icon: Building2 },
@@ -874,123 +889,61 @@ export default function SupplierList() {
     ];
 
     return (
-        <div className="space-y-6">
-            {/* Top Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="space-y-4">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">
-                        <span>Quản lý nhập hàng</span>
-                        <span>/</span>
-                        <span>Đối tác phân phối</span>
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
-                        <Building2 className="w-7 h-7 text-blue-600" />
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
                         Quản lý nhà cung cấp
                     </h1>
+                    <p className="text-sm text-slate-500 mt-0.5 tabular-nums">
+                        {totalElements.toLocaleString('vi-VN')} nhà cung cấp · {activeCount} đang hợp tác · {inactiveCount} ngừng hợp tác
+                    </p>
                 </div>
-                <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                     <button
                         type="button"
                         onClick={() => loadSuppliers(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-all shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                         title="Tải lại dữ liệu"
                     >
                         <RefreshCw
-                            className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`}
+                            className={`w-4 h-4 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`}
                         />
                         <span>Làm mới</span>
                     </button>
                     <button
                         type="button"
                         onClick={handleExportExcel}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                     >
-                        <Download className="w-4 h-4 text-gray-500" />
-                        Xuất Excel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setAddForm(initialAddFormState);
-                            setActiveAddTab('basic');
-                            setIsAddModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-500/20"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Thêm nhà cung cấp
+                        <Download className="w-4 h-4 text-slate-500" />
+                        <span>Xuất Excel</span>
                     </button>
                 </div>
             </div>
 
             {/* Error Banner with Retry */}
             {error && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-between text-rose-800 text-sm">
-                    <div className="flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                <div className="p-3.5 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-between gap-3 text-rose-800 text-sm">
+                    <div className="flex items-center gap-2.5">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                         <div>
-                            <span className="font-bold">Đã xảy ra lỗi:</span> {error}
+                            <span className="font-semibold">Đã xảy ra lỗi:</span> {error}
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={() => loadSuppliers()}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 transition-colors shadow-xs"
+                        className="px-3 py-1.5 rounded-md bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/40"
                     >
                         Thử lại
                     </button>
                 </div>
             )}
 
-            {/* Quick Metrics Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Tổng nhà cung cấp
-                        </p>
-                        <h3 className="text-2xl font-black text-gray-900 mt-1">
-                            {totalElements}
-                        </h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                        <Building2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Đang hợp tác (ACTIVE)
-                        </p>
-                        <h3 className="text-2xl font-black text-emerald-600 mt-1">
-                            {activeCount}
-                        </h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Ngừng hợp tác (INACTIVE)
-                        </p>
-                        <h3 className="text-2xl font-black text-gray-600 mt-1">
-                            {inactiveCount}
-                        </h3>
-                    </div>
-                    <div className="w-12 h-12 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center font-bold">
-                        <XCircle className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
-
-
-            {/* Filter Section */}
+            {/* Single-row Toolbar: Search + Filter + Primary CTA */}
             <AdminFilter
                 fields={filterFields}
                 searchQuery={searchQuery}
@@ -998,66 +951,54 @@ export default function SupplierList() {
                 values={filters}
                 onChange={handleFilterChange}
                 onReset={handleFilterReset}
-                searchPlaceholder="Tìm kiếm nhà cung cấp..."
+                searchPlaceholder="Tìm theo tên NCC, mã số thuế, SĐT, email..."
+                actions={
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setAddForm(initialAddFormState);
+                            setIsAddModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm nhà cung cấp</span>
+                    </button>
+                }
             />
 
-            {/* Suppliers Data Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <AdminTable
-                    columns={columns}
-                    data={suppliers}
-                    rowKey="id"
-                    loading={isLoading}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={totalElements}
-                    pageSize={pageSize}
-                    pageSizeOptions={[10, 15, 20]}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    onPageSizeChange={(newSize) => {
-                        setPageSize(newSize);
-                        setCurrentPage(1);
-                    }}
-                    onRowClick={(item) => handleOpenDetail(item)}
-                    itemUnitName="nhà cung cấp"
-                    emptyText="Không tìm thấy nhà cung cấp nào phù hợp với bộ lọc tìm kiếm hiện tại."
-                />
-            </div>
+            {/* Suppliers Data Table (Border-first, no outer card-in-card) */}
+            <AdminTable
+                columns={columns}
+                data={suppliers}
+                rowKey="id"
+                loading={isLoading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalElements}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 15, 20]}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize);
+                    setCurrentPage(1);
+                }}
+                onRowClick={(item) => handleOpenDetail(item)}
+                itemUnitName="nhà cung cấp"
+                emptyText="Không tìm thấy nhà cung cấp nào phù hợp với bộ lọc tìm kiếm hiện tại."
+            />
 
             {/* ========================================================================= */}
-            {/* ADD SUPPLIER MODAL                                                        */}
+            {/* ADD SUPPLIER MODAL (Flat 2-column form, no nested cards)                  */}
             {/* ========================================================================= */}
             <AdminModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 title="Thêm nhà cung cấp mới"
-                subtitle="Nhập thông tin pháp lý, mã định danh và thông tin liên hệ đại diện"
+                subtitle="Nhập thông tin doanh nghiệp, mã số thuế và đầu mối liên hệ"
                 size="lg"
-                tabs={modalFormTabs}
-                activeTab={activeAddTab}
-                onTabChange={setActiveAddTab}
                 footer={
-                    <div className="flex items-center justify-end gap-3 w-full">
-                        {activeAddTab === 'contact' && (
-                            <AdminButton
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setActiveAddTab('basic')}
-                            >
-                                Quay lại
-                            </AdminButton>
-                        )}
-                        {activeAddTab === 'basic' && (
-                            <AdminButton
-                                type="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => setActiveAddTab('contact')}
-                            >
-                                Tiếp theo: Đại diện & Địa chỉ
-                            </AdminButton>
-                        )}
+                    <div className="flex items-center justify-end gap-2.5 w-full">
                         <AdminButton
                             type="button"
                             variant="secondary"
@@ -1079,46 +1020,32 @@ export default function SupplierList() {
                     </div>
                 }
             >
-                {activeAddTab === 'basic' && (
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <AdminInput
-                                label="Tên nhà cung cấp"
-                                required
-                                placeholder="Ví dụ: Công ty TNHH Asus Việt Nam..."
-                                value={addForm.name}
-                                onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
-                            />
-                            <AdminInput
-                                label="Mã nhà cung cấp"
-                                required
-                                placeholder="Ví dụ: NCC_ASUS, NCC_FPT..."
-                                value={addForm.code}
-                                onChange={(e) =>
-                                    setAddForm({ ...addForm, code: e.target.value.toUpperCase() })
-                                }
-                                className="font-mono uppercase font-bold"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <AdminInput
-                                label="Email chính thức"
-                                required
-                                type="email"
-                                placeholder="contact@nhacungcap.vn"
-                                value={addForm.email}
-                                onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
-                            />
-                            <AdminInput
-                                label="Mã số thuế doanh nghiệp (MST)"
-                                placeholder="Ví dụ: 0312345678"
-                                value={addForm.taxCode}
-                                onChange={(e) => setAddForm({ ...addForm, taxCode: e.target.value })}
-                                className="font-mono"
-                            />
-                        </div>
-
+                <div className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <AdminInput
+                            label="Tên nhà cung cấp"
+                            required
+                            placeholder="Ví dụ: Công ty TNHH Asus Việt Nam..."
+                            value={addForm.name}
+                            onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                        />
+                        <AdminInput
+                            label="Mã nhà cung cấp"
+                            required
+                            placeholder="Ví dụ: NCC_ASUS, NCC_FPT..."
+                            value={addForm.code}
+                            onChange={(e) =>
+                                setAddForm({ ...addForm, code: e.target.value.toUpperCase() })
+                            }
+                            className="font-mono uppercase font-semibold tabular-nums"
+                        />
+                        <AdminInput
+                            label="Mã số thuế doanh nghiệp (MST)"
+                            placeholder="Ví dụ: 0312345678"
+                            value={addForm.taxCode}
+                            onChange={(e) => setAddForm({ ...addForm, taxCode: e.target.value })}
+                            className="font-mono tabular-nums"
+                        />
                         <AdminSelect
                             label="Trạng thái hoạt động"
                             value={addForm.status}
@@ -1131,13 +1058,11 @@ export default function SupplierList() {
                             }
                         />
                     </div>
-                )}
 
-                {activeAddTab === 'contact' && (
-                    <div className="space-y-4">
+                    <div className="border-t border-slate-200 pt-4 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <AdminInput
-                                label="Họ và tên người đại diện liên hệ"
+                                label="Người đại diện liên hệ"
                                 placeholder="Ví dụ: Nguyễn Văn A"
                                 value={addForm.contactPerson}
                                 onChange={(e) =>
@@ -1152,9 +1077,18 @@ export default function SupplierList() {
                                 onChange={(e) =>
                                     setAddForm({ ...addForm, phoneNumber: e.target.value })
                                 }
-                                className="font-mono"
+                                className="font-mono tabular-nums"
                             />
                         </div>
+
+                        <AdminInput
+                            label="Email chính thức"
+                            required
+                            type="email"
+                            placeholder="contact@nhacungcap.vn"
+                            value={addForm.email}
+                            onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                        />
 
                         <AdminTextarea
                             label="Địa chỉ trụ sở / Kho xuất hàng"
@@ -1164,24 +1098,21 @@ export default function SupplierList() {
                             onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
                         />
                     </div>
-                )}
+                </div>
             </AdminModal>
 
             {/* ========================================================================= */}
-            {/* EDIT SUPPLIER MODAL                                                       */}
+            {/* EDIT SUPPLIER MODAL (Flat 2-column form, no nested cards)                 */}
             {/* ========================================================================= */}
             {editForm && (
                 <AdminModal
                     isOpen={isEditModalOpen}
                     onClose={() => setIsEditModalOpen(false)}
                     title={`Chỉnh sửa: ${editForm.name}`}
-                    subtitle={`Cập nhật thông tin chi tiết nhà cung cấp mã [${editForm.code}]`}
+                    subtitle={`Cập nhật thông tin nhà cung cấp mã [${editForm.code}]`}
                     size="lg"
-                    tabs={modalFormTabs}
-                    activeTab={activeEditTab}
-                    onTabChange={setActiveEditTab}
                     footer={
-                        <div className="flex items-center justify-end gap-3 w-full">
+                        <div className="flex items-center justify-end gap-2.5 w-full">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -1203,49 +1134,34 @@ export default function SupplierList() {
                         </div>
                     }
                 >
-                    {activeEditTab === 'basic' && (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <AdminInput
-                                    label="Tên nhà cung cấp"
-                                    required
-                                    value={editForm.name}
-                                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                                />
-                                <AdminInput
-                                    label="Mã nhà cung cấp"
-                                    required
-                                    value={editForm.code}
-                                    onChange={(e) =>
-                                        setEditForm({
-                                            ...editForm,
-                                            code: e.target.value.toUpperCase(),
-                                        })
-                                    }
-                                    className="font-mono uppercase font-bold"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <AdminInput
-                                    label="Email chính thức"
-                                    required
-                                    type="email"
-                                    value={editForm.email}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, email: e.target.value })
-                                    }
-                                />
-                                <AdminInput
-                                    label="Mã số thuế doanh nghiệp (MST)"
-                                    value={editForm.taxCode}
-                                    onChange={(e) =>
-                                        setEditForm({ ...editForm, taxCode: e.target.value })
-                                    }
-                                    className="font-mono"
-                                />
-                            </div>
-
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <AdminInput
+                                label="Tên nhà cung cấp"
+                                required
+                                value={editForm.name}
+                                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            />
+                            <AdminInput
+                                label="Mã nhà cung cấp"
+                                required
+                                value={editForm.code}
+                                onChange={(e) =>
+                                    setEditForm({
+                                        ...editForm,
+                                        code: e.target.value.toUpperCase(),
+                                    })
+                                }
+                                className="font-mono uppercase font-semibold tabular-nums"
+                            />
+                            <AdminInput
+                                label="Mã số thuế doanh nghiệp (MST)"
+                                value={editForm.taxCode}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, taxCode: e.target.value })
+                                }
+                                className="font-mono tabular-nums"
+                            />
                             <AdminSelect
                                 label="Trạng thái hoạt động"
                                 value={editForm.status}
@@ -1258,13 +1174,11 @@ export default function SupplierList() {
                                 }
                             />
                         </div>
-                    )}
 
-                    {activeEditTab === 'contact' && (
-                        <div className="space-y-4">
+                        <div className="border-t border-slate-200 pt-4 space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <AdminInput
-                                    label="Họ và tên người đại diện"
+                                    label="Người đại diện liên hệ"
                                     value={editForm.contactPerson}
                                     onChange={(e) =>
                                         setEditForm({ ...editForm, contactPerson: e.target.value })
@@ -1277,12 +1191,22 @@ export default function SupplierList() {
                                     onChange={(e) =>
                                         setEditForm({ ...editForm, phoneNumber: e.target.value })
                                     }
-                                    className="font-mono"
+                                    className="font-mono tabular-nums"
                                 />
                             </div>
 
+                            <AdminInput
+                                label="Email chính thức"
+                                required
+                                type="email"
+                                value={editForm.email}
+                                onChange={(e) =>
+                                    setEditForm({ ...editForm, email: e.target.value })
+                                }
+                            />
+
                             <AdminTextarea
-                                label="Địa chỉ trụ sở / Kho xuất"
+                                label="Địa chỉ trụ sở / Kho xuất hàng"
                                 rows={3}
                                 value={editForm.address}
                                 onChange={(e) =>
@@ -1290,7 +1214,7 @@ export default function SupplierList() {
                                 }
                             />
                         </div>
-                    )}
+                    </div>
                 </AdminModal>
             )}
 
@@ -1302,25 +1226,23 @@ export default function SupplierList() {
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
                     title={
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
                             <span className="truncate">{selectedSupplier.name}</span>
-                            <span className="font-mono text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                            <span className="font-mono tabular-nums text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                                 {selectedSupplier.code}
                             </span>
                         </div>
                     }
-                    subtitle={`Hồ sơ chi tiết nhà cung cấp [${selectedSupplier.name}]`}
+                    subtitle={`Hồ sơ chi tiết nhà cung cấp`}
                     size="xl"
                     tabs={detailModalTabs}
                     activeTab={activeDetailTab}
                     onTabChange={(tabId) => setActiveDetailTab(tabId as 'overview' | 'orders')}
                     footer={
-                        <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-400">
-                                    Thêm vào hệ thống: <strong>{selectedSupplier.createdDate}</strong>
-                                </span>
-                            </div>
+                        <div className="flex items-center justify-between w-full gap-3">
+                            <span className="text-xs text-slate-500 tabular-nums">
+                                Ngày tạo: <strong className="font-medium text-slate-700">{selectedSupplier.createdDate}</strong>
+                            </span>
                             <div className="flex items-center gap-2">
                                 <AdminButton
                                     type="button"
@@ -1347,170 +1269,159 @@ export default function SupplierList() {
                     }
                 >
                     {activeDetailTab === 'overview' && (
-                        <div className="space-y-5">
-                            {/* Company Summary Banner */}
-                            <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/60 to-purple-50/60 border border-blue-100/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-white p-1 border border-blue-200 shadow-sm shrink-0 flex items-center justify-center overflow-hidden">
-                                        <img
-                                            src={selectedSupplier.logo}
-                                            alt={selectedSupplier.name}
-                                            className="w-full h-full object-cover rounded-xl"
-                                        />
+                        <div className="space-y-4">
+                            {/* Flat Company Summary Header */}
+                            <div className="p-4 rounded-md bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-11 h-11 rounded-md bg-white border border-slate-200 text-slate-700 font-semibold text-sm shrink-0 flex items-center justify-center">
+                                        {getInitials(selectedSupplier.name, selectedSupplier.code)}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h3 className="text-lg font-bold text-gray-900">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                            <h3 className="text-base font-semibold text-slate-900">
                                                 {selectedSupplier.name}
                                             </h3>
-                                            <span
-                                                className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${selectedSupplier.status === 'ACTIVE'
-                                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                    : 'bg-gray-100 text-gray-700 border-gray-200'
-                                                    }`}
-                                            >
+                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                                <span
+                                                    className={`w-1.5 h-1.5 rounded-full ${selectedSupplier.status === 'ACTIVE'
+                                                        ? 'bg-emerald-500'
+                                                        : 'bg-slate-400'
+                                                        }`}
+                                                />
                                                 {selectedSupplier.status === 'ACTIVE'
                                                     ? 'Đang hợp tác'
                                                     : 'Ngừng hợp tác'}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1.5 flex-wrap">
-                                            <span>
-                                                Mã số thuế:{' '}
-                                                <strong className="font-mono text-gray-800">
-                                                    {selectedSupplier.taxCode}
-                                                </strong>
+                                        <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                            Mã số thuế:{' '}
+                                            <span className="font-mono font-medium text-slate-800">
+                                                {selectedSupplier.taxCode}
                                             </span>
-
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleCopy(selectedSupplier.taxCode, 'Mã số thuế')
-                                        }
-                                        className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-xs inline-flex items-center gap-1.5"
-                                    >
-                                        <Copy className="w-3.5 h-3.5 text-gray-400" />
-                                        Copy MST
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        handleCopy(selectedSupplier.taxCode, 'Mã số thuế')
+                                    }
+                                    className="px-3 py-1.5 rounded-md bg-white border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1.5 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                                >
+                                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                                    Copy MST
+                                </button>
                             </div>
 
-                            {/* Contact Details Card */}
-                            <div className="p-4 rounded-xl border border-gray-200 bg-white space-y-3">
-                                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                                    <span className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5">
-                                        <User className="w-4 h-4 text-blue-600" />
-                                        Thông tin đầu mối đại diện & Liên hệ
-                                    </span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                    <div className="flex items-center ">
-                                        <span className="text-gray-500 mr-3">Người đại diện:</span>
-                                        <span className="font-bold text-gray-900">
+                            {/* Flat Contact & Address Specification Table */}
+                            <div className="border border-slate-200 rounded-md bg-white divide-y divide-slate-200 text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+                                    <div className="p-3.5">
+                                        <div className="text-xs text-slate-500">Người đại diện</div>
+                                        <div className="font-medium text-slate-900 mt-0.5">
                                             {selectedSupplier.contactPerson.name}
-                                        </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center ">
-                                        <span className="text-gray-500 mr-3">Số điện thoại:</span>
-                                        {selectedSupplier.phone !== '---' ? (
-                                            <a
-                                                href={`tel:${selectedSupplier.phone}`}
-                                                className="font-mono font-bold text-blue-600 hover:underline"
-                                            >
-                                                {selectedSupplier.phone}
-                                            </a>
-                                        ) : (
-                                            <span className="text-gray-400">Chưa cập nhật</span>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center ">
-                                        <span className="text-gray-500 mr-3">Email:</span>
-                                        <a
-                                            href={`mailto:${selectedSupplier.email}`}
-                                            className="text-blue-600 hover:underline"
-                                        >
-                                            {selectedSupplier.email}
-                                        </a>
-                                    </div>
-                                    <div className="flex items-center ">
-                                        <span className="text-gray-500 mr-3">Mã định danh NCC:</span>
-                                        <span className="font-mono font-bold text-gray-800">
-                                            {selectedSupplier.code}
-                                        </span>
+                                    <div className="p-3.5">
+                                        <div className="text-xs text-slate-500">Số điện thoại</div>
+                                        <div className="mt-0.5">
+                                            {selectedSupplier.phone !== '---' ? (
+                                                <a
+                                                    href={`tel:${selectedSupplier.phone}`}
+                                                    className="font-mono tabular-nums font-medium text-blue-600 hover:underline"
+                                                >
+                                                    {selectedSupplier.phone}
+                                                </a>
+                                            ) : (
+                                                <span className="text-slate-400">Chưa cập nhật</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Address Card */}
-                            <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-2">
-                                <span className="text-xs font-bold text-gray-600 uppercase block">
-                                    Trụ sở doanh nghiệp & Kho giao hàng:
-                                </span>
-                                <p className="text-xs text-gray-700 flex items-start gap-1.5">
-                                    <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                                    <span>{selectedSupplier.address}</span>
-                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+                                    <div className="p-3.5">
+                                        <div className="text-xs text-slate-500">Email chính thức</div>
+                                        <div className="mt-0.5 flex items-center gap-1.5 min-w-0">
+                                            <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            <a
+                                                href={`mailto:${selectedSupplier.email}`}
+                                                className="text-blue-600 hover:underline truncate"
+                                            >
+                                                {selectedSupplier.email}
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div className="p-3.5">
+                                        <div className="text-xs text-slate-500">Mã định danh NCC</div>
+                                        <div className="font-mono tabular-nums font-medium text-slate-900 mt-0.5">
+                                            {selectedSupplier.code}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-3.5">
+                                    <div className="text-xs text-slate-500">Trụ sở doanh nghiệp & Kho giao hàng</div>
+                                    <div className="text-slate-700 mt-1 flex items-start gap-1.5">
+                                        <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                                        <span>{selectedSupplier.address}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {activeDetailTab === 'orders' && (
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-700 uppercase">
-                                    Lịch sử đơn nhập hàng từ NCC này ({supplierOrders.length} đơn)
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between text-xs text-slate-600 tabular-nums">
+                                <span className="font-semibold text-slate-800">
+                                    Lịch sử đơn nhập hàng ({supplierOrders.length} đơn)
                                 </span>
+                                {supplierOrders.length > 0 && (
+                                    <span>
+                                        Tổng giá trị:{' '}
+                                        <strong className="text-slate-900">
+                                            {supplierOrders
+                                                .reduce((sum, o: any) => sum + Number(o.totalAmount || 0), 0)
+                                                .toLocaleString('vi-VN')}{' '}
+                                            ₫
+                                        </strong>
+                                    </span>
+                                )}
                             </div>
 
                             {isLoadingOrders ? (
-                                <div className="p-8 text-center bg-gray-50 rounded-2xl flex items-center justify-center gap-2 text-xs text-gray-500">
+                                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-md flex items-center justify-center gap-2 text-xs text-slate-500">
                                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                                     <span>Đang tải lịch sử đơn nhập hàng...</span>
                                 </div>
                             ) : supplierOrders.length > 0 ? (
-                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="border border-slate-200 rounded-md overflow-x-auto">
                                     <table className="w-full text-xs text-left">
-                                        <thead className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                                             <tr>
-                                                <th className="px-4 py-2.5">Mã đơn nhập</th>
-                                                <th className="px-4 py-2.5">Tên đơn</th>
-                                                <th className="px-4 py-2.5">Thời điểm đặt</th>
-                                                <th className="px-4 py-2.5">Tổng giá trị</th>
-                                                <th className="px-4 py-2.5">Trạng thái</th>
+                                                <th className="px-3.5 py-2.5">Mã đơn nhập</th>
+                                                <th className="px-3.5 py-2.5">Tên đơn</th>
+                                                <th className="px-3.5 py-2.5">Thời điểm đặt</th>
+                                                <th className="px-3.5 py-2.5 text-right">Tổng giá trị</th>
+                                                <th className="px-3.5 py-2.5">Trạng thái</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-slate-200/80 bg-white">
                                             {supplierOrders.map((order: any) => (
-                                                <tr key={order.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 font-mono font-bold text-blue-600">
+                                                <tr key={order.id} className="hover:bg-slate-50/80">
+                                                    <td className="px-3.5 py-2.5 font-mono tabular-nums font-medium text-slate-900 whitespace-nowrap">
                                                         {order.code}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-800 font-medium">
+                                                    <td className="px-3.5 py-2.5 text-slate-700 font-medium">
                                                         {order.name}
                                                     </td>
-                                                    <td className="px-4 py-3 text-gray-600">
+                                                    <td className="px-3.5 py-2.5 text-slate-600 tabular-nums whitespace-nowrap">
                                                         {formatDateTime(order.orderDate)}
                                                     </td>
-                                                    <td className="px-4 py-3 font-bold text-gray-900">
-                                                        {Number(order.totalAmount || 0).toLocaleString('vi-VN')} đ
+                                                    <td className="px-3.5 py-2.5 font-semibold text-slate-900 text-right tabular-nums whitespace-nowrap">
+                                                        {Number(order.totalAmount || 0).toLocaleString('vi-VN')} ₫
                                                     </td>
-                                                    <td className="px-4 py-3">
-                                                        <span
-                                                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${order.status === 'RECEIVED'
-                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                                : order.status === 'APPROVED'
-                                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                                                    : order.status === 'CANCELLED'
-                                                                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                                                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                }`}
-                                                        >
-                                                            {order.status}
-                                                        </span>
+                                                    <td className="px-3.5 py-2.5 whitespace-nowrap">
+                                                        {renderOrderStatusIndicator(order.status)}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1518,9 +1429,9 @@ export default function SupplierList() {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                    <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-xs text-gray-500">
+                                <div className="p-8 text-center bg-slate-50 rounded-md border border-dashed border-slate-300">
+                                    <Package className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+                                    <p className="text-xs text-slate-500">
                                         Chưa có đơn nhập hàng nào liên kết với nhà cung cấp này trong hệ thống.
                                     </p>
                                 </div>

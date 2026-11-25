@@ -245,44 +245,74 @@ export default function WarrantyRequestList() {
         addToast({ type: 'success', title: 'Thành công', message: 'Đã xuất file danh sách phiếu bảo hành' });
     };
 
+    // Restrained 6px status dot indicator (no colorful rounded-full pills)
+    const renderStatusIndicator = (status: WarrantyRequestItem['status']) => {
+        if (status === 'PENDING' || status === 0) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>Chờ tiếp nhận</span>
+                </span>
+            );
+        }
+        if (status === 'IN_PROGRESS' || status === 1) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                    <span>Đang xử lý</span>
+                </span>
+            );
+        }
+        if (status === 'COMPLETED' || status === 3) {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span>Hoàn tất</span>
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span>Từ chối</span>
+            </span>
+        );
+    };
+
     // Table Columns
     const columns: Column<WarrantyRequestItem>[] = [
         {
             key: 'requestCode',
-            header: 'Mã phiếu',
+            header: 'Phiếu & Serial',
             render: (item) => (
-                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900">
-                    <ClipboardList className="w-4 h-4 text-indigo-600" />
-                    <span>{item.requestCode}</span>
-                    <button
-                        onClick={() => handleCopy(item.requestCode)}
-                        className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition"
-                        title="Sao chép mã phiếu"
-                    >
-                        {copiedCode === item.requestCode ? (
-                            <Check className="w-3 h-3 text-emerald-600" />
-                        ) : (
-                            <Copy className="w-3 h-3" />
-                        )}
-                    </button>
+                <div className="space-y-0.5 min-w-[150px]">
+                    <div className="flex items-center gap-1 font-mono text-xs font-semibold text-slate-900 tabular-nums">
+                        <span>{item.requestCode}</span>
+                        <button
+                            type="button"
+                            onClick={() => handleCopy(item.requestCode)}
+                            className="p-0.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                            title="Sao chép mã phiếu"
+                        >
+                            {copiedCode === item.requestCode ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                                <Copy className="w-3 h-3" />
+                            )}
+                        </button>
+                    </div>
+                    <div className="font-mono text-[11px] text-slate-500 tabular-nums">
+                        SN: {item.serialNumber}
+                    </div>
                 </div>
             ),
         },
         {
-            key: 'createdDate',
-            header: 'Thời gian nhận',
-            render: (item) => <span className="text-xs text-slate-600">{formatDateTime(item.createdDate)}</span>,
-        },
-        {
             key: 'productName',
-            header: 'Sản phẩm & Serial lỗi',
+            header: 'Sản phẩm',
             render: (item) => (
-                <div className="max-w-xs">
-                    <div className="font-medium text-slate-900 line-clamp-1">{item.productName}</div>
-                    <div className="text-xs font-mono text-indigo-600 mt-0.5 flex items-center gap-1">
-                        <Barcode className="w-3 h-3" />
-                        <span>{item.serialNumber}</span>
-                    </div>
+                <div className="max-w-[220px] text-xs font-medium text-slate-900 line-clamp-2" title={item.productName}>
+                    {item.productName}
                 </div>
             ),
         },
@@ -290,33 +320,30 @@ export default function WarrantyRequestList() {
             key: 'customerName',
             header: 'Khách hàng',
             render: (item) => (
-                <div>
-                    <div className="text-xs font-semibold text-slate-900">{item.customerName}</div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{item.customerPhone}</span>
-                    </div>
+                <div className="space-y-0.5 max-w-[170px]">
+                    <div className="text-xs font-medium text-slate-900 truncate">{item.customerName}</div>
+                    <div className="text-xs font-mono text-slate-500 tabular-nums">{item.customerPhone}</div>
                 </div>
             ),
         },
         {
             key: 'issueDescription',
-            header: 'Mô tả hiện tượng lỗi',
+            header: 'Mô tả lỗi',
             render: (item) => (
-                <div className="max-w-xs text-xs text-slate-700 line-clamp-2" title={item.issueDescription}>
+                <div className="max-w-[220px] text-xs text-slate-600 line-clamp-2" title={item.issueDescription}>
                     {item.issueDescription}
                 </div>
             ),
         },
         {
             key: 'technicianName',
-            header: 'Kỹ thuật phụ trách',
+            header: 'Kỹ thuật viên',
             render: (item) => (
-                <div className="text-xs">
+                <div className="text-xs whitespace-nowrap">
                     {item.technicianName ? (
                         <span className="font-medium text-slate-800">{item.technicianName}</span>
                     ) : (
-                        <span className="text-slate-400 italic">Chưa phân công</span>
+                        <span className="text-slate-400">Chưa phân công</span>
                     )}
                 </div>
             ),
@@ -324,38 +351,17 @@ export default function WarrantyRequestList() {
         {
             key: 'status',
             header: 'Trạng thái',
-            render: (item) => {
-                if (item.status === 'PENDING' || item.status === 0) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
-                            <Clock className="w-3 h-3" />
-                            Chờ tiếp nhận
-                        </span>
-                    );
-                }
-                if (item.status === 'IN_PROGRESS' || item.status === 1) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-300">
-                            <Wrench className="w-3 h-3" />
-                            Đang xử lý
-                        </span>
-                    );
-                }
-                if (item.status === 'COMPLETED' || item.status === 3) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-300">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Hoàn tất
-                        </span>
-                    );
-                }
-                return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-300">
-                        <XCircle className="w-3 h-3" />
-                        Từ chối
-                    </span>
-                );
-            },
+            render: (item) => renderStatusIndicator(item.status),
+        },
+        {
+            key: 'createdDate',
+            header: 'Ngày tiếp nhận',
+            align: 'right',
+            render: (item) => (
+                <span className="text-xs text-slate-600 tabular-nums whitespace-nowrap">
+                    {formatDateTime(item.createdDate)}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -437,26 +443,21 @@ export default function WarrantyRequestList() {
     const activeCandidate = warrantyCandidates.find((w) => String(w.id) === selectedWarrantyId);
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-                            <ClipboardList className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">Quản lý yêu cầu bảo hành</h1>
-                            <p className="text-sm text-slate-500 mt-0.5">
-                                Tiếp nhận máy lỗi từ khách hàng, lập biên bản bảo hành và bàn giao phòng kỹ thuật
-                            </p>
-                        </div>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý yêu cầu bảo hành
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.total} phiếu · {stats.pending} chờ tiếp nhận · {stats.inProgress} đang xử lý
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <AdminButton
                         variant="secondary"
-                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />}
                         onClick={fetchRequests}
                     >
                         Làm mới
@@ -470,66 +471,26 @@ export default function WarrantyRequestList() {
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng số phiếu tiếp nhận</p>
-                        <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
-                    </div>
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                        <ClipboardList className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Chờ phân công & xử lý</p>
-                        <p className="text-2xl font-bold text-amber-600 mt-1">{stats.pending}</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                        <Clock className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đang kiểm tra & sửa chữa</p>
-                        <p className="text-2xl font-bold text-blue-600 mt-1">{stats.inProgress}</p>
-                    </div>
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <Wrench className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đã hoàn tất bàn giao</p>
-                        <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.completed}</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
             {/* Quick Status Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <div className="flex items-center gap-5 overflow-x-auto border-b border-slate-200">
                 {quickTabs.map((tab) => {
                     const isActive = quickStatusTab === tab.key;
                     return (
                         <button
                             key={tab.key}
+                            type="button"
                             onClick={() => handleTabChange(tab.key)}
-                            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 ${isActive
-                                    ? 'bg-amber-600 text-white shadow-sm'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                                }`}
+                            className={`pb-2.5 text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-2 border-b-2 -mb-px cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
+                                isActive
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                            }`}
                         >
                             <span>{tab.label}</span>
                             <span
-                                className={`px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-amber-700/60 text-white' : 'bg-slate-100 text-slate-600'
-                                    }`}
+                                className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
+                                    isActive ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+                                }`}
                             >
                                 {tab.count}
                             </span>
@@ -538,48 +499,49 @@ export default function WarrantyRequestList() {
                 })}
             </div>
 
-            {/* Filter */}
-            <AdminFilter
-                fields={filterFields}
-                searchPlaceholder="Tìm kiếm theo mã phiếu WR, số serial, khách hàng, SĐT..."
-                searchQuery={searchQuery}
-                onSearchChange={(v) => {
-                    setSearchQuery(v);
-                    setPage(1);
-                }}
-                values={filters}
-                onFilterChange={(vals) => {
-                    const nextFilters = { ...filters, ...vals };
-                    setFilters(nextFilters);
-                    setQuickStatusTab(nextFilters.status || 'ALL');
-                    setPage(1);
-                }}
-                onReset={() => {
-                    setSearchQuery('');
-                    setFilters({ status: '' });
-                    setQuickStatusTab('ALL');
-                    setPage(1);
-                }}
-            />
+            {/* Filter & Table */}
+            <div className="space-y-4">
+                <AdminFilter
+                    fields={filterFields}
+                    searchPlaceholder="Tìm kiếm theo mã phiếu WR, số serial, khách hàng, SĐT..."
+                    searchQuery={searchQuery}
+                    onSearchChange={(v) => {
+                        setSearchQuery(v);
+                        setPage(1);
+                    }}
+                    values={filters}
+                    onFilterChange={(vals) => {
+                        const nextFilters = { ...filters, ...vals };
+                        setFilters(nextFilters);
+                        setQuickStatusTab(nextFilters.status || 'ALL');
+                        setPage(1);
+                    }}
+                    onReset={() => {
+                        setSearchQuery('');
+                        setFilters({ status: '' });
+                        setQuickStatusTab('ALL');
+                        setPage(1);
+                    }}
+                />
 
-            {/* Table */}
-            <AdminTable
-                columns={columns}
-                data={requests}
-                rowKey="id"
-                loading={loading}
-                totalItems={totalElements}
-                currentPage={page}
-                pageSize={pageSize}
-                totalPages={totalPages}
-                pageSizeOptions={[5, 10, 15, 20, 50]}
-                onPageChange={(p) => setPage(p)}
-                onPageSizeChange={(s) => {
-                    setPageSize(s);
-                    setPage(1);
-                }}
-                emptyText="Chưa có phiếu yêu cầu bảo hành nào"
-            />
+                <AdminTable
+                    columns={columns}
+                    data={requests}
+                    rowKey="id"
+                    loading={loading}
+                    totalItems={totalElements}
+                    currentPage={page}
+                    pageSize={pageSize}
+                    totalPages={totalPages}
+                    pageSizeOptions={[5, 10, 15, 20, 50]}
+                    onPageChange={(p) => setPage(p)}
+                    onPageSizeChange={(s) => {
+                        setPageSize(s);
+                        setPage(1);
+                    }}
+                    emptyText="Chưa có phiếu yêu cầu bảo hành nào"
+                />
+            </div>
 
             {/* Modal Create Request */}
             <AdminModal
@@ -612,22 +574,24 @@ export default function WarrantyRequestList() {
                     </div>
 
                     {activeCandidate && (
-                        <div className="p-3 bg-indigo-50/50 border border-indigo-200 rounded-lg text-xs space-y-1">
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Khách hàng:</span>
-                                <span className="font-bold text-slate-900">{activeCandidate.customerName} - {activeCandidate.customerPhone}</span>
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 p-3.5 bg-slate-50 border border-slate-200 rounded-md text-xs">
+                            <div>
+                                <dt className="text-slate-500">Khách hàng</dt>
+                                <dd className="font-medium text-slate-900 mt-0.5 tabular-nums">
+                                    {activeCandidate.customerName} · {activeCandidate.customerPhone}
+                                </dd>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Thời hạn bảo hành còn lại:</span>
-                                <span className="font-semibold text-emerald-700">
+                            <div>
+                                <dt className="text-slate-500">Thời hạn bảo hành còn lại</dt>
+                                <dd className="font-semibold text-emerald-700 mt-0.5 tabular-nums">
                                     {activeCandidate.remainingDays} ngày (Hết hạn: {activeCandidate.endDate.slice(0, 10)})
-                                </span>
+                                </dd>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Gói chính sách:</span>
-                                <span className="text-indigo-700 font-medium">{activeCandidate.policyName}</span>
+                            <div className="sm:col-span-2">
+                                <dt className="text-slate-500">Gói chính sách</dt>
+                                <dd className="font-medium text-slate-900 mt-0.5">{activeCandidate.policyName}</dd>
                             </div>
-                        </div>
+                        </dl>
                     )}
 
                     <div>
@@ -692,115 +656,117 @@ export default function WarrantyRequestList() {
                 {selectedRequest && (
                     <div className="space-y-4">
                         {detailTab === 'overview' && (
-                            <div className="space-y-3">
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
-                                    <div>
-                                        <div className="text-xs text-slate-500">Mã phiếu bảo hành</div>
-                                        <div className="text-base font-mono font-bold text-slate-900 mt-0.5">
+                            <div className="space-y-4">
+                                {/* Flat summary header strip */}
+                                <div className="px-4 py-3 bg-slate-50 rounded-md border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm font-mono font-semibold text-slate-900 tabular-nums">
                                             {selectedRequest.requestCode}
-                                        </div>
+                                        </span>
+                                        <span className="text-slate-300">·</span>
+                                        {renderStatusIndicator(selectedRequest.status)}
                                     </div>
-                                    <span className="text-xs font-mono text-slate-600 bg-white px-3 py-1 rounded border">
-                                        Thời gian nhận: {formatDateTime(selectedRequest.createdDate)}
+                                    <span className="text-xs font-mono text-slate-500 tabular-nums">
+                                        Tiếp nhận: {formatDateTime(selectedRequest.createdDate)}
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Thông tin khách hàng</div>
-                                        <div className="text-sm font-bold text-slate-900 mt-1">
+                                {/* Flat 2-column detail grid (no card-in-card) */}
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs pt-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Khách hàng</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900">
                                             {selectedRequest.customerName}
-                                        </div>
-                                        <div className="text-xs text-slate-600 mt-0.5">
-                                            SĐT: {selectedRequest.customerPhone}
-                                        </div>
+                                        </dd>
+                                        <dd className="font-mono text-slate-500 tabular-nums">
+                                            {selectedRequest.customerPhone}
+                                        </dd>
                                     </div>
 
-                                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Thiết bị linh kiện</div>
-                                        <div className="text-sm font-bold text-slate-900 mt-1 line-clamp-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Thiết bị &amp; Serial</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900 line-clamp-1">
                                             {selectedRequest.productName}
-                                        </div>
-                                        <div className="text-xs font-mono text-indigo-600 mt-0.5">
-                                            Serial: {selectedRequest.serialNumber}
-                                        </div>
+                                        </dd>
+                                        <dd className="font-mono text-slate-600 tabular-nums">
+                                            SN: {selectedRequest.serialNumber}
+                                        </dd>
                                     </div>
-                                </div>
 
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500 font-medium">Hiện tượng lỗi tiếp nhận</div>
-                                    <p className="text-sm text-slate-800 mt-1 font-medium whitespace-pre-line">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Phụ kiện nhận kèm</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-800">
+                                            {selectedRequest.intakeAccessories || 'Không có'}
+                                        </dd>
+                                    </div>
+
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Tình trạng ngoại quan</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-800">
+                                            {selectedRequest.deviceCondition || 'Bình thường'}
+                                        </dd>
+                                    </div>
+                                </dl>
+
+                                <div className="p-3.5 bg-white rounded-md border border-slate-200 space-y-1">
+                                    <div className="text-xs font-medium text-slate-500">Hiện tượng lỗi tiếp nhận</div>
+                                    <p className="text-xs text-slate-800 leading-relaxed whitespace-pre-line">
                                         {selectedRequest.issueDescription}
                                     </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3 text-xs">
-                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                        <span className="text-slate-500">Phụ kiện nhận kèm:</span>
-                                        <div className="font-medium text-slate-800 mt-0.5">
-                                            {selectedRequest.intakeAccessories || 'Không có'}
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                        <span className="text-slate-500">Tình trạng ngoại quan:</span>
-                                        <div className="font-medium text-slate-800 mt-0.5">
-                                            {selectedRequest.deviceCondition || 'Bình thường'}
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         )}
 
                         {detailTab === 'technical' && (
-                            <div className="space-y-3">
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500">Kỹ thuật viên phụ trách</div>
-                                    <div className="text-sm font-bold text-slate-900 mt-1">
-                                        {selectedRequest.technicianName || 'Chưa chỉ định kỹ thuật viên'}
+                            <div className="space-y-4 text-xs">
+                                <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
+                                    <div className="px-4 py-3 flex items-center justify-between gap-4">
+                                        <span className="text-slate-500">Kỹ thuật viên phụ trách</span>
+                                        <span className="font-semibold text-slate-900">
+                                            {selectedRequest.technicianName || 'Chưa chỉ định kỹ thuật viên'}
+                                        </span>
+                                    </div>
+                                    <div className="px-4 py-3 space-y-1">
+                                        <div className="text-slate-500 font-medium">Biên bản chẩn đoán kỹ thuật</div>
+                                        <p className="text-slate-800 leading-relaxed">
+                                            {selectedRequest.inspectionNotes || 'Chưa có kết luận chẩn đoán'}
+                                        </p>
+                                    </div>
+                                    <div className="px-4 py-3 space-y-1">
+                                        <div className="text-slate-500 font-medium">Giải pháp xử lý</div>
+                                        <p className="text-slate-800 leading-relaxed">
+                                            {selectedRequest.solution || 'Chưa ghi nhận giải pháp'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500 font-medium">Biên bản chẩn đoán kỹ thuật</div>
-                                    <p className="text-sm text-slate-800 mt-1">
-                                        {selectedRequest.inspectionNotes || 'Chưa có kết luận chẩn đoán'}
-                                    </p>
-                                </div>
-
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500 font-medium">Giải pháp xử lý</div>
-                                    <p className="text-sm text-slate-800 mt-1">
-                                        {selectedRequest.solution || 'Chưa ghi nhận giải pháp'}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <div className="text-xs font-semibold text-slate-700 uppercase mb-2">
+                                <div className="space-y-2">
+                                    <div className="text-xs font-semibold text-slate-700 uppercase tracking-wider tabular-nums">
                                         Linh kiện thay thế ({selectedRequest.parts?.length || 0})
                                     </div>
                                     {selectedRequest.parts && selectedRequest.parts.length > 0 ? (
-                                        <div className="space-y-2">
+                                        <div className="divide-y divide-slate-200 border border-slate-200 rounded-md bg-white">
                                             {selectedRequest.parts.map((part) => (
                                                 <div
                                                     key={part.id}
-                                                    className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs"
+                                                    className="px-3.5 py-2.5 flex items-center justify-between gap-3"
                                                 >
-                                                    <div>
-                                                        <div className="font-bold text-slate-900">
+                                                    <div className="min-w-0">
+                                                        <div className="font-medium text-slate-900 truncate">
                                                             {part.productName}
                                                         </div>
-                                                        <div className="text-slate-500 mt-0.5">
-                                                            Mã: {part.productCode} - Số lượng: {part.quantity}
+                                                        <div className="text-[11px] font-mono text-slate-500 mt-0.5 tabular-nums">
+                                                            Mã: {part.productCode} · SL: {part.quantity}
                                                         </div>
                                                     </div>
-                                                    <span className="px-2 py-0.5 rounded font-medium bg-indigo-100 text-indigo-700">
+                                                    <span className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-700 border border-slate-200 shrink-0">
                                                         {part.status}
                                                     </span>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 rounded-lg">
+                                        <div className="p-3.5 text-center text-xs text-slate-400 bg-slate-50 border border-slate-200 rounded-md">
                                             Không có linh kiện thay thế nào cho ca sửa này
                                         </div>
                                     )}
@@ -829,24 +795,24 @@ export default function WarrantyRequestList() {
                 }
             >
                 {selectedRequest && (
-                    <div className="p-6 bg-white border border-slate-200 rounded-lg space-y-6 print:border-none print:p-0">
+                    <div className="p-6 bg-white border border-slate-200 rounded-md space-y-5 print:border-none print:p-0">
                         {/* Print Header */}
-                        <div className="flex justify-between items-start border-b pb-4">
+                        <div className="flex justify-between items-start border-b border-slate-200 pb-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900 uppercase">
-                                    HỆ THỐNG MÁY TÍNH & LINH KIỆN PCSTORE
+                                <h2 className="text-base font-semibold text-slate-900 uppercase">
+                                    HỆ THỐNG MÁY TÍNH &amp; LINH KIỆN PCSTORE
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Trung Tâm Dịch Vụ Khách Hàng & Bảo Hành Kỹ Thuật
+                                    Trung Tâm Dịch Vụ Khách Hàng &amp; Bảo Hành Kỹ Thuật
                                 </p>
-                                <p className="text-xs text-slate-500">Hotline kỹ thuật: 1900 8888 - 0988 888 999</p>
+                                <p className="text-xs text-slate-500 tabular-nums">Hotline kỹ thuật: 1900 8888 - 0988 888 999</p>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right tabular-nums">
                                 <div className="text-xs text-slate-500">Mã biên nhận</div>
-                                <div className="text-base font-mono font-bold text-indigo-700">
+                                <div className="text-base font-mono font-semibold text-slate-900">
                                     {selectedRequest.requestCode}
                                 </div>
-                                <div className="text-[11px] text-slate-400 mt-1">
+                                <div className="text-[11px] text-slate-500 mt-0.5">
                                     {formatDateTime(selectedRequest.createdDate)}
                                 </div>
                             </div>
@@ -854,7 +820,7 @@ export default function WarrantyRequestList() {
 
                         {/* Title */}
                         <div className="text-center">
-                            <h3 className="text-base font-bold text-slate-900 uppercase tracking-wide">
+                            <h3 className="text-base font-semibold text-slate-900 uppercase tracking-tight">
                                 BIÊN BẢN TIẾP NHẬN THIẾT BỊ BẢO HÀNH
                             </h3>
                             <p className="text-xs text-slate-500 italic mt-0.5">
@@ -863,52 +829,52 @@ export default function WarrantyRequestList() {
                         </div>
 
                         {/* Info tables */}
-                        <div className="grid grid-cols-2 gap-4 text-xs border p-3 rounded-lg bg-slate-50/50">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs border border-slate-200 p-3.5 rounded-md bg-slate-50">
                             <div className="space-y-1">
                                 <div>
-                                    <span className="font-semibold text-slate-700">Khách hàng:</span>{' '}
-                                    <span className="font-bold text-slate-900">{selectedRequest.customerName}</span>
+                                    <span className="text-slate-500">Khách hàng:</span>{' '}
+                                    <strong className="text-slate-900">{selectedRequest.customerName}</strong>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-slate-700">Điện thoại:</span>{' '}
-                                    <span className="font-mono">{selectedRequest.customerPhone}</span>
+                                    <span className="text-slate-500">Điện thoại:</span>{' '}
+                                    <span className="font-mono text-slate-900 tabular-nums">{selectedRequest.customerPhone}</span>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-slate-700">Đơn mua hàng:</span>{' '}
-                                    <span className="font-mono">{selectedRequest.orderCode || 'Bảo hành lẻ'}</span>
+                                    <span className="text-slate-500">Đơn mua hàng:</span>{' '}
+                                    <span className="font-mono text-slate-900 tabular-nums">{selectedRequest.orderCode || 'Bảo hành lẻ'}</span>
                                 </div>
                             </div>
 
                             <div className="space-y-1">
                                 <div>
-                                    <span className="font-semibold text-slate-700">Thiết bị:</span>{' '}
-                                    <span className="font-bold text-slate-900">{selectedRequest.productName}</span>
+                                    <span className="text-slate-500">Thiết bị:</span>{' '}
+                                    <strong className="text-slate-900">{selectedRequest.productName}</strong>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-slate-700">Số Serial:</span>{' '}
-                                    <span className="font-mono font-bold text-indigo-700">
+                                    <span className="text-slate-500">Số Serial:</span>{' '}
+                                    <span className="font-mono font-semibold text-slate-900 tabular-nums">
                                         {selectedRequest.serialNumber}
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="font-semibold text-slate-700">Phụ kiện kèm:</span>{' '}
-                                    <span>{selectedRequest.intakeAccessories || 'Thân máy'}</span>
+                                    <span className="text-slate-500">Phụ kiện kèm:</span>{' '}
+                                    <span className="text-slate-900">{selectedRequest.intakeAccessories || 'Thân máy'}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Issue description */}
-                        <div className="border p-3 rounded-lg text-xs space-y-1">
-                            <div className="font-semibold text-slate-700">Tình trạng lỗi do khách hàng mô tả:</div>
-                            <div className="text-slate-900 italic">{selectedRequest.issueDescription}</div>
-                            <div className="text-slate-500 text-[11px] mt-1">
+                        <div className="border border-slate-200 p-3.5 rounded-md text-xs space-y-1">
+                            <div className="font-medium text-slate-700">Tình trạng lỗi do khách hàng mô tả</div>
+                            <div className="text-slate-900">{selectedRequest.issueDescription}</div>
+                            <div className="text-slate-500 text-[11px] pt-1">
                                 Tình trạng máy khi nhận:{' '}
                                 <span className="font-medium text-slate-700">{selectedRequest.deviceCondition}</span>
                             </div>
                         </div>
 
                         {/* Terms */}
-                        <div className="text-[11px] text-slate-500 space-y-1 border-t pt-3">
+                        <div className="text-[11px] text-slate-500 space-y-1 border-t border-slate-200 pt-3">
                             <p className="font-semibold text-slate-700">Quy định bảo hành:</p>
                             <p>- Thời gian xử lý kiểm tra và sửa chữa tiêu chuẩn từ 3 - 7 ngày làm việc.</p>
                             <p>- Công ty không chịu trách nhiệm về dữ liệu cá nhân lưu trữ trong ổ đĩa của khách hàng.</p>
@@ -916,17 +882,17 @@ export default function WarrantyRequestList() {
                         </div>
 
                         {/* Signatures */}
-                        <div className="grid grid-cols-2 text-center text-xs pt-4 border-t">
+                        <div className="grid grid-cols-2 text-center text-xs pt-4 border-t border-slate-200">
                             <div>
-                                <div className="font-bold text-slate-800">KHÁCH HÀNG KÝ NHẬN</div>
+                                <div className="font-semibold text-slate-800">KHÁCH HÀNG KÝ NHẬN</div>
                                 <div className="text-[11px] text-slate-400 italic mt-0.5">(Ký và ghi rõ họ tên)</div>
-                                <div className="h-16"></div>
+                                <div className="h-14"></div>
                                 <div className="font-medium text-slate-900">{selectedRequest.customerName}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-slate-800">ĐẠI DIỆN TIẾP NHẬN BẢO HÀNH</div>
+                                <div className="font-semibold text-slate-800">ĐẠI DIỆN TIẾP NHẬN BẢO HÀNH</div>
                                 <div className="text-[11px] text-slate-400 italic mt-0.5">(Ký tên đóng dấu)</div>
-                                <div className="h-16"></div>
+                                <div className="h-14"></div>
                                 <div className="font-medium text-slate-900">
                                     {selectedRequest.technicianName || 'Nhân viên tiếp nhận'}
                                 </div>

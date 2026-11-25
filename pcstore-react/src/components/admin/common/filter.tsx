@@ -183,17 +183,18 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
     };
 
     return (
-        <div className={`bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3 ${className}`}>
+        <div className={`bg-white p-3 rounded-md border border-slate-200 space-y-2.5 ${className}`}>
             {/* Top Toolbar Row */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 {/* Search Bar, Reset & Filter Button */}
-                <div className="flex flex-1 flex-nowrap items-center justify-between gap-2.5 min-w-0">
+                <div className="flex flex-1 flex-nowrap items-center justify-between gap-2 min-w-0">
                     {showSearch && (
                         <SearchBar
                             value={searchQuery}
                             onChange={activeSearchChange}
                             onSearch={onSearch}
                             placeholder={searchPlaceholder}
+                            size="sm"
                             className={searchBarClassName || "flex-1 min-w-0"}
                         />
                     )}
@@ -203,7 +204,7 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                             <button
                                 type="button"
                                 onClick={handleResetAll}
-                                className="flex items-center justify-center p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                className="flex items-center justify-center p-1.5 text-rose-600 border border-slate-200 hover:bg-rose-50 hover:border-rose-200 rounded-md transition-colors shrink-0 cursor-pointer"
                                 title="Đặt lại"
                                 aria-label="Đặt lại"
                             >
@@ -217,27 +218,27 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(!isOpen)}
-                                    className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl border whitespace-nowrap transition-all ${isOpen || activeFilterCount > 0
-                                        ? 'bg-blue-50 text-blue-600 border-blue-200 ring-2 ring-blue-500/10'
-                                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 shadow-sm'
+                                    className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md border whitespace-nowrap transition-colors cursor-pointer ${isOpen || activeFilterCount > 0
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                                         }`}
                                 >
-                                    <Filter className="w-4 h-4 text-blue-600 shrink-0" />
+                                    <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                                     <span>Bộ lọc</span>
                                     {activeFilterCount > 0 && (
-                                        <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">
+                                        <span className="min-w-4 h-4 px-1 rounded-md bg-blue-600 text-white text-[10px] flex items-center justify-center font-semibold tabular-nums">
                                             {activeFilterCount}
                                         </span>
                                     )}
-                                    <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 {/* Dropdown Popover */}
                                 {isOpen && (
-                                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 z-50 space-y-4 animate-in fade-in slide-in-from-top-2">
-                                        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                                            <div className="flex items-center gap-2 font-bold text-xs text-gray-800 uppercase tracking-wider">
-                                                <SlidersHorizontal className="w-4 h-4 text-blue-600" />
+                                    <div className="absolute right-0 mt-1.5 w-72 sm:w-80 bg-white rounded-md shadow-md border border-slate-200 p-3.5 z-50 space-y-3 animate-in fade-in slide-in-from-top-2">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <div className="flex items-center gap-2 font-semibold text-xs text-slate-800 uppercase tracking-wider">
+                                                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
                                                 <span>Tùy chọn bộ lọc</span>
                                             </div>
                                             {activeFilterCount > 0 && (
@@ -247,30 +248,30 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                                                         setInternalValues({});
                                                         activeOnChange?.({});
                                                     }}
-                                                    className="text-[11px] font-semibold text-red-500 hover:underline"
+                                                    className="text-[11px] font-medium text-rose-600 hover:underline cursor-pointer"
                                                 >
                                                     Xóa bộ lọc
                                                 </button>
                                             )}
                                         </div>
 
-                                        <div className="space-y-3.5 max-h-80 overflow-y-auto pr-1">
+                                        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                                             {fields.map((field) => {
                                                 const fieldKey = field.id || field.name || '';
                                                 return (
-                                                    <div key={fieldKey} className="space-y-1.5">
-                                                        <label className="text-[11px] font-semibold text-gray-600 flex items-center gap-1.5">
-                                                            {field.icon && <field.icon className="w-3.5 h-3.5 text-gray-400" />}
+                                                    <div key={fieldKey} className="space-y-1">
+                                                        <label className="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
+                                                            {field.icon && <field.icon className="w-3.5 h-3.5 text-slate-400" />}
                                                             {field.label}
                                                         </label>
                                                         {field.type === 'date' ? (
                                                             <div className="relative">
-                                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                                                <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                                                                 <input
                                                                     type="date"
                                                                     value={values[fieldKey] || ''}
                                                                     onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
-                                                                    className="w-full bg-white border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl py-2 pl-9 pr-3 shadow-sm focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                                                    className="w-full bg-white border border-slate-200 text-slate-800 text-xs font-medium rounded-md py-1.5 pl-8 pr-2.5 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/15"
                                                                 />
                                                             </div>
                                                         ) : (
@@ -301,8 +302,8 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
 
             {/* Active Filter Chips */}
             {activeFilterCount > 0 && (
-                <div className="pt-2 flex flex-wrap items-center gap-1.5 border-t border-gray-50">
-                    <span className="text-[11px] font-semibold text-gray-400 mr-1">Đang lọc theo:</span>
+                <div className="pt-2 flex flex-wrap items-center gap-1.5 border-t border-slate-100">
+                    <span className="text-[11px] font-medium text-slate-500 mr-1">Đang lọc:</span>
                     {Object.entries(values).map(([key, val]) => {
                         if (val === undefined || val === '' || val === null) return null;
                         const field = fields.find((f) => (f.id || f.name) === key);
@@ -312,17 +313,17 @@ export const AdminFilter: React.FC<AdminFilterProps> = ({
                         return (
                             <span
                                 key={key}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100"
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200"
                             >
                                 <span>
-                                    {field?.label}: <strong className="font-bold">{displayVal}</strong>
+                                    {field?.label}: <strong className="font-semibold text-slate-900">{displayVal}</strong>
                                 </span>
                                 <button
                                     type="button"
                                     onClick={() => handleFieldChange(key, undefined)}
-                                    className="hover:bg-blue-100 rounded p-0.5 transition-colors"
+                                    className="hover:bg-slate-200 rounded p-0.5 transition-colors cursor-pointer"
                                 >
-                                    <X className="w-3 h-3 text-blue-600" />
+                                    <X className="w-3 h-3 text-slate-500" />
                                 </button>
                             </span>
                         );

@@ -108,6 +108,7 @@ export const RETURN_STATUS_CONFIG: Record<
         stageName: string;
         label: string;
         badgeClass: string;
+        dotColor: string;
         icon: React.ElementType;
         description: string;
         nextActor: string;
@@ -116,8 +117,9 @@ export const RETURN_STATUS_CONFIG: Record<
     WAITING_PACK: {
         stageNumber: 1,
         stageName: 'Giai đoạn 1: Lập đơn',
-        label: 'Chờ đóng gói hoàn hàng',
-        badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 ring-amber-500/10',
+        label: 'Chờ đóng gói',
+        badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+        dotColor: 'bg-amber-500',
         icon: Box,
         description: 'Quản lý đã tạo đơn và gửi yêu cầu xuống kho, chờ nhân viên kho nhặt hàng lỗi & đóng gói',
         nextActor: 'Nhân viên kho',
@@ -126,7 +128,8 @@ export const RETURN_STATUS_CONFIG: Record<
         stageNumber: 2,
         stageName: 'Giai đoạn 2: Đóng gói xong',
         label: 'Chờ bàn giao ĐVVC',
-        badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-300 ring-indigo-500/10',
+        badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+        dotColor: 'bg-sky-500',
         icon: Package,
         description: 'Kho đã đóng gói đúng quy chuẩn, dán tem niêm phong và đang chờ Đơn vị vận chuyển tới lấy kiện hàng',
         nextActor: 'Nhân viên kho & ĐVVC',
@@ -134,8 +137,9 @@ export const RETURN_STATUS_CONFIG: Record<
     HANDED_OVER: {
         stageNumber: 3,
         stageName: 'Giai đoạn 3: Vận chuyển',
-        label: 'Đã bàn giao ĐVVC / Đang vận chuyển',
-        badgeClass: 'bg-blue-50 text-blue-700 border-blue-300 ring-blue-500/10',
+        label: 'Đang gửi trả NCC',
+        badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+        dotColor: 'bg-blue-500',
         icon: Truck,
         description: 'ĐVVC đã nhận kiện hàng và chứng từ, đang trong lộ trình vận chuyển tới kho Nhà cung cấp',
         nextActor: 'Đơn vị vận chuyển',
@@ -143,8 +147,9 @@ export const RETURN_STATUS_CONFIG: Record<
     DELIVERED_SUPPLIER: {
         stageNumber: 4,
         stageName: 'Giai đoạn 4: Tiếp nhận tại NCC',
-        label: 'Đã giao NCC / Đang đối soát',
-        badgeClass: 'bg-purple-50 text-purple-700 border-purple-300 ring-purple-500/10',
+        label: 'Đã giao NCC / Đối soát',
+        badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+        dotColor: 'bg-slate-700',
         icon: Building2,
         description: 'ĐVVC đã bàn giao thực tế tại kho NCC. NCC đang kiểm tra ngoại quan và đối soát mã Serial',
         nextActor: 'Nhà cung cấp & Quản lý',
@@ -152,17 +157,19 @@ export const RETURN_STATUS_CONFIG: Record<
     COMPLETED: {
         stageNumber: 4,
         stageName: 'Giai đoạn 4: Hoàn tất',
-        label: 'Đã hoàn hàng thành công',
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 ring-emerald-500/10',
+        label: 'Đã hoàn tất',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        dotColor: 'bg-emerald-500',
         icon: CheckCircle2,
         description: 'NCC xác nhận đối soát xong, Quản lý xác nhận chuyển trạng thái sản phẩm thành Đã trả về NCC và đóng quy trình',
-        nextActor: 'Quy trình hoàn tất',
+        nextActor: 'Hoàn tất',
     },
     CANCELLED: {
         stageNumber: 1,
         stageName: 'Đã hủy',
-        label: 'Đã hủy đơn hoàn trả',
-        badgeClass: 'bg-gray-100 text-gray-700 border-gray-300 ring-gray-500/10',
+        label: 'Đã hủy',
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+        dotColor: 'bg-slate-400',
         icon: XCircle,
         description: 'Đơn hoàn hàng bị hủy, các serial được hoàn trả lại danh sách hàng lỗi tồn kho',
         nextActor: '---',
@@ -808,129 +815,153 @@ export default function SupplierReturnList() {
         setCurrentPage(1);
     };
 
+    const selectedCreateEstimatedTotal = useMemo(() => {
+        return availableSerialsForSelectedSupplier
+            .filter((c) => selectedCandidateSerials.includes(c.serialNumber))
+            .reduce((sum, c) => sum + (c.productPrice || 0), 0);
+    }, [availableSerialsForSelectedSupplier, selectedCandidateSerials]);
+
+    const renderReturnStatusIndicator = (status: SupplierReturnStatus) => {
+        const conf = RETURN_STATUS_CONFIG[status] || RETURN_STATUS_CONFIG.WAITING_PACK;
+        return (
+            <span
+                className="inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap"
+                title={conf.description}
+            >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${conf.dotColor}`} />
+                <span className={status === 'CANCELLED' ? 'text-slate-500' : 'text-slate-700'}>
+                    {conf.label}
+                </span>
+            </span>
+        );
+    };
+
     /**
      * Cột bảng Phiếu hoàn hàng
      */
     const orderColumns: Column<SupplierReturnOrder>[] = [
         {
             key: 'code',
-            header: 'Mã đơn hoàn hàng',
-            render: (order) => (
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
-                        <RotateCcw className="w-4 h-4" />
-                    </div>
-                    <div>
+            header: 'Mã phiếu hoàn',
+            render: (order) => {
+                const receiptCode = order.items[0]?.goodsReceiptCode;
+                return (
+                    <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-1.5">
-                            <span
-                                className="font-mono font-bold text-gray-900 hover:text-blue-600 cursor-pointer"
-                                onClick={() => handleOpenDetail(order)}
+                            <button
+                                type="button"
+                                className="font-mono text-xs font-semibold tabular-nums text-slate-900 hover:text-blue-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 rounded-sm text-left"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenDetail(order);
+                                }}
                             >
                                 {order.code}
-                            </span>
+                            </button>
                             <button
                                 type="button"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     handleCopy(order.code);
                                 }}
-                                className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"
-                                title="Sao chép mã đơn"
+                                className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                                title="Sao chép mã phiếu"
                             >
                                 {copiedSerial === order.code ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                    <Check className="w-3 h-3 text-emerald-600" />
                                 ) : (
-                                    <Copy className="w-3.5 h-3.5" />
+                                    <Copy className="w-3 h-3" />
                                 )}
                             </button>
                         </div>
-                        <div className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDateTime(order.createdAt)}</span>
+                        <div className="text-[11px] text-slate-500 font-mono tabular-nums truncate max-w-[190px]">
+                            {receiptCode ? `Phiếu nhập: ${receiptCode}` : order.trackingNumber ? `VĐ: ${order.trackingNumber}` : '---'}
                         </div>
+                    </div>
+                );
+            },
+        },
+        {
+            key: 'supplier',
+            header: 'Nhà cung cấp',
+            render: (order) => (
+                <div className="space-y-0.5 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate max-w-[190px]" title={order.supplierName}>
+                        {order.supplierName}
+                    </div>
+                    <div className="text-xs text-slate-500 font-mono tabular-nums flex items-center gap-1.5">
+                        <span>{order.supplierCode}</span>
+                        {order.supplierPhone && order.supplierPhone !== '---' && (
+                            <>
+                                <span className="text-slate-300">·</span>
+                                <span>{order.supplierPhone}</span>
+                            </>
+                        )}
                     </div>
                 </div>
             ),
         },
         {
-            key: 'supplier',
-            header: 'Nhà cung cấp tiếp nhận',
+            key: 'reason',
+            header: 'Lý do hoàn hàng',
             render: (order) => (
-                <div>
-                    <div className="font-semibold text-gray-900 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{order.supplierName}</span>
+                <div className="space-y-0.5 max-w-[220px]">
+                    <div
+                        className="text-xs text-slate-700 line-clamp-2 leading-relaxed"
+                        title={order.returnReasonGeneral || order.items[0]?.defectReason || ''}
+                    >
+                        {order.returnReasonGeneral || order.items[0]?.defectReason || '---'}
                     </div>
-                    <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
-                        <span>Mã: <b className="font-mono text-gray-700">{order.supplierCode}</b></span>
-                        <span>•</span>
-                        <span>{order.supplierPhone}</span>
-                    </div>
+                    {order.carrierName && (
+                        <div className="text-[11px] text-slate-500 font-mono tabular-nums truncate">
+                            {order.carrierName}{order.trackingNumber ? ` · ${order.trackingNumber}` : ''}
+                        </div>
+                    )}
                 </div>
             ),
         },
         {
             key: 'items',
-            header: 'Sản phẩm & Serial chỉ định',
+            header: 'SL hoàn',
+            align: 'right',
             render: (order) => (
-                <div>
-                    <div className="flex items-center gap-1.5 font-bold text-gray-800">
-                        <Boxes className="w-4 h-4 text-indigo-600" />
-                        <span>{order.totalQuantity} mã Serial</span>
-                        <span className="text-xs font-normal text-gray-400">({formatVND(order.totalEstimatedValue)})</span>
+                <div className="space-y-0.5 text-right tabular-nums">
+                    <div className="text-xs font-medium text-slate-900 whitespace-nowrap">
+                        {order.totalQuantity} Serial
                     </div>
-                    <div className="text-xs text-gray-500 font-mono mt-0.5 line-clamp-1">
+                    <div
+                        className="text-[11px] text-slate-500 font-mono truncate max-w-[140px] ml-auto"
+                        title={order.items.map((it) => it.serialNumber).join(', ')}
+                    >
                         {order.items.map((it) => it.serialNumber).join(', ')}
                     </div>
                 </div>
             ),
         },
         {
-            key: 'status',
-            header: 'Tiến độ 4 giai đoạn',
-            align: 'center',
-            render: (order) => {
-                const conf = RETURN_STATUS_CONFIG[order.status] || RETURN_STATUS_CONFIG.WAITING_PACK;
-                const IconComp = conf.icon;
-                return (
-                    <div className="flex flex-col items-center gap-1">
-                        <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border shadow-xs ${conf.badgeClass}`}
-                        >
-                            <IconComp className="w-3.5 h-3.5" />
-                            {conf.label}
-                        </span>
-                        <span className="text-[10px] text-gray-500 font-medium">
-                            Bước tiếp: <b className="text-gray-700">{conf.nextActor}</b>
-                        </span>
-                    </div>
-                );
-            },
+            key: 'totalValue',
+            header: 'Tổng giá trị hoàn',
+            align: 'right',
+            render: (order) => (
+                <div className="text-sm font-semibold text-slate-900 text-right tabular-nums whitespace-nowrap">
+                    {formatVND(order.totalEstimatedValue)}
+                </div>
+            ),
         },
         {
-            key: 'shipping',
-            header: 'Vận chuyển & Bàn giao',
-            render: (order) => {
-                if (order.carrierName) {
-                    return (
-                        <div className="text-xs">
-                            <div className="font-medium text-blue-700 flex items-center gap-1">
-                                <Truck className="w-3.5 h-3.5" />
-                                <span>{order.carrierName}</span>
-                            </div>
-                            <div className="font-mono text-gray-600 text-[11px] mt-0.5">
-                                Vận đơn: <b>{order.trackingNumber || '---'}</b>
-                            </div>
-                        </div>
-                    );
-                }
-                return (
-                    <span className="text-xs text-gray-400 italic flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Chưa bàn giao ĐVVC
-                    </span>
-                );
-            },
+            key: 'status',
+            header: 'Trạng thái',
+            render: (order) => renderReturnStatusIndicator(order.status),
+        },
+        {
+            key: 'createdAt',
+            header: 'Ngày tạo phiếu',
+            align: 'right',
+            render: (order) => (
+                <div className="text-xs text-slate-600 text-right tabular-nums whitespace-nowrap">
+                    {formatDateTime(order.createdAt)}
+                </div>
+            ),
         },
         {
             key: 'actions',
@@ -1012,25 +1043,23 @@ export default function SupplierReturnList() {
             key: 'serialNumber',
             header: 'Mã Serial lỗi',
             render: (item) => (
-                <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
-                        <AlertTriangle className="w-3.5 h-3.5" />
+                <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-1.5 font-mono text-xs font-semibold tabular-nums text-slate-900">
+                        <span>{item.serialNumber}</span>
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopy(item.serialNumber);
+                            }}
+                            className="p-0.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                            title="Sao chép Serial"
+                        >
+                            <Copy className="w-3 h-3" />
+                        </button>
                     </div>
-                    <div>
-                        <div className="flex items-center gap-1.5 font-mono font-bold text-gray-900">
-                            <span>{item.serialNumber}</span>
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCopy(item.serialNumber);
-                                }}
-                                className="p-0.5 text-gray-400 hover:text-blue-600 rounded"
-                            >
-                                <Copy className="w-3 h-3" />
-                            </button>
-                        </div>
-                        <div className="text-[11px] text-gray-400">Phiếu nhập: {item.goodsReceiptCode || '---'}</div>
+                    <div className="text-[11px] text-slate-500 font-mono tabular-nums">
+                        Phiếu nhập: {item.goodsReceiptCode || '---'}
                     </div>
                 </div>
             ),
@@ -1039,56 +1068,59 @@ export default function SupplierReturnList() {
             key: 'product',
             header: 'Linh kiện / Thiết bị',
             render: (item) => (
-                <div>
-                    <div className="font-semibold text-gray-900 line-clamp-1">{item.productName}</div>
-                    <div className="text-xs text-gray-500 font-mono mt-0.5">
-                        <span>{item.productCode}</span> • <span className="font-sans text-gray-700 font-medium">{formatVND(item.productPrice)}</span>
+                <div className="space-y-0.5 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate max-w-[220px]" title={item.productName}>
+                        {item.productName}
+                    </div>
+                    <div className="text-xs text-slate-500 font-mono tabular-nums">
+                        {item.productCode}
                     </div>
                 </div>
             ),
         },
         {
             key: 'supplier',
-            header: 'Nhà cung cấp cung ứng',
+            header: 'Nhà cung cấp',
             render: (item) => (
-                <div>
-                    <div className="font-medium text-gray-900 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-gray-400" />
-                        <span>{item.supplierName}</span>
+                <div className="space-y-0.5 min-w-0">
+                    <div className="text-sm font-medium text-slate-900 truncate max-w-[180px]" title={item.supplierName}>
+                        {item.supplierName}
                     </div>
-                    <div className="text-xs text-gray-500 font-mono">{item.supplierCode}</div>
+                    <div className="text-xs text-slate-500 font-mono tabular-nums">{item.supplierCode}</div>
                 </div>
             ),
         },
         {
             key: 'defectReason',
-            header: 'Mô tả tình trạng lỗi kiểm đếm',
+            header: 'Mô tả lỗi',
             render: (item) => (
-                <div className="text-xs text-rose-700 max-w-md line-clamp-2">
+                <div className="text-xs text-slate-600 max-w-[230px] line-clamp-2" title={item.defectReason}>
                     {item.defectReason}
                 </div>
             ),
         },
         {
+            key: 'price',
+            header: 'Đơn giá',
+            align: 'right',
+            render: (item) => (
+                <div className="text-sm font-semibold text-slate-900 text-right tabular-nums whitespace-nowrap">
+                    {formatVND(item.productPrice)}
+                </div>
+            ),
+        },
+        {
             key: 'status',
-            header: 'Tình trạng xử lý',
-            align: 'center',
-            render: (item) => {
-                if (item.isInActiveReturnOrder) {
-                    return (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                            <Box className="w-3 h-3" />
-                            Đã đưa vào đơn hoàn hàng
-                        </span>
-                    );
-                }
-                return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-300">
-                        <Clock className="w-3 h-3" />
-                        Chờ Quản lý lập đơn hoàn trả
-                    </span>
-                );
-            },
+            header: 'Trạng thái',
+            render: (item) => (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.isInActiveReturnOrder ? 'bg-blue-500' : 'bg-amber-500'
+                            }`}
+                    />
+                    {item.isInActiveReturnOrder ? 'Đã lập đơn hoàn' : 'Chờ lập đơn hoàn'}
+                </span>
+            ),
         },
         {
             key: 'actions',
@@ -1120,206 +1152,52 @@ export default function SupplierReturnList() {
     ];
 
     return (
-        <div className="space-y-6">
-            {/* ======================================================== */}
-            {/* HEADER                                                   */}
-            {/* ======================================================== */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-gray-100">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-rose-600 text-white rounded-xl shadow-md shadow-rose-500/20">
-                            <RotateCcw className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                                Quản lý hoàn trả hàng cho Nhà Cung Cấp
-                            </h1>
-                            <p className="text-sm text-gray-500">
-                                Quy trình hoàn hàng 4 giai đoạn: Cửa hàng (Quản lý & Kho) ➔ Đơn vị vận chuyển (ĐVVC) ➔ Nhà cung cấp
-                            </p>
-                        </div>
-                    </div>
+        <div className="space-y-4">
+            {/* Compact Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý hoàn hàng nhà cung cấp
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-0.5 tabular-nums">
+                        {kpiStats.total} phiếu hoàn · {kpiStats.waitingPack + kpiStats.waitingHandover} tại kho · {kpiStats.handedOver + kpiStats.deliveredSupplier} đang xử lý · {kpiStats.completed} hoàn tất
+                    </p>
                 </div>
 
-                {/* Header Actions */}
-                <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Header Utility Action */}
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => loadAllData(true)}
                         disabled={isRefreshing || isLoading}
-                        className="inline-flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                         title="Tải lại dữ liệu"
                     >
-                        <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-                        <span className="hidden sm:inline">Làm mới</span>
+                        <RefreshCw className={`w-4 h-4 text-slate-500 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+                        <span>Làm mới</span>
                     </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleOpenCreateModal()}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-rose-600 rounded-xl hover:bg-rose-700 transition-all cursor-pointer shadow-sm shadow-rose-600/30"
-                    >
-                        <ShieldAlert className="w-4 h-4" />
-                        <span>Lập đơn hoàn hàng (GĐ 1)</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* ======================================================== */}
-            {/* KPI STATS CARDS                                          */}
-            {/* ======================================================== */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                <div
-                    onClick={() => {
-                        setStatusFilter('ALL');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'ALL' && activeMainTab === 'orders'
-                        ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">Tổng đơn hoàn</span>
-                        <div className="p-2 bg-slate-100 text-slate-700 rounded-lg">
-                            <RotateCcw className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-gray-900 mt-1">{kpiStats.total} đơn</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5 font-sans">{formatVND(kpiStats.totalEstimatedValue)}</div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('WAITING_PACK');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'WAITING_PACK' && activeMainTab === 'orders'
-                        ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">1. Chờ đóng gói</span>
-                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                            <Box className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-amber-700 mt-1">{kpiStats.waitingPack} đơn</div>
-                    <div className="text-[11px] text-amber-600 font-medium mt-0.5">Kho chuẩn bị đóng</div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('WAITING_HANDOVER');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'WAITING_HANDOVER' && activeMainTab === 'orders'
-                        ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">2. Chờ bàn giao</span>
-                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                            <Package className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-indigo-700 mt-1">{kpiStats.waitingHandover} đơn</div>
-                    <div className="text-[11px] text-indigo-600 font-medium mt-0.5">Đã đóng gói xong</div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('HANDED_OVER');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'HANDED_OVER' && activeMainTab === 'orders'
-                        ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">3. Đang vận chuyển</span>
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                            <Truck className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-blue-700 mt-1">{kpiStats.handedOver} đơn</div>
-                    <div className="text-[11px] text-blue-600 font-medium mt-0.5">ĐVVC đang giao</div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('DELIVERED_SUPPLIER');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'DELIVERED_SUPPLIER' && activeMainTab === 'orders'
-                        ? 'border-purple-500 ring-2 ring-purple-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">4. NCC đối soát</span>
-                        <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                            <Building2 className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-purple-700 mt-1">{kpiStats.deliveredSupplier} đơn</div>
-                    <div className="text-[11px] text-purple-600 font-medium mt-0.5">Chờ Quản lý duyệt</div>
-                </div>
-
-                <div
-                    onClick={() => {
-                        setStatusFilter('COMPLETED');
-                        setActiveMainTab('orders');
-                        setCurrentPage(1);
-                    }}
-                    className={`bg-white p-3.5 rounded-xl border transition-all cursor-pointer ${statusFilter === 'COMPLETED' && activeMainTab === 'orders'
-                        ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
-                        : 'border-gray-100 hover:border-gray-200 shadow-xs'
-                        }`}
-                >
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">Hoàn tất thành công</span>
-                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                            <CheckCircle2 className="w-4 h-4" />
-                        </div>
-                    </div>
-                    <div className="text-xl font-bold text-emerald-700 mt-1">{kpiStats.completed} đơn</div>
-                    <div className="text-[11px] text-emerald-600 font-medium mt-0.5">Đã đóng quy trình</div>
                 </div>
             </div>
 
             {/* ======================================================== */}
             {/* VIEW MODE TABS NAVIGATION & ROLE FILTER                  */}
             {/* ======================================================== */}
-            <div className="flex items-center justify-between border-b border-gray-200 pt-1">
-                <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200">
+                <div className="flex items-center gap-5">
                     <button
                         type="button"
                         onClick={() => {
                             setActiveMainTab('orders');
                             setCurrentPage(1);
                         }}
-                        className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-bold text-sm transition-all cursor-pointer ${
+                        className={`flex items-center gap-2 pb-2.5 px-0.5 border-b-2 font-medium text-sm transition-colors cursor-pointer focus-visible:outline-none ${
                             activeMainTab === 'orders'
-                                ? 'border-rose-600 text-rose-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                         }`}
                     >
-                        <RotateCcw className="w-4 h-4" />
                         <span>Phiếu hoàn hàng NCC</span>
-                        <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                activeMainTab === 'orders' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600'
-                            }`}
-                        >
+                        <span className="text-xs px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 tabular-nums font-medium">
                             {filteredOrders.length}
                         </span>
                     </button>
@@ -1330,30 +1208,26 @@ export default function SupplierReturnList() {
                             setActiveMainTab('defective_pool');
                             setCandidatePage(1);
                         }}
-                        className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-bold text-sm transition-all cursor-pointer ${
+                        className={`flex items-center gap-2 pb-2.5 px-0.5 border-b-2 font-medium text-sm transition-colors cursor-pointer focus-visible:outline-none ${
                             activeMainTab === 'defective_pool'
-                                ? 'border-rose-600 text-rose-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-800'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-slate-500 hover:text-slate-800'
                         }`}
                     >
-                        <AlertTriangle className="w-4 h-4" />
                         <span>Kho linh kiện lỗi chờ hoàn trả</span>
                         {kpiStats.activeDefectiveSerials > 0 && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">
+                            <span className="text-xs px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 tabular-nums font-medium">
                                 {kpiStats.activeDefectiveSerials}
                             </span>
                         )}
                     </button>
                 </div>
 
-                {/* Role View Filter Selector */}
+                {/* Compact Role View Selector */}
                 {activeMainTab === 'orders' && (
                     <div className="hidden lg:flex items-center gap-1.5 pb-2">
-                        <span className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                            <UserCheck className="w-3.5 h-3.5 text-gray-400" />
-                            Góc nhìn vai trò:
-                        </span>
-                        <div className="inline-flex rounded-lg bg-gray-100 p-0.5 text-xs font-semibold">
+                        <span className="text-xs text-slate-500">Vai trò:</span>
+                        <div className="inline-flex rounded-md border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
                             {[
                                 { key: 'ALL', label: 'Tất cả' },
                                 { key: 'STORE_MANAGER', label: 'Quản lý' },
@@ -1367,10 +1241,10 @@ export default function SupplierReturnList() {
                                         setSelectedRoleView(role.key as any);
                                         setCurrentPage(1);
                                     }}
-                                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
                                         selectedRoleView === role.key
-                                            ? 'bg-white text-gray-900 shadow-2xs'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                            ? 'bg-white text-slate-900 border border-slate-200'
+                                            : 'text-slate-600 hover:text-slate-900 border border-transparent'
                                     }`}
                                 >
                                     {role.label}
@@ -1386,44 +1260,52 @@ export default function SupplierReturnList() {
             {/* ======================================================== */}
             {activeMainTab === 'orders' && (
                 <div className="space-y-4">
-                    {/* Filter Bar */}
+                    {/* Single-row Toolbar: Search + Filters + Primary CTA */}
                     <AdminFilter
                         searchQuery={searchQuery}
                         onSearchChange={(q) => {
                             setSearchQuery(q);
                             setCurrentPage(1);
                         }}
-                        searchPlaceholder="Tìm kiếm theo mã đơn hoàn hàng (PR-...), tên NCC, mã vận đơn, mã Serial..."
+                        searchPlaceholder="Tìm theo mã phiếu hoàn, phiếu nhập gốc, nhà cung cấp, mã Serial..."
                         fields={filterFields}
                         values={filterValues}
                         onFilterChange={handleFilterChange}
                         onReset={handleResetFilters}
+                        actions={
+                            <button
+                                type="button"
+                                onClick={() => handleOpenCreateModal()}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                <span>Tạo phiếu hoàn hàng</span>
+                            </button>
+                        }
                     />
 
-                    {/* Table Orders */}
-                    <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-                        <AdminTable<SupplierReturnOrder>
-                            columns={orderColumns}
-                            data={paginatedOrders}
-                            rowKey="id"
-                            loading={isLoading}
-                            emptyText="Không tìm thấy phiếu hoàn trả hàng nào phù hợp với bộ lọc."
-                            emptyIcon={RotateCcw}
-                            currentPage={currentPage}
-                            totalPages={totalOrderPages}
-                            totalItems={filteredOrders.length}
-                            pageSize={pageSize}
-                            pageSizeOptions={[10, 20, 30]}
-                            onPageChange={setCurrentPage}
-                            onPageSizeChange={(sz) => {
-                                setPageSize(sz);
-                                setCurrentPage(1);
-                            }}
-                            showPageSizeSelector={true}
-                            itemUnitName="đơn"
-                            onRowClick={(order) => handleOpenDetail(order)}
-                        />
-                    </div>
+                    {/* Table Orders (Border-first, no outer card-in-card) */}
+                    <AdminTable<SupplierReturnOrder>
+                        columns={orderColumns}
+                        data={paginatedOrders}
+                        rowKey="id"
+                        loading={isLoading}
+                        emptyText="Không tìm thấy phiếu hoàn trả hàng nào phù hợp với bộ lọc."
+                        emptyIcon={RotateCcw}
+                        currentPage={currentPage}
+                        totalPages={totalOrderPages}
+                        totalItems={filteredOrders.length}
+                        pageSize={pageSize}
+                        pageSizeOptions={[10, 20, 30]}
+                        onPageChange={setCurrentPage}
+                        onPageSizeChange={(sz) => {
+                            setPageSize(sz);
+                            setCurrentPage(1);
+                        }}
+                        showPageSizeSelector={true}
+                        itemUnitName="phiếu hoàn"
+                        onRowClick={(order) => handleOpenDetail(order)}
+                    />
                 </div>
             )}
 
@@ -1432,38 +1314,14 @@ export default function SupplierReturnList() {
             {/* ======================================================== */}
             {activeMainTab === 'defective_pool' && (
                 <div className="space-y-4">
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-2.5">
-                            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                                <p className="font-bold text-sm">
-                                    Kho hàng lỗi & Linh kiện kiểm đếm không đạt chuẩn (Defective Items Pool)
-                                </p>
-                                <p className="text-amber-800 mt-0.5">
-                                    Đây là danh sách các sản phẩm và mã Serial phát hiện lỗi khi kiểm đếm nhập kho hoặc kiểm tra kỹ thuật.
-                                    Quản lý cửa hàng có thể rà soát và bấm <b>"Lập đơn hoàn NCC"</b> để bắt đầu Giai đoạn 1 của quy trình.
-                                </p>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => handleOpenCreateModal()}
-                            className="shrink-0 px-3 py-2 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-                        >
-                            <ShieldAlert className="w-4 h-4" />
-                            <span>Tạo đơn hoàn mới</span>
-                        </button>
-                    </div>
-
-                    {/* Filter Bar for Defective Candidates */}
+                    {/* Single-row Toolbar for Defective Candidates */}
                     <AdminFilter
                         searchQuery={candidateSearchQuery}
                         onSearchChange={(q) => {
                             setCandidateSearchQuery(q);
                             setCandidatePage(1);
                         }}
-                        searchPlaceholder="Tìm kiếm mã Serial lỗi, mã linh kiện, tên linh kiện, phiếu nhập, lý do lỗi..."
+                        searchPlaceholder="Tìm mã Serial lỗi, tên linh kiện, phiếu nhập gốc, lý do lỗi..."
                         fields={[
                             {
                                 id: 'supplier',
@@ -1488,30 +1346,38 @@ export default function SupplierReturnList() {
                             setCandidateSupplierFilter('ALL');
                             setCandidatePage(1);
                         }}
+                        actions={
+                            <button
+                                type="button"
+                                onClick={() => handleOpenCreateModal()}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                <span>Tạo phiếu hoàn hàng</span>
+                            </button>
+                        }
                     />
 
-                    <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-                        <AdminTable<DefectiveSerialCandidate>
-                            columns={candidateColumns}
-                            data={paginatedCandidates}
-                            rowKey="serialNumber"
-                            loading={isLoading}
-                            emptyText="Hiện tại không có mã Serial lỗi nào đang tồn đọng trong kho phù hợp với bộ lọc."
-                            emptyIcon={CheckCircle2}
-                            currentPage={candidatePage}
-                            totalPages={totalCandidatePages}
-                            totalItems={filteredCandidates.length}
-                            pageSize={candidatePageSize}
-                            pageSizeOptions={[10, 20, 30]}
-                            onPageChange={setCandidatePage}
-                            onPageSizeChange={(sz) => {
-                                setCandidatePageSize(sz);
-                                setCandidatePage(1);
-                            }}
-                            showPageSizeSelector={true}
-                            itemUnitName="serial"
-                        />
-                    </div>
+                    <AdminTable<DefectiveSerialCandidate>
+                        columns={candidateColumns}
+                        data={paginatedCandidates}
+                        rowKey="serialNumber"
+                        loading={isLoading}
+                        emptyText="Hiện tại không có mã Serial lỗi nào đang tồn đọng trong kho phù hợp với bộ lọc."
+                        emptyIcon={CheckCircle2}
+                        currentPage={candidatePage}
+                        totalPages={totalCandidatePages}
+                        totalItems={filteredCandidates.length}
+                        pageSize={candidatePageSize}
+                        pageSizeOptions={[10, 20, 30]}
+                        onPageChange={setCandidatePage}
+                        onPageSizeChange={(sz) => {
+                            setCandidatePageSize(sz);
+                            setCandidatePage(1);
+                        }}
+                        showPageSizeSelector={true}
+                        itemUnitName="serial"
+                    />
                 </div>
             )}
 
@@ -1519,165 +1385,147 @@ export default function SupplierReturnList() {
             {/* MODAL GIAI ĐOẠN 1: QUẢN LÝ LẬP ĐƠN HOÀN HÀNG MỚI          */}
             {/* ======================================================== */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-md max-w-4xl w-full max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden">
                         {/* Header */}
-                        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-rose-50 to-white">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs">
-                                    <ShieldAlert className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-lg">
-                                        Khởi tạo đơn hoàn hàng tới Nhà cung cấp (Giai đoạn 1)
-                                    </h3>
-                                    <p className="text-xs text-gray-500">
-                                        Quản lý cửa hàng lựa chọn NCC, chỉ định mã Serial lỗi và gửi yêu cầu đóng gói xuống kho
-                                    </p>
-                                </div>
+                        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-200 bg-white">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-base">
+                                    Tạo phiếu hoàn hàng nhà cung cấp
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Chọn nhà cung cấp, chỉ định mã Serial lỗi và thiết lập phương án xử lý
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsCreateModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
-                        {/* Body - Scrollable */}
-                        <div className="p-6 overflow-y-auto space-y-5 text-xs">
-                            {/* BƯỚC 1: CHỌN NHÀ CUNG CẤP */}
-                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                        <Building2 className="w-4 h-4 text-rose-600" />
-                                        <span>Bước 1: Chọn Nhà cung cấp cần hoàn hàng <span className="text-rose-500">*</span></span>
-                                    </label>
-                                    <span className="text-gray-500 text-[11px]">
-                                        Chỉ hiển thị các serial lỗi thuộc về NCC này
-                                    </span>
+                        {/* Body - Scrollable Flat Layout */}
+                        <div className="p-5 overflow-y-auto space-y-5 text-xs">
+                            {/* Section 1: Nhà cung cấp & Hình thức xử lý */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="sm:col-span-2">
+                                    <AdminLabel required>Nhà cung cấp cần hoàn hàng</AdminLabel>
+                                    <AdminSelect
+                                        value={createSupplierId}
+                                        onChange={(e) => {
+                                            setCreateSupplierId(Number(e.target.value));
+                                            setSelectedCandidateSerials([]);
+                                        }}
+                                    >
+                                        {suppliers.map((s) => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name} ({s.code}) - {s.phoneNumber || 'Không có SĐT'}
+                                            </option>
+                                        ))}
+                                    </AdminSelect>
                                 </div>
 
-                                <AdminSelect
-                                    value={createSupplierId}
-                                    onChange={(e) => {
-                                        setCreateSupplierId(Number(e.target.value));
-                                        setSelectedCandidateSerials([]);
-                                    }}
-                                >
-                                    {suppliers.map((s) => (
-                                        <option key={s.id} value={s.id}>
-                                            {s.name} ({s.code}) - {s.phoneNumber || 'Không có SĐT'}
-                                        </option>
-                                    ))}
-                                </AdminSelect>
+                                <div>
+                                    <AdminLabel>Hình thức xử lý</AdminLabel>
+                                    <AdminSelect
+                                        value={createResolution}
+                                        onChange={(e) => setCreateResolution(e.target.value as ReturnResolutionType)}
+                                    >
+                                        <option value="REPLACE">Đổi mới sản phẩm 1:1 theo hợp đồng</option>
+                                        <option value="REFUND">Bồi hoàn tiền mặt / Cấn trừ công nợ</option>
+                                        <option value="REPAIR">Gửi sang trung tâm bảo hành chính hãng</option>
+                                    </AdminSelect>
+                                </div>
+
+                                <div>
+                                    <AdminLabel>Quản lý phụ trách lập phiếu</AdminLabel>
+                                    <AdminInput
+                                        type="text"
+                                        value={createManagerName}
+                                        onChange={(e) => setCreateManagerName(e.target.value)}
+                                    />
+                                </div>
                             </div>
 
-                            {/* BƯỚC 2: CHỈ ĐỊNH SẢN PHẨM & MÃ SERIAL */}
-                            <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-3">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2.5">
-                                    <label className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                        <Barcode className="w-4 h-4 text-blue-600" />
-                                        <span>Bước 2: Kiểm tra và chọn mã Serial cần hoàn hàng <span className="text-rose-500">*</span></span>
-                                    </label>
+                            {/* Section 2: Chọn mã Serial cần hoàn trả */}
+                            <div className="border-t border-slate-200 pt-4 space-y-2.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <AdminLabel required className="!mb-0">
+                                        Danh sách mã Serial lỗi khả dụng ({availableSerialsForSelectedSupplier.length})
+                                    </AdminLabel>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2.5 tabular-nums">
+                                        <span className="text-xs text-slate-600">
+                                            Đã chọn: <strong className="text-slate-900">{selectedCandidateSerials.length}</strong>
+                                        </span>
                                         <button
                                             type="button"
                                             onClick={handleSelectAllCandidates}
-                                            className="px-2.5 py-1 text-xs text-blue-700 font-semibold hover:bg-blue-50 rounded-lg cursor-pointer transition-colors"
+                                            className="px-2.5 py-1 text-xs text-blue-600 font-medium hover:bg-blue-50 rounded-md cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                                         >
                                             {selectedCandidateSerials.length === availableSerialsForSelectedSupplier.length && availableSerialsForSelectedSupplier.length > 0
                                                 ? 'Bỏ chọn tất cả'
-                                                : 'Chọn tất cả serial'}
+                                                : 'Chọn tất cả'}
                                         </button>
-                                        <span className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-bold">
-                                            Đã chọn: {selectedCandidateSerials.length}
-                                        </span>
                                     </div>
                                 </div>
 
                                 {availableSerialsForSelectedSupplier.length === 0 ? (
-                                    <div className="p-6 text-center text-gray-500 border border-dashed rounded-xl space-y-1">
-                                        <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
-                                        <p className="font-medium text-gray-700">Không có mã Serial lỗi nào đang tồn đọng của Nhà cung cấp này.</p>
-                                        <p className="text-[11px] text-gray-400">Bạn có thể chọn Nhà cung cấp khác hoặc kiểm tra lại kho kiểm đếm.</p>
+                                    <div className="p-6 text-center text-slate-500 border border-dashed border-slate-300 rounded-md bg-slate-50/70 space-y-1">
+                                        <p className="font-medium text-slate-700">Không có mã Serial lỗi nào đang tồn đọng của nhà cung cấp này.</p>
+                                        <p className="text-[11px] text-slate-400">Chọn nhà cung cấp khác hoặc kiểm tra lại kho kiểm đếm.</p>
                                     </div>
                                 ) : (
-                                    <div className="max-h-56 overflow-y-auto border rounded-xl divide-y">
+                                    <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-md divide-y divide-slate-200/80 bg-white">
                                         {availableSerialsForSelectedSupplier.map((item) => {
                                             const isSelected = selectedCandidateSerials.includes(item.serialNumber);
                                             return (
-                                                <div
+                                                <button
                                                     key={item.serialNumber}
+                                                    type="button"
                                                     onClick={() => handleToggleSerialCandidate(item.serialNumber)}
-                                                    className={`p-3 flex items-center justify-between gap-3 cursor-pointer transition-colors ${isSelected ? 'bg-rose-50/70 border-rose-200' : 'hover:bg-gray-50'
+                                                    className={`w-full text-left p-3 flex items-center justify-between gap-3 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40 ${isSelected ? 'bg-blue-50/60' : 'hover:bg-slate-50'
                                                         }`}
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="text-rose-600">
+                                                    <div className="flex items-start gap-2.5 min-w-0">
+                                                        <div className="mt-0.5 shrink-0">
                                                             {isSelected ? (
-                                                                <CheckSquare className="w-4 h-4 text-rose-600" />
+                                                                <CheckSquare className="w-4 h-4 text-blue-600" />
                                                             ) : (
-                                                                <Square className="w-4 h-4 text-gray-300" />
+                                                                <Square className="w-4 h-4 text-slate-300" />
                                                             )}
                                                         </div>
-                                                        <div>
-                                                            <div className="font-mono font-bold text-gray-900 flex items-center gap-1.5">
-                                                                <span>{item.serialNumber}</span>
-                                                                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-sans">
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className="font-mono font-semibold tabular-nums text-slate-900">
+                                                                    {item.serialNumber}
+                                                                </span>
+                                                                <span className="text-[11px] font-mono tabular-nums bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded-md">
                                                                     {item.productCode}
                                                                 </span>
                                                             </div>
-                                                            <div className="text-xs text-gray-600 font-medium line-clamp-1">{item.productName}</div>
-                                                            <div className="text-[11px] text-rose-600 italic mt-0.5">Lỗi: {item.defectReason}</div>
+                                                            <div className="text-xs text-slate-700 font-medium line-clamp-1 mt-0.5">{item.productName}</div>
+                                                            <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">Lỗi: {item.defectReason}</div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="text-right shrink-0">
-                                                        <div className="font-bold text-gray-900 font-mono">{formatVND(item.productPrice)}</div>
-                                                        <div className="text-[10px] text-gray-400">Phiếu: {item.goodsReceiptCode || '---'}</div>
+                                                    <div className="text-right shrink-0 tabular-nums">
+                                                        <div className="font-semibold text-slate-900">{formatVND(item.productPrice)}</div>
+                                                        <div className="text-[11px] text-slate-400 font-mono">Phiếu: {item.goodsReceiptCode || '---'}</div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             );
                                         })}
                                     </div>
                                 )}
                             </div>
 
-                            {/* BƯỚC 3: THIẾT LẬP PHƯƠNG ÁN & GỬI YÊU CẦU ĐÓNG GÓI XUỐNG KHO */}
-                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                                <label className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <FileCheck2 className="w-4 h-4 text-emerald-600" />
-                                    <span>Bước 3: Phương án giải quyết & Giao nhiệm vụ xuống kho</span>
-                                </label>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                        <AdminLabel>Hình thức xử lý mong muốn:</AdminLabel>
-                                        <AdminSelect
-                                            value={createResolution}
-                                            onChange={(e) => setCreateResolution(e.target.value as ReturnResolutionType)}
-                                        >
-                                            <option value="REPLACE">Đổi mới sản phẩm 1:1 theo hợp đồng</option>
-                                            <option value="REFUND">Bồi hoàn tiền mặt / Cấn trừ công nợ</option>
-                                            <option value="REPAIR">Gửi sang trung tâm bảo hành chính hãng</option>
-                                        </AdminSelect>
-                                    </div>
-
-                                    <div>
-                                        <AdminLabel>Quản lý phụ trách lập phiếu:</AdminLabel>
-                                        <AdminInput
-                                            type="text"
-                                            value={createManagerName}
-                                            onChange={(e) => setCreateManagerName(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
+                            {/* Section 3: Lý do & Ghi chú kho */}
+                            <div className="border-t border-slate-200 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <AdminLabel>Lý do hoàn trả chung ghi nhận:</AdminLabel>
+                                    <AdminLabel>Lý do hoàn trả chung</AdminLabel>
                                     <AdminTextarea
                                         rows={2}
                                         value={createReason}
@@ -1687,25 +1535,26 @@ export default function SupplierReturnList() {
                                 </div>
 
                                 <div>
-                                    <AdminLabel className="flex items-center gap-1.5 text-blue-700">
-                                        <Send className="w-3.5 h-3.5" />
-                                        <span>Ghi chú dặn dò gửi Bộ phận kho (Hướng dẫn đóng gói bảo quản):</span>
-                                    </AdminLabel>
+                                    <AdminLabel>Ghi chú hướng dẫn đóng gói cho kho</AdminLabel>
                                     <AdminTextarea
                                         rows={2}
                                         value={createManagerNotes}
                                         onChange={(e) => setCreateManagerNotes(e.target.value)}
-                                        placeholder="Ví dụ: Bọc xốp chống sốc 2 lớp, niêm phong tem đỏ, đối chiếu kỹ mã SN..."
+                                        placeholder="Ví dụ: Bọc xốp chống sốc 2 lớp, niêm phong tem..."
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-between px-6 py-3.5 bg-gray-50 border-t">
-                            <div className="text-xs">
-                                <span className="text-gray-500">Tổng sản phẩm hoàn: </span>
-                                <b className="text-gray-900">{selectedCandidateSerials.length} serial</b>
+                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 bg-slate-50 border-t border-slate-200">
+                            <div className="text-xs text-slate-600 tabular-nums">
+                                Đã chọn: <strong className="text-slate-900">{selectedCandidateSerials.length} serial</strong>
+                                <span className="mx-2 text-slate-300">·</span>
+                                Tổng giá trị hoàn:{' '}
+                                <strong className="text-sm font-semibold text-slate-900">
+                                    {formatVND(selectedCreateEstimatedTotal)}
+                                </strong>
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -1718,13 +1567,13 @@ export default function SupplierReturnList() {
                                 </AdminButton>
                                 <AdminButton
                                     type="button"
-                                    variant="danger"
+                                    variant="primary"
                                     onClick={handleConfirmCreateOrder}
                                     disabled={isSubmittingCreate || selectedCandidateSerials.length === 0}
                                     isLoading={isSubmittingCreate}
                                     icon={Send}
                                 >
-                                    Khởi tạo đơn & Gửi yêu cầu đóng gói xuống kho
+                                    Tạo phiếu & Gửi kho đóng gói
                                 </AdminButton>
                             </div>
                         </div>
@@ -1736,57 +1585,48 @@ export default function SupplierReturnList() {
             {/* MODAL GIAI ĐOẠN 2: NHÂN VIÊN KHO ĐÓNG GÓI                 */}
             {/* ======================================================== */}
             {isPackModalOpen && packTargetOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl w-[80vw] h-[80vh] shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-center px-6 py-4 border-b bg-amber-50">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-amber-600 text-white rounded-xl">
-                                    <Box className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-base">
-                                        Giai đoạn 2: Nhân viên kho thực hiện đóng gói
-                                    </h3>
-                                    <p className="text-xs text-amber-800">
-                                        Phiếu hoàn hàng: <b>{packTargetOrder.code}</b> • NCC: {packTargetOrder.supplierName}
-                                    </p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-md max-w-2xl w-full max-h-[88vh] border border-slate-200 overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-200">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-base">
+                                    Xác nhận kho đóng gói
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                    Phiếu: <strong className="font-mono text-slate-800">{packTargetOrder.code}</strong> · NCC: {packTargetOrder.supplierName}
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsPackModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
-                            {/* Ghi chú từ Quản lý */}
+                        <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
                             {packTargetOrder.managerNotes && (
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 space-y-1">
-                                    <div className="font-bold flex items-center gap-1.5 text-blue-800">
-                                        <Info className="w-3.5 h-3.5" />
-                                        <span>Yêu cầu từ Quản lý cửa hàng:</span>
-                                    </div>
-                                    <p className="text-blue-950 leading-relaxed">{packTargetOrder.managerNotes}</p>
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-700 space-y-1">
+                                    <div className="font-semibold text-slate-800">Yêu cầu từ Quản lý cửa hàng</div>
+                                    <p className="leading-relaxed">{packTargetOrder.managerNotes}</p>
                                 </div>
                             )}
 
-                            {/* Danh sách serial cần đóng gói */}
                             <div className="space-y-1.5">
-                                <label className="font-bold text-gray-800 block">
-                                    Các mã Serial chỉ định cần lấy từ khu hàng lỗi ({packTargetOrder.items.length} cá thể):
-                                </label>
-                                <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2 max-h-40 overflow-y-auto">
+                                <AdminLabel className="tabular-nums">
+                                    Danh sách Serial cần đóng gói ({packTargetOrder.items.length})
+                                </AdminLabel>
+                                <div className="border border-slate-200 rounded-md bg-white divide-y divide-slate-200/80 max-h-44 overflow-y-auto">
                                     {packTargetOrder.items.map((it) => (
-                                        <div key={it.id} className="flex items-center justify-between text-xs">
-                                            <div>
-                                                <span className="font-mono font-bold text-rose-700">{it.serialNumber}</span>
-                                                <span className="text-gray-500 ml-2 font-medium">{it.productName}</span>
+                                        <div key={it.id} className="px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                                            <div className="min-w-0">
+                                                <span className="font-mono font-semibold tabular-nums text-slate-900">{it.serialNumber}</span>
+                                                <span className="text-slate-500 ml-2 truncate">{it.productName}</span>
                                             </div>
-                                            <span className="text-emerald-700 font-semibold flex items-center gap-1 text-[11px]">
-                                                <CheckCircle2 className="w-3 h-3" /> Đã kiểm ngoại quan
+                                            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 shrink-0">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                Đã kiểm
                                             </span>
                                         </div>
                                     ))}
@@ -1794,7 +1634,7 @@ export default function SupplierReturnList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Tên nhân viên kho phụ trách đóng gói:</AdminLabel>
+                                <AdminLabel>Nhân viên kho phụ trách đóng gói</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={packStaffName}
@@ -1803,7 +1643,7 @@ export default function SupplierReturnList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Quy cách & Ghi chú đóng gói:</AdminLabel>
+                                <AdminLabel>Quy cách & Ghi chú đóng gói</AdminLabel>
                                 <AdminTextarea
                                     rows={2}
                                     value={packNotes}
@@ -1813,7 +1653,7 @@ export default function SupplierReturnList() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 bg-gray-50 border-t">
+                        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-slate-50 border-t border-slate-200">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -1826,9 +1666,8 @@ export default function SupplierReturnList() {
                                 variant="primary"
                                 onClick={handleConfirmPackOrder}
                                 icon={CheckCircle2}
-                                className="!bg-amber-600 hover:!bg-amber-700 shadow-amber-600/30"
                             >
-                                Xác nhận đóng gói hoàn tất (Chuyển sang Chờ bàn giao ĐVVC)
+                                Xác nhận đã đóng gói
                             </AdminButton>
                         </div>
                     </div>
@@ -1839,32 +1678,27 @@ export default function SupplierReturnList() {
             {/* MODAL GIAI ĐOẠN 2 -> 3: BÀN GIAO CHO ĐVVC                */}
             {/* ======================================================== */}
             {isHandoverModalOpen && handoverTargetOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl w-[80vw] h-[80vh] shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-center px-6 py-4 border-b bg-indigo-50">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-indigo-600 text-white rounded-xl">
-                                    <Truck className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-base">
-                                        Giai đoạn 2 ➔ 3: Bàn giao đơn hoàn tới Đơn vị vận chuyển (ĐVVC)
-                                    </h3>
-                                    <p className="text-xs text-indigo-800">
-                                        Phiếu: <b>{handoverTargetOrder.code}</b> • Địa chỉ NCC: {handoverTargetOrder.supplierAddress || 'Kho trung tâm NCC'}
-                                    </p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-md max-w-2xl w-full max-h-[88vh] border border-slate-200 overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-200">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-base">
+                                    Bàn giao kiện hàng cho ĐVVC
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                    Phiếu: <strong className="font-mono text-slate-800">{handoverTargetOrder.code}</strong> · {handoverTargetOrder.supplierAddress || 'Kho trung tâm NCC'}
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsHandoverModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+                        <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
                             <div>
                                 <AdminLabel required>Đơn vị vận chuyển đối tác</AdminLabel>
                                 <AdminSelect
@@ -1880,32 +1714,33 @@ export default function SupplierReturnList() {
                                 </AdminSelect>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <AdminLabel required>Mã vận đơn (Tracking number)</AdminLabel>
+                                    <AdminLabel required>Mã vận đơn (Tracking)</AdminLabel>
                                     <AdminInput
                                         type="text"
                                         value={handoverTracking}
                                         onChange={(e) => setHandoverTracking(e.target.value)}
-                                        className="font-mono font-bold text-blue-700"
+                                        className="font-mono font-semibold tabular-nums"
                                         placeholder="Ví dụ: VTP-8849201948VN"
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <AdminLabel>SĐT tài xế / tổng đài ĐVVC:</AdminLabel>
+                                    <AdminLabel>SĐT tài xế / Tổng đài ĐVVC</AdminLabel>
                                     <AdminInput
                                         type="text"
                                         value={handoverPhone}
                                         onChange={(e) => setHandoverPhone(e.target.value)}
+                                        className="font-mono tabular-nums"
                                         placeholder="09xx..."
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <AdminLabel>Nhân viên kho bàn giao:</AdminLabel>
+                                <AdminLabel>Nhân viên kho bàn giao</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={handoverStaffName}
@@ -1914,7 +1749,7 @@ export default function SupplierReturnList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Ghi chú biên bản bàn giao:</AdminLabel>
+                                <AdminLabel>Ghi chú biên bản bàn giao</AdminLabel>
                                 <AdminTextarea
                                     rows={2}
                                     value={handoverNotes}
@@ -1923,7 +1758,7 @@ export default function SupplierReturnList() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 bg-gray-50 border-t">
+                        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-slate-50 border-t border-slate-200">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -1937,7 +1772,7 @@ export default function SupplierReturnList() {
                                 onClick={handleConfirmHandover}
                                 icon={Truck}
                             >
-                                Xác nhận bàn giao cho ĐVVC (Chuyển sang Đang vận chuyển)
+                                Xác nhận bàn giao ĐVVC
                             </AdminButton>
                         </div>
                     </div>
@@ -1948,42 +1783,35 @@ export default function SupplierReturnList() {
             {/* MODAL GIAI ĐOẠN 3 -> 4: ĐVVC GIAO TỚI NCC                 */}
             {/* ======================================================== */}
             {isDeliveredModalOpen && deliveredTargetOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl w-[80vw] h-[80vh] shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-center px-6 py-4 border-b bg-blue-50">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-blue-600 text-white rounded-xl">
-                                    <Building2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-base">
-                                        Giai đoạn 3 ➔ 4: Bàn giao kiện hàng tới Nhà cung cấp
-                                    </h3>
-                                    <p className="text-xs text-blue-800">
-                                        ĐVVC {deliveredTargetOrder.carrierName} • Vận đơn: {deliveredTargetOrder.trackingNumber}
-                                    </p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-md max-w-2xl w-full max-h-[88vh] border border-slate-200 overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-200">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-base">
+                                    Xác nhận đã giao tới nhà cung cấp
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                    ĐVVC {deliveredTargetOrder.carrierName} · Vận đơn: <span className="font-mono">{deliveredTargetOrder.trackingNumber}</span>
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsDeliveredModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
-                            <div className="p-3 bg-gray-50 rounded-xl border space-y-1">
-                                <div className="font-bold text-gray-900">Địa chỉ bàn giao Nhà cung cấp:</div>
-                                <p className="text-gray-700">{deliveredTargetOrder.supplierAddress || 'Địa chỉ kho đối tác đăng ký trong hợp đồng'}</p>
-                                <p className="text-gray-500">Đối tác: <b>{deliveredTargetOrder.supplierName}</b> ({deliveredTargetOrder.supplierPhone})</p>
+                        <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                            <div className="p-3.5 bg-slate-50 rounded-md border border-slate-200 space-y-1">
+                                <div className="font-semibold text-slate-900">{deliveredTargetOrder.supplierName}</div>
+                                <p className="text-slate-600">{deliveredTargetOrder.supplierAddress || 'Địa chỉ kho đối tác đăng ký trong hợp đồng'}</p>
+                                <p className="text-slate-500 font-mono tabular-nums">SĐT: {deliveredTargetOrder.supplierPhone}</p>
                             </div>
 
                             <div>
-                                <AdminLabel>
-                                    Đại diện bên nhận tại kho NCC (Ký nhận kiện hàng):
-                                </AdminLabel>
+                                <AdminLabel>Đại diện bên nhận tại kho NCC</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={deliveredRecipient}
@@ -1992,7 +1820,7 @@ export default function SupplierReturnList() {
                             </div>
 
                             <div>
-                                <AdminLabel>Biên bản / Ghi chú giao nhận thực tế:</AdminLabel>
+                                <AdminLabel>Ghi chú giao nhận thực tế</AdminLabel>
                                 <AdminTextarea
                                     rows={2}
                                     value={deliveredNotes}
@@ -2001,7 +1829,7 @@ export default function SupplierReturnList() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 bg-gray-50 border-t">
+                        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-slate-50 border-t border-slate-200">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -2015,7 +1843,7 @@ export default function SupplierReturnList() {
                                 onClick={handleConfirmDelivered}
                                 icon={CheckCircle2}
                             >
-                                Xác nhận ĐVVC đã giao tới Nhà cung cấp (Bắt đầu đối soát)
+                                Xác nhận đã tới NCC
                             </AdminButton>
                         </div>
                     </div>
@@ -2026,45 +1854,44 @@ export default function SupplierReturnList() {
             {/* MODAL GIAI ĐOẠN 4: QUẢN LÝ XÁC NHẬN HOÀN TẤT              */}
             {/* ======================================================== */}
             {isCompleteModalOpen && completeTargetOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl w-[80vw] h-[80vh] shadow-2xl border border-gray-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex justify-between items-center px-6 py-4 border-b bg-emerald-50">
-                            <div className="flex items-center gap-2.5">
-                                <div className="p-2 bg-emerald-600 text-white rounded-xl">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-gray-900 text-base">
-                                        Giai đoạn 4: Xác nhận hoàn hàng thành công & Đóng quy trình
-                                    </h3>
-                                    <p className="text-xs text-emerald-800">
-                                        Quản lý cửa hàng nhận phản hồi đối soát từ NCC và cập nhật trạng thái kết thúc
-                                    </p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-md max-w-2xl w-full max-h-[88vh] border border-slate-200 overflow-hidden flex flex-col">
+                        <div className="flex justify-between items-center px-5 py-4 border-b border-slate-200">
+                            <div>
+                                <h3 className="font-semibold text-slate-900 text-base">
+                                    Xác nhận hoàn tất quy trình hoàn hàng
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
+                                    Phiếu: <strong className="font-mono text-slate-800">{completeTargetOrder.code}</strong> · NCC: {completeTargetOrder.supplierName}
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsCompleteModalOpen(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg cursor-pointer"
+                                className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                             >
                                 <XCircle className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4 text-xs overflow-y-auto flex-1">
-                            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-emerald-950 space-y-1">
-                                <div className="font-bold">Đơn hoàn: {completeTargetOrder.code}</div>
-                                <div>Nhà cung cấp: <b>{completeTargetOrder.supplierName}</b></div>
-                                <div>
-                                    Số lượng: <b>{completeTargetOrder.totalQuantity} mã Serial</b> • Giá trị: <b>{formatVND(completeTargetOrder.totalEstimatedValue)}</b>
+                        <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md space-y-1 tabular-nums">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Số lượng hoàn</span>
+                                    <span className="font-semibold text-slate-900">{completeTargetOrder.totalQuantity} mã Serial</span>
                                 </div>
-                                <div className="text-[11px] text-emerald-800 font-medium">
-                                    Phương án xử lý: {RESOLUTION_LABELS[completeTargetOrder.resolution]}
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Giá trị hoàn trả</span>
+                                    <span className="font-semibold text-slate-900">{formatVND(completeTargetOrder.totalEstimatedValue)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Phương án xử lý</span>
+                                    <span className="font-medium text-slate-800">{RESOLUTION_LABELS[completeTargetOrder.resolution]}</span>
                                 </div>
                             </div>
 
                             <div>
-                                <AdminLabel>Quản lý cửa hàng phụ trách xác nhận:</AdminLabel>
+                                <AdminLabel>Quản lý phụ trách xác nhận</AdminLabel>
                                 <AdminInput
                                     type="text"
                                     value={completeManagerName}
@@ -2073,9 +1900,7 @@ export default function SupplierReturnList() {
                             </div>
 
                             <div>
-                                <AdminLabel>
-                                    Nội dung thông điệp xác nhận & Biên bản đối soát từ Nhà cung cấp:
-                                </AdminLabel>
+                                <AdminLabel>Nội dung phản hồi & Biên bản đối soát từ NCC</AdminLabel>
                                 <AdminTextarea
                                     rows={3}
                                     value={completeFeedback}
@@ -2084,20 +1909,16 @@ export default function SupplierReturnList() {
                                 />
                             </div>
 
-                            <div className="p-3 bg-gray-50 border rounded-xl text-gray-600">
-                                <p className="font-bold text-gray-800 flex items-center gap-1.5 mb-1">
-                                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                                    <span>Hành động hệ thống khi xác nhận:</span>
-                                </p>
-                                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                                    <li>Chuyển trạng thái đơn hoàn sang <b>"Đã hoàn hàng thành công" (COMPLETED)</b>.</li>
-                                    <li>Cập nhật toàn bộ các mã Serial liên quan sang trạng thái <b>"Đã trả về nhà cung cấp" (RETURNED)</b>.</li>
-                                    <li>Lưu log lịch sử và chính thức đóng quy trình hoàn trả.</li>
+                            <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-slate-600 text-[11px] space-y-1">
+                                <div className="font-semibold text-slate-800">Khi xác nhận hoàn tất:</div>
+                                <ul className="list-disc list-inside space-y-0.5">
+                                    <li>Chuyển trạng thái phiếu hoàn sang <strong>COMPLETED</strong>.</li>
+                                    <li>Cập nhật toàn bộ mã Serial liên quan sang trạng thái <strong>RETURNED</strong>.</li>
                                 </ul>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-2 px-6 py-3 bg-gray-50 border-t">
+                        <div className="flex items-center justify-end gap-2 px-5 py-3.5 bg-slate-50 border-t border-slate-200">
                             <AdminButton
                                 type="button"
                                 variant="secondary"
@@ -2110,9 +1931,9 @@ export default function SupplierReturnList() {
                                 variant="primary"
                                 onClick={handleConfirmComplete}
                                 icon={CheckCircle2}
-                                className="!bg-emerald-600 hover:!bg-emerald-700 shadow-emerald-600/30"
+                                className="!bg-emerald-600 hover:!bg-emerald-700"
                             >
-                                Xác nhận hoàn tất & Đóng quy trình hoàn hàng
+                                Xác nhận hoàn tất
                             </AdminButton>
                         </div>
                     </div>
@@ -2126,282 +1947,230 @@ export default function SupplierReturnList() {
                 <AdminModal
                     isOpen={isDetailModalOpen}
                     onClose={() => setIsDetailModalOpen(false)}
-                    title={`Chi tiết Đơn hoàn hàng NCC: ${selectedOrder.code}`}
-                    subtitle={`${selectedOrder.supplierName} • Tổng ${selectedOrder.totalQuantity} mã Serial (${formatVND(selectedOrder.totalEstimatedValue)})`}
+                    title={
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="font-mono tabular-nums text-slate-900">{selectedOrder.code}</span>
+                            <span className="text-slate-300">·</span>
+                            {renderReturnStatusIndicator(selectedOrder.status)}
+                        </div>
+                    }
+                    subtitle={`${selectedOrder.supplierName} • ${selectedOrder.totalQuantity} mã Serial`}
                     icon={RotateCcw}
                     size="2xl"
                     tabs={detailTabs}
                     activeTab={activeDetailTab}
                     onTabChange={(t) => setActiveDetailTab(t as any)}
-                    showFooter={false}
+                    showFooter={true}
+                    footer={
+                        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                            <div className="text-xs text-slate-500 tabular-nums">
+                                Tổng giá trị hoàn:{' '}
+                                <strong className="text-sm font-semibold text-slate-900">
+                                    {formatVND(selectedOrder.totalEstimatedValue)}
+                                </strong>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {selectedOrder.status === 'WAITING_PACK' && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => handleOpenPackModal(selectedOrder)}
+                                        icon={Box}
+                                    >
+                                        Kho đóng gói
+                                    </AdminButton>
+                                )}
+                                {selectedOrder.status === 'WAITING_HANDOVER' && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => handleOpenHandoverModal(selectedOrder)}
+                                        icon={Truck}
+                                    >
+                                        Bàn giao ĐVVC
+                                    </AdminButton>
+                                )}
+                                {selectedOrder.status === 'HANDED_OVER' && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => handleOpenDeliveredModal(selectedOrder)}
+                                        icon={Building2}
+                                    >
+                                        Đã giao tới NCC
+                                    </AdminButton>
+                                )}
+                                {selectedOrder.status === 'DELIVERED_SUPPLIER' && (
+                                    <AdminButton
+                                        type="button"
+                                        size="sm"
+                                        variant="primary"
+                                        onClick={() => handleOpenCompleteModal(selectedOrder)}
+                                        icon={CheckCircle2}
+                                        className="!bg-emerald-600 hover:!bg-emerald-700"
+                                    >
+                                        Xác nhận hoàn tất
+                                    </AdminButton>
+                                )}
+                                <AdminButton
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => setIsDetailModalOpen(false)}
+                                >
+                                    Đóng
+                                </AdminButton>
+                            </div>
+                        </div>
+                    }
                 >
                     {/* Tab 1: Info & Interactive Workflow */}
                     {activeDetailTab === 'info' && (
-                        <div className="space-y-6 p-2 text-xs">
-                            {/* Banner Trạng thái hiện tại */}
-                            {(() => {
-                                const conf = RETURN_STATUS_CONFIG[selectedOrder.status] || RETURN_STATUS_CONFIG.WAITING_PACK;
-                                const IconComp = conf.icon;
-                                return (
-                                    <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${conf.badgeClass}`}>
-                                        <div className="flex items-center gap-3">
-                                            <IconComp className="w-6 h-6 shrink-0" />
-                                            <div>
-                                                <div className="font-bold text-sm">
-                                                    {conf.stageName}: {conf.label}
-                                                </div>
-                                                <div className="text-[11.5px] opacity-90 mt-0.5">
-                                                    {conf.description}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Nút hành động trực tiếp */}
-                                        <div className="shrink-0 flex items-center gap-2">
-                                            {selectedOrder.status === 'WAITING_PACK' && (
-                                                <AdminButton
-                                                    type="button"
-                                                    onClick={() => handleOpenPackModal(selectedOrder)}
-                                                    className="!px-3.5 !py-1.5 !bg-amber-700 hover:!bg-amber-800 text-white rounded-lg font-bold shadow-xs transition-colors"
-                                                >
-                                                    Kho thực hiện đóng gói
-                                                </AdminButton>
-                                            )}
-                                            {selectedOrder.status === 'WAITING_HANDOVER' && (
-                                                <AdminButton
-                                                    type="button"
-                                                    onClick={() => handleOpenHandoverModal(selectedOrder)}
-                                                    className="!px-3.5 !py-1.5 !bg-indigo-700 hover:!bg-indigo-800 text-white rounded-lg font-bold shadow-xs transition-colors"
-                                                >
-                                                    Bàn giao cho ĐVVC
-                                                </AdminButton>
-                                            )}
-                                            {selectedOrder.status === 'HANDED_OVER' && (
-                                                <AdminButton
-                                                    type="button"
-                                                    onClick={() => handleOpenDeliveredModal(selectedOrder)}
-                                                    className="!px-3.5 !py-1.5 !bg-blue-700 hover:!bg-blue-800 text-white rounded-lg font-bold shadow-xs transition-colors"
-                                                >
-                                                    Cập nhật ĐVVC đã giao tới NCC
-                                                </AdminButton>
-                                            )}
-                                            {selectedOrder.status === 'DELIVERED_SUPPLIER' && (
-                                                <AdminButton
-                                                    type="button"
-                                                    onClick={() => handleOpenCompleteModal(selectedOrder)}
-                                                    className="!px-3.5 !py-1.5 !bg-emerald-700 hover:!bg-emerald-800 text-white rounded-lg font-bold shadow-xs transition-colors"
-                                                >
-                                                    Xác nhận hoàn tất quy trình
-                                                </AdminButton>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Stepper 4 giai đoạn tiến trình */}
-                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
-                                <div className="font-bold text-gray-800 text-xs uppercase tracking-wider flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-blue-600" />
-                                    <span>Tiến trình 4 giai đoạn thực tế</span>
+                        <div className="space-y-4 text-xs">
+                            {/* Flat 4-stage Progress Strip */}
+                            <div className="border border-slate-200 rounded-md bg-white grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 tabular-nums">
+                                <div className={`p-3 ${selectedOrder.createdAt ? 'bg-emerald-50/40' : ''}`}>
+                                    <div className="font-semibold text-slate-900">1. Lập đơn</div>
+                                    <div className="text-[11px] text-slate-600 mt-0.5 truncate">{selectedOrder.createdByName}</div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">{formatDateTime(selectedOrder.createdAt)}</div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-                                    {/* Bước 1 */}
-                                    <div
-                                        className={`p-3 rounded-xl border ${selectedOrder.createdAt
-                                            ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900'
-                                            : 'bg-white border-gray-200 text-gray-400'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-1.5 font-bold text-xs mb-1">
-                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                            <span>GĐ 1: Lập đơn & Serial</span>
-                                        </div>
-                                        <div className="text-[11px] text-gray-600">Bởi: {selectedOrder.createdByName}</div>
-                                        <div className="text-[10px] text-gray-400 mt-1">{formatDateTime(selectedOrder.createdAt)}</div>
+                                <div className={`p-3 ${selectedOrder.packedAt ? 'bg-emerald-50/40' : selectedOrder.status === 'WAITING_PACK' ? 'bg-amber-50/50' : ''}`}>
+                                    <div className="font-semibold text-slate-900">2. Đóng gói</div>
+                                    <div className="text-[11px] text-slate-600 mt-0.5 truncate">
+                                        {selectedOrder.packedByName || 'Chờ nhân viên kho'}
                                     </div>
-
-                                    {/* Bước 2 */}
-                                    <div
-                                        className={`p-3 rounded-xl border ${selectedOrder.packedAt
-                                            ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900'
-                                            : selectedOrder.status === 'WAITING_PACK'
-                                                ? 'bg-amber-50 border-amber-300 text-amber-900 ring-2 ring-amber-500/20'
-                                                : 'bg-white border-gray-200 text-gray-400'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-1.5 font-bold text-xs mb-1">
-                                            {selectedOrder.packedAt ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                            ) : (
-                                                <Box className="w-4 h-4 text-amber-600" />
-                                            )}
-                                            <span>GĐ 2: Đóng gói & Bàn giao</span>
-                                        </div>
-                                        <div className="text-[11px] text-gray-600">
-                                            {selectedOrder.packedByName ? `Kho: ${selectedOrder.packedByName}` : 'Chờ nhân viên kho'}
-                                        </div>
-                                        <div className="text-[10px] text-gray-400 mt-1">
-                                            {selectedOrder.packedAt ? formatDateTime(selectedOrder.packedAt) : '---'}
-                                        </div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">
+                                        {selectedOrder.packedAt ? formatDateTime(selectedOrder.packedAt) : '---'}
                                     </div>
+                                </div>
 
-                                    {/* Bước 3 */}
-                                    <div
-                                        className={`p-3 rounded-xl border ${selectedOrder.deliveredAt
-                                            ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900'
-                                            : selectedOrder.status === 'HANDED_OVER'
-                                                ? 'bg-blue-50 border-blue-300 text-blue-900 ring-2 ring-blue-500/20'
-                                                : 'bg-white border-gray-200 text-gray-400'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-1.5 font-bold text-xs mb-1">
-                                            {selectedOrder.deliveredAt ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                            ) : (
-                                                <Truck className="w-4 h-4 text-blue-600" />
-                                            )}
-                                            <span>GĐ 3: Vận chuyển ĐVVC</span>
-                                        </div>
-                                        <div className="text-[11px] text-gray-600">
-                                            {selectedOrder.carrierName ? selectedOrder.carrierName : 'Chưa giao ĐVVC'}
-                                        </div>
-                                        <div className="text-[10px] text-gray-400 mt-1">
-                                            {selectedOrder.deliveredAt
-                                                ? `Đã đến NCC: ${formatDateTime(selectedOrder.deliveredAt)}`
-                                                : selectedOrder.trackingNumber || '---'}
-                                        </div>
+                                <div className={`p-3 ${selectedOrder.deliveredAt ? 'bg-emerald-50/40' : selectedOrder.status === 'HANDED_OVER' ? 'bg-blue-50/50' : ''}`}>
+                                    <div className="font-semibold text-slate-900">3. Vận chuyển</div>
+                                    <div className="text-[11px] text-slate-600 mt-0.5 truncate">
+                                        {selectedOrder.carrierName || 'Chưa bàn giao ĐVVC'}
                                     </div>
+                                    <div className="text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                                        {selectedOrder.deliveredAt ? formatDateTime(selectedOrder.deliveredAt) : selectedOrder.trackingNumber || '---'}
+                                    </div>
+                                </div>
 
-                                    {/* Bước 4 */}
-                                    <div
-                                        className={`p-3 rounded-xl border ${selectedOrder.status === 'COMPLETED'
-                                            ? 'bg-emerald-50/60 border-emerald-300 text-emerald-900'
-                                            : selectedOrder.status === 'DELIVERED_SUPPLIER'
-                                                ? 'bg-purple-50 border-purple-300 text-purple-900 ring-2 ring-purple-500/20'
-                                                : 'bg-white border-gray-200 text-gray-400'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-1.5 font-bold text-xs mb-1">
-                                            {selectedOrder.status === 'COMPLETED' ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                            ) : (
-                                                <Building2 className="w-4 h-4 text-purple-600" />
-                                            )}
-                                            <span>GĐ 4: NCC & Hoàn tất</span>
-                                        </div>
-                                        <div className="text-[11px] text-gray-600">
-                                            {selectedOrder.status === 'COMPLETED' ? 'Đã hoàn hàng thành công' : 'Chờ đối soát & duyệt'}
-                                        </div>
-                                        <div className="text-[10px] text-gray-400 mt-1">
-                                            {selectedOrder.completedAt ? formatDateTime(selectedOrder.completedAt) : '---'}
-                                        </div>
+                                <div className={`p-3 ${selectedOrder.status === 'COMPLETED' ? 'bg-emerald-50/40' : selectedOrder.status === 'DELIVERED_SUPPLIER' ? 'bg-slate-50' : ''}`}>
+                                    <div className="font-semibold text-slate-900">4. NCC & Hoàn tất</div>
+                                    <div className="text-[11px] text-slate-600 mt-0.5">
+                                        {selectedOrder.status === 'COMPLETED' ? 'Đã hoàn tất' : 'Chờ đối soát'}
+                                    </div>
+                                    <div className="text-[11px] text-slate-400 mt-0.5">
+                                        {selectedOrder.completedAt ? formatDateTime(selectedOrder.completedAt) : '---'}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Details 2 Columns: NCC & Logistic Details */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
-                                    <div className="font-semibold text-gray-900 text-xs border-b pb-1.5 flex items-center gap-1.5">
-                                        <Building2 className="w-4 h-4 text-rose-600" />
-                                        <span>Thông tin Nhà cung cấp tiếp nhận</span>
+                            {/* Flat 2-column Specification Grid: NCC & Logistics */}
+                            <div className="border border-slate-200 rounded-md bg-white grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+                                <div className="p-4 space-y-2">
+                                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Nhà cung cấp tiếp nhận
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Đơn vị tiếp nhận:</span>
-                                        <span className="font-bold text-gray-900">{selectedOrder.supplierName}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Mã nhà cung cấp:</span>
-                                        <span className="font-mono font-semibold text-gray-800">{selectedOrder.supplierCode}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Số điện thoại NCC:</span>
-                                        <span className="text-gray-800">{selectedOrder.supplierPhone}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Email RMA:</span>
-                                        <span className="text-gray-800">{selectedOrder.supplierEmail}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-500">Địa chỉ kho NCC:</span>
-                                        <span className="text-gray-800 text-right max-w-xs">{selectedOrder.supplierAddress || 'Chưa cập nhật'}</span>
-                                    </div>
+                                    <dl className="space-y-1.5">
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Đơn vị</dt>
+                                            <dd className="font-semibold text-slate-900 text-right">{selectedOrder.supplierName}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Mã NCC</dt>
+                                            <dd className="font-mono tabular-nums text-slate-800">{selectedOrder.supplierCode}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Số điện thoại</dt>
+                                            <dd className="font-mono tabular-nums text-slate-800">{selectedOrder.supplierPhone}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Email RMA</dt>
+                                            <dd className="text-slate-700 truncate max-w-[200px]">{selectedOrder.supplierEmail}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500 shrink-0">Địa chỉ kho</dt>
+                                            <dd className="text-slate-700 text-right">{selectedOrder.supplierAddress || 'Chưa cập nhật'}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
 
-                                <div className="p-4 bg-white rounded-xl border border-gray-200 space-y-2">
-                                    <div className="font-semibold text-gray-900 text-xs border-b pb-1.5 flex items-center gap-1.5">
-                                        <Truck className="w-4 h-4 text-blue-600" />
-                                        <span>Thông tin Vận chuyển & Đối tác ĐVVC</span>
+                                <div className="p-4 space-y-2">
+                                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Vận chuyển & Phương án xử lý
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Đơn vị vận chuyển:</span>
-                                        <span className="font-bold text-blue-700">{selectedOrder.carrierName || 'Chưa bàn giao'}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Mã vận đơn (Tracking):</span>
-                                        <span className="font-mono font-bold text-gray-900">{selectedOrder.trackingNumber || '---'}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Liên hệ tài xế ĐVVC:</span>
-                                        <span className="text-gray-800">{selectedOrder.carrierPhone || '---'}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1 border-b border-gray-100">
-                                        <span className="text-gray-500">Phương án bồi hoàn:</span>
-                                        <span className="font-bold text-emerald-700">{RESOLUTION_LABELS[selectedOrder.resolution]}</span>
-                                    </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-500">Tổng giá trị dự tính:</span>
-                                        <span className="font-bold text-blue-700 font-mono">{formatVND(selectedOrder.totalEstimatedValue)}</span>
-                                    </div>
+                                    <dl className="space-y-1.5">
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Đơn vị vận chuyển</dt>
+                                            <dd className="font-medium text-slate-900">{selectedOrder.carrierName || 'Chưa bàn giao'}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Mã vận đơn</dt>
+                                            <dd className="font-mono font-semibold tabular-nums text-slate-900">{selectedOrder.trackingNumber || '---'}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">SĐT tài xế / ĐVVC</dt>
+                                            <dd className="font-mono tabular-nums text-slate-800">{selectedOrder.carrierPhone || '---'}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Hình thức xử lý</dt>
+                                            <dd className="font-medium text-slate-900 text-right">{RESOLUTION_LABELS[selectedOrder.resolution]}</dd>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <dt className="text-slate-500">Tổng giá trị hoàn</dt>
+                                            <dd className="font-semibold tabular-nums text-slate-900">{formatVND(selectedOrder.totalEstimatedValue)}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
                             </div>
 
-                            {/* Bảng kê chi tiết từng Serial */}
+                            {/* Compact Serial Items Table */}
                             <div className="space-y-2">
-                                <div className="font-bold text-gray-900 text-xs flex items-center justify-between">
-                                    <span className="flex items-center gap-1.5">
-                                        <Boxes className="w-4 h-4 text-indigo-600" />
-                                        <span>Danh sách cá thể Serial trong đơn ({selectedOrder.items.length} thiết bị):</span>
-                                    </span>
+                                <div className="text-xs font-semibold text-slate-800 tabular-nums">
+                                    Danh sách Serial hoàn trả ({selectedOrder.items.length})
                                 </div>
 
-                                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <div className="border border-slate-200 rounded-md overflow-x-auto bg-white">
                                     <table className="w-full text-xs">
-                                        <thead className="bg-gray-50 text-gray-600 border-b">
+                                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                                             <tr>
                                                 <th className="p-2.5 text-center w-10">STT</th>
                                                 <th className="p-2.5 text-left">Mã Serial lỗi</th>
-                                                <th className="p-2.5 text-left">Tên linh kiện / Thiết bị</th>
-                                                <th className="p-2.5 text-left">Mô tả tình trạng lỗi</th>
+                                                <th className="p-2.5 text-left">Linh kiện / Thiết bị</th>
+                                                <th className="p-2.5 text-left">Mô tả lỗi</th>
                                                 <th className="p-2.5 text-right">Đơn giá nhập</th>
-                                                <th className="p-2.5 text-center">Đóng gói kho</th>
+                                                <th className="p-2.5 text-left">Đóng gói</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100">
+                                        <tbody className="divide-y divide-slate-200/80">
                                             {selectedOrder.items.map((it, idx) => (
-                                                <tr key={it.id} className="hover:bg-gray-50/50">
-                                                    <td className="p-2.5 text-center text-gray-500 font-mono">{idx + 1}</td>
-                                                    <td className="p-2.5 font-mono font-bold text-rose-700">
+                                                <tr key={it.id} className="hover:bg-slate-50/70">
+                                                    <td className="p-2.5 text-center text-slate-400 font-mono tabular-nums">{idx + 1}</td>
+                                                    <td className="p-2.5 font-mono font-semibold tabular-nums text-slate-900 whitespace-nowrap">
                                                         {it.serialNumber}
                                                     </td>
                                                     <td className="p-2.5">
-                                                        <div className="font-medium text-gray-900">{it.productName}</div>
-                                                        <div className="text-[11px] text-gray-400 font-mono">{it.productCode}</div>
+                                                        <div className="font-medium text-slate-900">{it.productName}</div>
+                                                        <div className="text-[11px] text-slate-500 font-mono tabular-nums">{it.productCode}</div>
                                                     </td>
-                                                    <td className="p-2.5 text-gray-700 italic max-w-xs">{it.defectReason}</td>
-                                                    <td className="p-2.5 text-right font-mono font-bold text-gray-900">
+                                                    <td className="p-2.5 text-slate-600 max-w-xs">{it.defectReason}</td>
+                                                    <td className="p-2.5 text-right font-semibold tabular-nums text-slate-900 whitespace-nowrap">
                                                         {formatVND(it.productPrice)}
                                                     </td>
-                                                    <td className="p-2.5 text-center">
+                                                    <td className="p-2.5 whitespace-nowrap">
                                                         {it.isPacked || selectedOrder.packedAt ? (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                                                <Check className="w-3 h-3" /> Đã đóng
+                                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                Đã đóng
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                                                <Clock className="w-3 h-3" /> Chờ kho lấy
+                                                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                                Chờ kho
                                                             </span>
                                                         )}
                                                     </td>
@@ -2414,12 +2183,11 @@ export default function SupplierReturnList() {
 
                             {/* Phản hồi đối soát NCC nếu có */}
                             {selectedOrder.supplierFeedback && (
-                                <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                                    <div className="font-bold text-purple-900 flex items-center gap-1.5">
-                                        <Building2 className="w-4 h-4 text-purple-700" />
-                                        <span>Phản hồi & Biên bản đối soát từ Nhà cung cấp:</span>
+                                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md space-y-1">
+                                    <div className="font-semibold text-slate-800">
+                                        Phản hồi & Biên bản đối soát từ Nhà cung cấp
                                     </div>
-                                    <p className="text-purple-950 leading-relaxed">{selectedOrder.supplierFeedback}</p>
+                                    <p className="text-slate-700 leading-relaxed">{selectedOrder.supplierFeedback}</p>
                                 </div>
                             )}
                         </div>
@@ -2427,31 +2195,30 @@ export default function SupplierReturnList() {
 
                     {/* Tab 2: Audit History Log */}
                     {activeDetailTab === 'history' && (
-                        <div className="p-4 space-y-4 text-xs">
-                            <div className="font-bold text-gray-900 text-sm border-b pb-2 flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-blue-600" />
-                                <span>Nhật ký thời gian thực hiện qua các giai đoạn</span>
+                        <div className="space-y-4 text-xs">
+                            <div className="font-semibold text-slate-900 text-sm border-b border-slate-200 pb-2">
+                                Nhật ký thực hiện qua các giai đoạn
                             </div>
 
-                            <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-200">
+                            <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-px before:bg-slate-200">
                                 {selectedOrder.history.map((log) => (
                                     <div key={log.id} className="relative space-y-1">
-                                        <div className="absolute -left-6 top-0.5 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] ring-4 ring-white">
+                                        <div className="absolute -left-6 top-0.5 w-5 h-5 rounded-md bg-slate-800 text-white flex items-center justify-center font-semibold text-[10px] tabular-nums">
                                             {log.stageNumber}
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-bold text-gray-900 text-xs">{log.title}</span>
-                                            <span className="text-[11px] text-gray-400 font-mono">{formatDateTime(log.timestamp)}</span>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="font-semibold text-slate-900 text-xs">{log.title}</span>
+                                            <span className="text-[11px] text-slate-400 font-mono tabular-nums">{formatDateTime(log.timestamp)}</span>
                                         </div>
-                                        <div className="text-gray-600 flex items-center gap-2 text-[11px]">
-                                            <span className="font-semibold text-gray-800">{log.actorName}</span>
-                                            <span>•</span>
-                                            <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-mono font-medium">
+                                        <div className="text-slate-600 flex items-center gap-2 text-[11px]">
+                                            <span className="font-medium text-slate-800">{log.actorName}</span>
+                                            <span className="text-slate-300">·</span>
+                                            <span className="text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md font-mono text-[10px]">
                                                 {log.actorRole}
                                             </span>
                                         </div>
                                         {log.note && (
-                                            <p className="text-gray-700 bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-[11.5px] leading-relaxed mt-1">
+                                            <p className="text-slate-700 bg-slate-50 p-2.5 rounded-md border border-slate-200 text-xs leading-relaxed mt-1">
                                                 {log.note}
                                             </p>
                                         )}
@@ -2463,110 +2230,110 @@ export default function SupplierReturnList() {
 
                     {/* Tab 3: Official Printable Document */}
                     {activeDetailTab === 'print' && (
-                        <div className="p-4 space-y-4 text-xs">
-                            <div className="flex justify-end gap-2">
+                        <div className="space-y-3 text-xs">
+                            <div className="flex justify-end">
                                 <AdminButton
                                     type="button"
                                     onClick={() => window.print()}
                                     icon={Printer}
                                     variant="primary"
-                                    className="!text-xs !font-bold"
+                                    size="sm"
                                 >
-                                    In biên bản bàn giao này (A4)
+                                    In biên bản bàn giao (A4)
                                 </AdminButton>
                             </div>
 
                             {/* Khổ giấy A4 */}
-                            <div className="p-8 bg-white border border-gray-300 rounded-xl shadow-xs text-black font-serif space-y-5">
+                            <div className="p-6 sm:p-8 bg-white border border-slate-300 rounded-md text-black font-serif space-y-5">
                                 <div className="text-center space-y-1">
                                     <div className="font-bold text-xs uppercase tracking-wider">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                                     <div className="text-[11px] italic underline">Độc lập - Tự do - Hạnh phúc</div>
                                 </div>
 
                                 <div className="text-center pt-2">
-                                    <h2 className="text-lg font-bold uppercase tracking-wider text-gray-900 font-sans">
+                                    <h2 className="text-lg font-bold uppercase tracking-wider text-slate-900 font-sans">
                                         BIÊN BẢN XUẤT HOÀN TRẢ HÀNG LỖI TỚI NHÀ CUNG CẤP & BÀN GIAO ĐVVC
                                     </h2>
-                                    <div className="text-xs text-gray-600 font-sans mt-0.5">
+                                    <div className="text-xs text-slate-600 font-sans tabular-nums mt-0.5">
                                         Mã phiếu hoàn hàng: <b>{selectedOrder.code}</b>
                                         {selectedOrder.trackingNumber ? ` • Mã vận đơn: ${selectedOrder.trackingNumber}` : ''}
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 text-xs font-sans">
-                                    <div className="space-y-1 border p-3 rounded-lg">
-                                        <div className="font-bold text-gray-900 border-b pb-1">1. BÊN GIAO (CỬA HÀNG PCSTORE)</div>
+                                    <div className="space-y-1 border border-slate-300 p-3 rounded-md">
+                                        <div className="font-bold text-slate-900 border-b border-slate-200 pb-1">1. BÊN GIAO (CỬA HÀNG PCSTORE)</div>
                                         <div>Đơn vị: Hệ thống máy tính & thiết bị PCStore</div>
                                         <div>Đại diện kho: {selectedOrder.packedByName || selectedOrder.createdByName}</div>
                                         <div>Địa chỉ kho: Số 123 Đường Công Nghệ, Q. Cầu Giấy, Hà Nội</div>
                                         <div>Hotline: 1900 8888 • contact@pcstore.vn</div>
                                     </div>
 
-                                    <div className="space-y-1 border p-3 rounded-lg">
-                                        <div className="font-bold text-gray-900 border-b pb-1">2. BÊN NHẬN (NHÀ CUNG CẤP)</div>
+                                    <div className="space-y-1 border border-slate-300 p-3 rounded-md">
+                                        <div className="font-bold text-slate-900 border-b border-slate-200 pb-1">2. BÊN NHẬN (NHÀ CUNG CẤP)</div>
                                         <div>Nhà cung cấp: <b>{selectedOrder.supplierName}</b></div>
-                                        <div>Mã đối tác: {selectedOrder.supplierCode} • SĐT: {selectedOrder.supplierPhone}</div>
+                                        <div className="tabular-nums">Mã đối tác: {selectedOrder.supplierCode} • SĐT: {selectedOrder.supplierPhone}</div>
                                         <div>Địa chỉ kho nhận: {selectedOrder.supplierAddress || 'Theo hợp đồng cung ứng'}</div>
                                         <div>Phương án: <b>{RESOLUTION_LABELS[selectedOrder.resolution]}</b></div>
                                     </div>
                                 </div>
 
                                 {selectedOrder.carrierName && (
-                                    <div className="border p-2.5 rounded-lg font-sans text-xs bg-gray-50 flex items-center justify-between">
+                                    <div className="border border-slate-300 p-2.5 rounded-md font-sans text-xs bg-slate-50 flex items-center justify-between tabular-nums">
                                         <span><b>3. ĐƠN VỊ VẬN CHUYỂN TRUNG GIAN (ĐVVC):</b> {selectedOrder.carrierName}</span>
-                                        <span><b>Mã vận đơn (Tracking):</b> {selectedOrder.trackingNumber}</span>
+                                        <span><b>Mã vận đơn:</b> {selectedOrder.trackingNumber}</span>
                                     </div>
                                 )}
 
-                                <table className="w-full text-xs border-collapse border border-gray-400 font-sans">
+                                <table className="w-full text-xs border-collapse border border-slate-400 font-sans tabular-nums">
                                     <thead>
-                                        <tr className="bg-gray-100 font-bold">
-                                            <th className="border border-gray-400 p-2 text-center w-10">STT</th>
-                                            <th className="border border-gray-400 p-2 text-left">Tên sản phẩm / Linh kiện</th>
-                                            <th className="border border-gray-400 p-2 text-left">Mã Serial lỗi</th>
-                                            <th className="border border-gray-400 p-2 text-left">Tình trạng kiểm đếm</th>
-                                            <th className="border border-gray-400 p-2 text-right">Đơn giá</th>
+                                        <tr className="bg-slate-100 font-bold">
+                                            <th className="border border-slate-400 p-2 text-center w-10">STT</th>
+                                            <th className="border border-slate-400 p-2 text-left">Tên sản phẩm / Linh kiện</th>
+                                            <th className="border border-slate-400 p-2 text-left">Mã Serial lỗi</th>
+                                            <th className="border border-slate-400 p-2 text-left">Tình trạng kiểm đếm</th>
+                                            <th className="border border-slate-400 p-2 text-right">Đơn giá</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {selectedOrder.items.map((it, idx) => (
                                             <tr key={it.id}>
-                                                <td className="border border-gray-400 p-2 text-center">{idx + 1}</td>
-                                                <td className="border border-gray-400 p-2 font-medium">{it.productName}</td>
-                                                <td className="border border-gray-400 p-2 font-mono font-bold text-rose-700">
+                                                <td className="border border-slate-400 p-2 text-center">{idx + 1}</td>
+                                                <td className="border border-slate-400 p-2 font-medium">{it.productName}</td>
+                                                <td className="border border-slate-400 p-2 font-mono font-semibold text-slate-900">
                                                     {it.serialNumber}
                                                 </td>
-                                                <td className="border border-gray-400 p-2 text-gray-700">{it.defectReason}</td>
-                                                <td className="border border-gray-400 p-2 text-right font-mono font-bold">
+                                                <td className="border border-slate-400 p-2 text-slate-700">{it.defectReason}</td>
+                                                <td className="border border-slate-400 p-2 text-right font-mono font-semibold">
                                                     {formatVND(it.productPrice)}
                                                 </td>
                                             </tr>
                                         ))}
-                                        <tr className="bg-gray-50 font-bold">
-                                            <td colSpan={4} className="border border-gray-400 p-2 text-right">TỔNG GIÁ TRỊ BỒI HOÀN:</td>
-                                            <td className="border border-gray-400 p-2 text-right text-blue-700 font-mono">
+                                        <tr className="bg-slate-50 font-bold">
+                                            <td colSpan={4} className="border border-slate-400 p-2 text-right">TỔNG GIÁ TRỊ BỒI HOÀN:</td>
+                                            <td className="border border-slate-400 p-2 text-right text-slate-900 font-mono">
                                                 {formatVND(selectedOrder.totalEstimatedValue)}
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
 
-                                <div className="text-[11px] font-sans space-y-1 italic text-gray-700">
+                                <div className="text-[11px] font-sans space-y-1 italic text-slate-700">
                                     <p>* Cam kết đối soát: Nhà cung cấp có trách nhiệm kiểm tra ngoại quan, đối soát các mã serial trên kiện hàng thực nhận và phản hồi kết quả trong vòng 03 - 07 ngày làm việc kể từ thời điểm nhận hàng.</p>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-4 pt-10 text-center text-xs font-sans">
                                     <div className="space-y-16">
                                         <div className="font-bold">ĐẠI DIỆN BÊN GIAO (KHO CỬA HÀNG)</div>
-                                        <div className="font-mono italic text-gray-400">(Ký, ghi rõ họ tên)</div>
+                                        <div className="font-mono italic text-slate-400">(Ký, ghi rõ họ tên)</div>
                                     </div>
                                     <div className="space-y-16">
                                         <div className="font-bold">ĐẠI DIỆN ĐƠN VỊ VẬN CHUYỂN</div>
-                                        <div className="font-mono italic text-gray-400">(Ký, ghi rõ họ tên)</div>
+                                        <div className="font-mono italic text-slate-400">(Ký, ghi rõ họ tên)</div>
                                     </div>
                                     <div className="space-y-16">
                                         <div className="font-bold">ĐẠI DIỆN BÊN NHẬN (NHÀ CUNG CẤP)</div>
-                                        <div className="font-mono italic text-gray-400">(Ký, ghi rõ họ tên và đóng dấu)</div>
+                                        <div className="font-mono italic text-slate-400">(Ký, ghi rõ họ tên và đóng dấu)</div>
                                     </div>
                                 </div>
                             </div>

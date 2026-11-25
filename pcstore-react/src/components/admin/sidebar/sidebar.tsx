@@ -233,7 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
             {/* Brand Header */}
             <div className="h-16 border-b border-gray-100 flex items-center justify-between px-4">
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[linear-gradient(180deg,#2E9BFB_0%,#1D52E7_100%)] flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0">
+                    <div className="w-8 h-8 rounded-md bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                         PC
                     </div>
                     {!collapsed && (
@@ -260,9 +260,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                                     to={item.path}
                                     end={item.exact}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${isActive
-                                            ? 'bg-blue-50 text-blue-600 font-bold shadow-sm'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                        `flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-colors ${isActive
+                                            ? 'bg-blue-50 text-blue-600 font-semibold'
+                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                         }`
                                     }
                                 >
@@ -283,9 +283,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                                 <button
                                     type="button"
                                     onClick={() => toggleSubmenu(item.id)}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${isChildActive
-                                        ? 'bg-blue-50/70 text-blue-600 font-bold'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${isChildActive
+                                        ? 'bg-blue-50/70 text-blue-600 font-semibold'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
@@ -316,9 +316,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                                                             to={sub.path}
                                                             end={sub.exact}
                                                             className={({ isActive }) =>
-                                                                `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all duration-200 ${isActive
-                                                                    ? 'bg-blue-600 text-white font-semibold shadow-sm'
-                                                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                                                                `flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-colors ${isActive
+                                                                    ? 'bg-blue-600 text-white font-semibold'
+                                                                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                                                                 }`
                                                             }
                                                         >
@@ -339,22 +339,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
                 {/* Clickable area below nav items to toggle collapse/expand */}
                 <div
                     onClick={onToggle}
-                    className="flex-1 min-h-[60px] cursor-pointer rounded-xl transition-colors hover:bg-gray-50/80 flex items-end justify-center pb-3 my-2"
+                    className="flex-1 min-h-[60px] cursor-pointer rounded-md transition-colors hover:bg-slate-50/80 flex items-end justify-center pb-3 my-2"
                     title={collapsed ? 'Bấm vào đây để mở rộng Sidebar' : 'Bấm vào đây để thu gọn Sidebar'}
                 >
-                    <span className="text-[10px] font-bold text-gray-300 opacity-0 hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] font-semibold text-slate-300 opacity-0 hover:opacity-100 transition-opacity">
                         {collapsed ? '▶' : '◀ Click để thu gọn'}
                     </span>
                 </div>
             </div>
 
             {/* Footer Info */}
-            <div className="p-3 border-t border-gray-100 space-y-2">
+            <div className="p-3 border-t border-slate-100 space-y-2">
                 {!collapsed && (
                     <NavLink
                         to="/"
                         target="_blank"
-                        className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 hover:text-blue-600 hover:bg-slate-50 rounded-md transition-colors"
                     >
                         <Globe className="w-4 h-4" />
                         <span>Trang bán hàng</span>

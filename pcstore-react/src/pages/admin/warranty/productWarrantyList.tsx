@@ -317,19 +317,45 @@ export default function ProductWarrantyList() {
         addToast({ type: 'success', title: 'Thành công', message: 'Đã xuất file danh sách bảo hành' });
     };
 
+    // Restrained 6px status dot indicator (no colorful rounded-full pills)
+    const renderWarrantyStatusIndicator = (status: ProductWarrantyItem['status']) => {
+        if (status === 'ACTIVE') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                    <span>Còn hạn</span>
+                </span>
+            );
+        }
+        if (status === 'EXPIRING_SOON') {
+            return (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    <span>Sắp hết hạn</span>
+                </span>
+            );
+        }
+        return (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span>Đã hết hạn</span>
+            </span>
+        );
+    };
+
     // Table Columns
     const columns: Column<ProductWarrantyItem>[] = [
         {
             key: 'serialNumber',
-            header: 'Số Serial',
+            header: 'Serial & Chứng từ',
             render: (item) => (
-                <div>
-                    <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-900">
-                        <Barcode className="w-3.5 h-3.5 text-indigo-500" />
+                <div className="space-y-0.5 min-w-[155px]">
+                    <div className="flex items-center gap-1 font-mono text-xs font-semibold text-slate-900 tabular-nums whitespace-nowrap">
                         <span>{item.serialNumber}</span>
                         <button
+                            type="button"
                             onClick={() => handleCopy(item.serialNumber)}
-                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition"
+                            className="p-0.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                             title="Sao chép Serial"
                         >
                             {copiedSerial === item.serialNumber ? (
@@ -340,9 +366,8 @@ export default function ProductWarrantyList() {
                         </button>
                     </div>
                     {item.orderCode && (
-                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
-                            <span>Đơn:</span>
-                            <span className="font-mono text-indigo-600">{item.orderCode}</span>
+                        <div className="font-mono text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
+                            Đơn: {item.orderCode}
                         </div>
                     )}
                 </div>
@@ -350,17 +375,14 @@ export default function ProductWarrantyList() {
         },
         {
             key: 'productName',
-            header: 'Sản phẩm & Thương hiệu',
+            header: 'Sản phẩm & Chính sách',
             render: (item) => (
-                <div className="max-w-sm">
-                    <div className="font-medium text-slate-900 line-clamp-1">{item.productName}</div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
-                        {item.brandName && (
-                            <span className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[11px]">
-                                {item.brandName}
-                            </span>
-                        )}
-                        <span className="text-[11px] text-slate-400">Mã: {item.productCode || 'N/A'}</span>
+                <div className="max-w-[280px] space-y-0.5">
+                    <div className="text-xs font-medium text-slate-900 truncate" title={item.productName}>
+                        {item.productName}
+                    </div>
+                    <div className="text-[11px] text-slate-500 truncate tabular-nums" title={item.policyName}>
+                        {item.policyName} · {Math.round(item.durationDays / 30)} tháng
                     </div>
                 </div>
             ),
@@ -369,61 +391,35 @@ export default function ProductWarrantyList() {
             key: 'customerName',
             header: 'Khách hàng',
             render: (item) => (
-                <div>
-                    <div className="text-xs font-semibold text-slate-900">{item.customerName}</div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{item.customerPhone}</span>
-                    </div>
-                </div>
-            ),
-        },
-        {
-            key: 'policyName',
-            header: 'Gói bảo hành',
-            render: (item) => (
-                <div className="max-w-[200px]">
-                    <div className="text-xs font-medium text-slate-800 line-clamp-1">{item.policyName}</div>
-                    <div className="text-[11px] text-indigo-600 mt-0.5 font-medium">
-                        {item.durationDays} ngày ({Math.round(item.durationDays / 30)} tháng)
-                    </div>
+                <div className="space-y-0.5 max-w-[180px]">
+                    <div className="text-xs font-medium text-slate-900 truncate">{item.customerName}</div>
+                    <div className="text-xs font-mono text-slate-500 tabular-nums">{item.customerPhone}</div>
                 </div>
             ),
         },
         {
             key: 'remainingDays',
-            header: 'Thời hạn còn lại',
+            header: 'Thời hạn bảo hành',
+            align: 'right',
             render: (item) => {
-                const total = item.durationDays || 365;
-                const percent = Math.min(100, Math.max(0, Math.round((item.remainingDays / total) * 100)));
                 const isExpiring = item.status === 'EXPIRING_SOON';
                 const isExpired = item.status === 'EXPIRED';
 
                 return (
-                    <div className="w-36">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                            <span
-                                className={`font-semibold ${isExpired
-                                        ? 'text-rose-600'
-                                        : isExpiring
-                                            ? 'text-amber-600'
-                                            : 'text-emerald-700'
-                                    }`}
-                            >
-                                {isExpired ? 'Hết hạn' : `${item.remainingDays} ngày`}
-                            </span>
-                            <span className="text-[10px] text-slate-400">Đến {formatDate(item.endDate)}</span>
+                    <div className="space-y-0.5 text-right tabular-nums whitespace-nowrap">
+                        <div className="text-xs font-medium text-slate-900">
+                            {formatDate(item.startDate)} → {formatDate(item.endDate)}
                         </div>
-                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                            <div
-                                className={`h-full rounded-full transition-all duration-300 ${isExpired
-                                        ? 'bg-rose-500 w-full'
-                                        : isExpiring
-                                            ? 'bg-amber-500'
-                                            : 'bg-emerald-500'
-                                    }`}
-                                style={{ width: isExpired ? '100%' : `${percent}%` }}
-                            ></div>
+                        <div
+                            className={`text-[11px] ${
+                                isExpired
+                                    ? 'text-rose-600 font-medium'
+                                    : isExpiring
+                                    ? 'text-amber-700 font-medium'
+                                    : 'text-slate-500'
+                            }`}
+                        >
+                            {isExpired ? 'Đã hết hạn' : `Còn ${item.remainingDays} ngày`}
                         </div>
                     </div>
                 );
@@ -432,30 +428,7 @@ export default function ProductWarrantyList() {
         {
             key: 'status',
             header: 'Trạng thái',
-            render: (item) => {
-                if (item.status === 'ACTIVE') {
-                    return (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-300">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            Còn hạn
-                        </span>
-                    );
-                }
-                if (item.status === 'EXPIRING_SOON') {
-                    return (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-300">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                            Sắp hết hạn
-                        </span>
-                    );
-                }
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-300">
-                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                        Đã hết hạn
-                    </span>
-                );
-            },
+            render: (item) => renderWarrantyStatusIndicator(item.status),
         },
         {
             key: 'actions',
@@ -535,26 +508,21 @@ export default function ProductWarrantyList() {
     ];
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-5">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-                            <ShieldCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900">Quản lý bảo hành sản phẩm</h1>
-                            <p className="text-sm text-slate-500 mt-0.5">
-                                Tra cứu danh sách linh kiện và số Serial đã được cấp thẻ bảo hành chính hãng
-                            </p>
-                        </div>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        Quản lý bảo hành sản phẩm
+                    </h1>
+                    <p className="mt-0.5 text-sm text-slate-500 tabular-nums">
+                        {stats.total} serial · {stats.active} còn hạn · {stats.expiringSoon} sắp hết hạn
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <AdminButton
                         variant="secondary"
-                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+                        icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />}
                         onClick={fetchWarranties}
                     >
                         Làm mới
@@ -572,117 +540,56 @@ export default function ProductWarrantyList() {
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng serial bảo hành</p>
-                        <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
-                    </div>
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                        <Barcode className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đang còn hạn</p>
-                        <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.active}</p>
-                    </div>
-                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                        <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Sắp hết hạn (&le; 30 ngày)</p>
-                        <p className="text-2xl font-bold text-amber-600 mt-1">{stats.expiringSoon}</p>
-                    </div>
-                    <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                        <AlertTriangle className="w-6 h-6" />
-                    </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đã hết hạn</p>
-                        <p className="text-2xl font-bold text-rose-600 mt-1">{stats.expired}</p>
-                    </div>
-                    <div className="p-3 bg-rose-50 text-rose-600 rounded-lg">
-                        <XCircle className="w-6 h-6" />
-                    </div>
-                </div>
-            </div>
-
             {/* Quick Status Tabs */}
-            <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('ALL');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${quickStatusTab === 'ALL'
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    Tất cả sản phẩm ({stats.total})
-                </button>
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('ACTIVE');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${quickStatusTab === 'ACTIVE'
-                            ? 'bg-emerald-600 text-white shadow-sm'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Còn hạn ({stats.active})
-                </button>
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('EXPIRING_SOON');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${quickStatusTab === 'EXPIRING_SOON'
-                            ? 'bg-amber-600 text-white shadow-sm'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    Sắp hết hạn ({stats.expiringSoon})
-                </button>
-                <button
-                    onClick={() => {
-                        setQuickStatusTab('EXPIRED');
-                        setCurrentPage(1);
-                    }}
-                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${quickStatusTab === 'EXPIRED'
-                            ? 'bg-rose-600 text-white shadow-sm'
-                            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                        }`}
-                >
-                    <XCircle className="w-3.5 h-3.5" />
-                    Đã hết hạn ({stats.expired})
-                </button>
+            <div className="flex items-center gap-6 border-b border-slate-200 overflow-x-auto">
+                {(
+                    [
+                        { id: 'ALL', label: 'Tất cả sản phẩm', count: stats.total },
+                        { id: 'ACTIVE', label: 'Còn hạn', count: stats.active },
+                        { id: 'EXPIRING_SOON', label: 'Sắp hết hạn', count: stats.expiringSoon },
+                        { id: 'EXPIRED', label: 'Đã hết hạn', count: stats.expired },
+                    ] as const
+                ).map((tab) => {
+                    const isActive = quickStatusTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => {
+                                setQuickStatusTab(tab.id);
+                                setCurrentPage(1);
+                            }}
+                            className={`pb-2.5 text-sm font-medium flex items-center gap-2 border-b-2 -mb-px whitespace-nowrap transition-colors cursor-pointer focus-visible:outline-none focus-visible:text-blue-600 ${
+                                isActive
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-slate-500 hover:text-slate-900'
+                            }`}
+                        >
+                            <span>{tab.label}</span>
+                            <span
+                                className={`px-1.5 py-0.5 rounded-md text-xs font-medium tabular-nums ${
+                                    isActive ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+                                }`}
+                            >
+                                {tab.count}
+                            </span>
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Filter Section */}
-            <AdminFilter
-                fields={filterFields}
-                searchPlaceholder="Tìm theo số serial, tên sản phẩm, khách hàng, mã đơn..."
-                searchQuery={searchQuery}
-                onSearchChange={handleSearch}
-                values={filters}
-                onFilterChange={handleFilterChange}
-                onReset={handleFilterReset}
-            />
+            {/* Filter & Table */}
+            <div className="space-y-4">
+                <AdminFilter
+                    fields={filterFields}
+                    searchPlaceholder="Tìm theo số serial, tên sản phẩm, khách hàng, mã đơn..."
+                    searchQuery={searchQuery}
+                    onSearchChange={handleSearch}
+                    values={filters}
+                    onFilterChange={handleFilterChange}
+                    onReset={handleFilterReset}
+                />
 
-            {/* Table with Pagination */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <AdminTable
                     columns={columns}
                     data={warranties}
@@ -736,60 +643,56 @@ export default function ProductWarrantyList() {
                     <div className="space-y-4">
                         {detailTab === 'general' && (
                             <div className="space-y-4">
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between">
+                                {/* Flat Serial summary strip */}
+                                <div className="px-4 py-3 bg-slate-50 rounded-md border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                                     <div>
-                                        <div className="text-xs text-slate-500">Mã Số Serial</div>
-                                        <div className="text-lg font-mono font-bold text-slate-900 mt-0.5">
+                                        <div className="text-[11px] text-slate-500">Mã số Serial</div>
+                                        <div className="text-sm font-mono font-semibold text-slate-900 tabular-nums mt-0.5">
                                             {selectedWarranty.serialNumber}
                                         </div>
                                     </div>
-                                    <span
-                                        className={`px-3 py-1 rounded-full text-xs font-bold ${selectedWarranty.status === 'ACTIVE'
-                                                ? 'bg-emerald-100 text-emerald-800'
-                                                : selectedWarranty.status === 'EXPIRING_SOON'
-                                                    ? 'bg-amber-100 text-amber-800'
-                                                    : 'bg-rose-100 text-rose-800'
-                                            }`}
-                                    >
-                                        {selectedWarranty.status === 'ACTIVE'
-                                            ? 'CÒN HẠN BẢO HÀNH'
-                                            : selectedWarranty.status === 'EXPIRING_SOON'
-                                                ? 'SẮP HẾT HẠN'
-                                                : 'ĐÃ HẾT HẠN'}
-                                    </span>
+                                    {renderWarrantyStatusIndicator(selectedWarranty.status)}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Ngày bắt đầu hiệu lực</div>
-                                        <div className="text-sm font-semibold text-slate-900 mt-1">
+                                {/* Flat 2-column grid (no card-in-card) */}
+                                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs pt-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Ngày bắt đầu hiệu lực</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900 tabular-nums">
                                             {formatDate(selectedWarranty.startDate)}
-                                        </div>
+                                        </dd>
                                     </div>
-                                    <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                        <div className="text-xs text-slate-500">Ngày hết hạn bảo hành</div>
-                                        <div className="text-sm font-semibold text-rose-600 mt-1">
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Ngày hết hạn bảo hành</dt>
+                                        <dd className="mt-0.5 font-semibold text-slate-900 tabular-nums">
                                             {formatDate(selectedWarranty.endDate)}
-                                        </div>
+                                        </dd>
                                     </div>
-                                </div>
-
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500">Gói chính sách bảo hành áp dụng</div>
-                                    <div className="text-sm font-bold text-indigo-700 mt-1">
-                                        {selectedWarranty.policyName}
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Gói chính sách áp dụng</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900">
+                                            {selectedWarranty.policyName}
+                                        </dd>
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-1">
-                                        Thời hạn cam kết: {selectedWarranty.durationDays} ngày (~
-                                        {Math.round(selectedWarranty.durationDays / 30)} tháng) - Còn lại:{' '}
-                                        <span className="font-semibold text-emerald-600">
-                                            {selectedWarranty.remainingDays} ngày
-                                        </span>
+                                    <div className="border-b border-slate-100 pb-2">
+                                        <dt className="text-slate-500">Thời hạn cam kết &amp; còn lại</dt>
+                                        <dd className="mt-0.5 font-medium text-slate-900 tabular-nums">
+                                            {Math.round(selectedWarranty.durationDays / 30)} tháng ({selectedWarranty.durationDays} ngày) ·{' '}
+                                            <span
+                                                className={
+                                                    selectedWarranty.status === 'EXPIRED'
+                                                        ? 'text-rose-600 font-semibold'
+                                                        : 'text-emerald-700 font-semibold'
+                                                }
+                                            >
+                                                Còn {selectedWarranty.remainingDays} ngày
+                                            </span>
+                                        </dd>
                                     </div>
-                                </div>
+                                </dl>
 
                                 {selectedWarranty.note && (
-                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
+                                    <div className="px-3.5 py-2.5 bg-amber-50 rounded-md border border-amber-200 text-xs text-amber-900">
                                         <span className="font-semibold">Ghi chú:</span> {selectedWarranty.note}
                                     </div>
                                 )}
@@ -797,42 +700,41 @@ export default function ProductWarrantyList() {
                         )}
 
                         {detailTab === 'device' && (
-                            <div className="space-y-3">
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500">Tên thiết bị linh kiện</div>
-                                    <div className="text-sm font-bold text-slate-900 mt-0.5">
+                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs pt-1">
+                                <div className="sm:col-span-2 border-b border-slate-100 pb-2">
+                                    <dt className="text-slate-500">Tên thiết bị linh kiện</dt>
+                                    <dd className="mt-0.5 font-semibold text-slate-900">
                                         {selectedWarranty.productName}
-                                    </div>
-                                    <div className="text-xs text-slate-500 mt-1">
-                                        Thương hiệu: {selectedWarranty.brandName || 'Chính hãng'} | Mã:{' '}
-                                        {selectedWarranty.productCode || 'N/A'}
-                                    </div>
+                                    </dd>
+                                    <dd className="text-[11px] text-slate-500 mt-0.5 tabular-nums">
+                                        Thương hiệu: {selectedWarranty.brandName || 'Chính hãng'} · Mã SP: {selectedWarranty.productCode || 'N/A'}
+                                    </dd>
                                 </div>
 
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500">Thông tin khách hàng sở hữu</div>
-                                    <div className="text-sm font-bold text-slate-900 mt-0.5">
+                                <div className="border-b border-slate-100 pb-2">
+                                    <dt className="text-slate-500">Khách hàng sở hữu</dt>
+                                    <dd className="mt-0.5 font-medium text-slate-900">
                                         {selectedWarranty.customerName}
-                                    </div>
-                                    <div className="text-xs text-slate-600 mt-1 flex flex-col gap-0.5">
-                                        <span>Số điện thoại: {selectedWarranty.customerPhone}</span>
-                                        <span>Email: {selectedWarranty.customerEmail || 'Chưa cập nhật'}</span>
-                                    </div>
+                                    </dd>
+                                    <dd className="font-mono text-slate-500 tabular-nums mt-0.5">
+                                        {selectedWarranty.customerPhone}
+                                    </dd>
+                                    {selectedWarranty.customerEmail && (
+                                        <dd className="text-slate-500 mt-0.5">{selectedWarranty.customerEmail}</dd>
+                                    )}
                                 </div>
 
-                                <div className="p-3 bg-white rounded-lg border border-slate-200">
-                                    <div className="text-xs text-slate-500">Đơn hàng xuất bán</div>
-                                    <div className="text-sm font-mono font-bold text-indigo-600 mt-0.5">
+                                <div className="border-b border-slate-100 pb-2">
+                                    <dt className="text-slate-500">Đơn hàng xuất bán</dt>
+                                    <dd className="mt-0.5 font-mono font-semibold text-slate-900 tabular-nums">
                                         {selectedWarranty.orderCode}
-                                    </div>
-                                    <div className="text-xs text-slate-500 mt-1">
+                                    </dd>
+                                    <dd className="text-slate-500 mt-0.5 tabular-nums">
                                         Số lần đã tiếp nhận bảo hành:{' '}
-                                        <span className="font-semibold text-slate-900">
-                                            {selectedWarranty.requestsCount || 0} lần
-                                        </span>
-                                    </div>
+                                        <strong className="text-slate-900">{selectedWarranty.requestsCount || 0} lần</strong>
+                                    </dd>
                                 </div>
-                            </div>
+                            </dl>
                         )}
                     </div>
                 )}
@@ -856,10 +758,15 @@ export default function ProductWarrantyList() {
                 }
             >
                 <div className="space-y-4">
-                    <div className="p-3 bg-indigo-50 rounded-lg text-xs text-indigo-900">
-                        Thiết bị: <span className="font-bold">{selectedWarranty?.productName}</span>
-                        <br />
-                        Serial: <span className="font-mono font-bold">{selectedWarranty?.serialNumber}</span>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 space-y-1">
+                        <div>
+                            <span className="text-slate-500">Thiết bị:</span>{' '}
+                            <strong className="text-slate-900">{selectedWarranty?.productName}</strong>
+                        </div>
+                        <div>
+                            <span className="text-slate-500">Serial:</span>{' '}
+                            <strong className="font-mono text-slate-900 tabular-nums">{selectedWarranty?.serialNumber}</strong>
+                        </div>
                     </div>
 
                     <div>
@@ -907,22 +814,24 @@ export default function ProductWarrantyList() {
                 }
             >
                 <div className="space-y-4">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg grid grid-cols-2 gap-3 text-xs">
+                    <dl className="p-3.5 bg-slate-50 border border-slate-200 rounded-md grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div>
-                            <span className="text-slate-500">Khách hàng:</span>{' '}
-                            <span className="font-bold text-slate-800">{selectedWarranty?.customerName}</span>
-                            <br />
-                            <span className="text-slate-500">SĐT:</span>{' '}
-                            <span className="font-semibold text-slate-800">{selectedWarranty?.customerPhone}</span>
+                            <dt className="text-slate-500">Khách hàng</dt>
+                            <dd className="font-medium text-slate-900 mt-0.5">
+                                {selectedWarranty?.customerName}
+                            </dd>
+                            <dd className="font-mono text-slate-500 tabular-nums">
+                                {selectedWarranty?.customerPhone}
+                            </dd>
                         </div>
                         <div>
-                            <span className="text-slate-500">Serial lỗi:</span>{' '}
-                            <span className="font-mono font-bold text-indigo-600">{selectedWarranty?.serialNumber}</span>
-                            <br />
-                            <span className="text-slate-500">Gói BH:</span>{' '}
-                            <span className="font-semibold text-slate-800">{selectedWarranty?.policyName}</span>
+                            <dt className="text-slate-500">Serial &amp; Gói bảo hành</dt>
+                            <dd className="font-mono font-semibold text-slate-900 tabular-nums mt-0.5">
+                                {selectedWarranty?.serialNumber}
+                            </dd>
+                            <dd className="text-slate-600">{selectedWarranty?.policyName}</dd>
                         </div>
-                    </div>
+                    </dl>
 
                     <div>
                         <AdminLabel required>Mô tả hiện tượng lỗi khách hàng báo</AdminLabel>

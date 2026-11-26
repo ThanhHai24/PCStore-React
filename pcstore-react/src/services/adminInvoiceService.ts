@@ -1,6 +1,7 @@
 import { adminAnalyticsService } from './adminAnalyticsService';
 import { adminOrderService } from './adminOrderService';
 import { systemLogService } from './systemLogService';
+import { escapeHtml } from '../utils/sanitize';
 import type {
     AdminInvoice,
     CreateInvoicePayload,
@@ -827,6 +828,7 @@ export const adminInvoiceService = {
     printInvoice(invoice: AdminInvoice): void {
         const win = window.open('', '_blank', 'width=900,height=780');
         if (!win) return;
+        win.opener = null;
 
         const formattedDate = new Date(invoice.invoiceDate).toLocaleDateString('vi-VN', {
             day: '2-digit',
@@ -842,14 +844,14 @@ export const adminInvoiceService = {
                 <tr>
                     <td style="text-align:center;">${index + 1}</td>
                     <td>
-                        <div style="font-weight:600;color:#111827;">${item.productName}</div>
-                        <div style="font-size:11px;color:#6b7280;font-family:monospace;">Mã SP: ${item.productCode}</div>
+                        <div style="font-weight:600;color:#111827;">${escapeHtml(item.productName)}</div>
+                        <div style="font-size:11px;color:#6b7280;font-family:monospace;">Mã SP: ${escapeHtml(item.productCode)}</div>
                     </td>
                     <td style="text-align:center;">Chiếc</td>
                     <td style="text-align:center;font-weight:600;">${item.quantity}</td>
-                    <td style="text-align:right;">${formatVND(item.unitPrice)}</td>
-                    <td style="text-align:right;">${item.discountAmount > 0 ? '-' + formatVND(item.discountAmount) : '0 ₫'}</td>
-                    <td style="text-align:right;font-weight:700;">${formatVND(item.subtotal)}</td>
+                    <td style="text-align:right;">${escapeHtml(formatVND(item.unitPrice))}</td>
+                    <td style="text-align:right;">${item.discountAmount > 0 ? '-' + escapeHtml(formatVND(item.discountAmount)) : '0 ₫'}</td>
+                    <td style="text-align:right;font-weight:700;">${escapeHtml(formatVND(item.subtotal))}</td>
                 </tr>`
                       )
                       .join('')
@@ -857,21 +859,21 @@ export const adminInvoiceService = {
                 <tr>
                     <td style="text-align:center;">1</td>
                     <td>
-                        <div style="font-weight:600;">Thanh toán đơn hàng ${invoice.orderCode}</div>
+                        <div style="font-weight:600;">Thanh toán đơn hàng ${escapeHtml(invoice.orderCode)}</div>
                         <div style="font-size:11px;color:#6b7280;">Linh kiện máy tính & thiết bị PCStore</div>
                     </td>
                     <td style="text-align:center;">Gói</td>
                     <td style="text-align:center;font-weight:600;">1</td>
-                    <td style="text-align:right;">${formatVND(invoice.totalAmount)}</td>
-                    <td style="text-align:right;">${invoice.discountAmount > 0 ? '-' + formatVND(invoice.discountAmount) : '0 ₫'}</td>
-                    <td style="text-align:right;font-weight:700;">${formatVND(invoice.amount)}</td>
+                    <td style="text-align:right;">${escapeHtml(formatVND(invoice.totalAmount))}</td>
+                    <td style="text-align:right;">${invoice.discountAmount > 0 ? '-' + escapeHtml(formatVND(invoice.discountAmount)) : '0 ₫'}</td>
+                    <td style="text-align:right;font-weight:700;">${escapeHtml(formatVND(invoice.amount))}</td>
                 </tr>`;
 
         const html = `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<title>Hóa đơn ${invoice.invoiceCode} - PCStore</title>
+<title>Hóa đơn ${escapeHtml(invoice.invoiceCode)} - PCStore</title>
 <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Arial, sans-serif; }
     body { margin: 0; padding: 28px; color: #1f2937; background: #fff; font-size: 13px; line-height: 1.5; }
@@ -920,8 +922,8 @@ export const adminInvoiceService = {
         </div>
         <div style="text-align:right;">
             <div style="font-size:11px;color:#6b7280;">Mẫu số: <strong>1C26TPC</strong></div>
-            <div style="font-size:12px;">Số HĐ: <strong style="color:#1d4ed8;font-family:monospace;">${invoice.invoiceCode}</strong></div>
-            <div style="font-size:11px;color:#6b7280;margin-bottom:6px;">Đơn hàng: ${invoice.orderCode}</div>
+            <div style="font-size:12px;">Số HĐ: <strong style="color:#1d4ed8;font-family:monospace;">${escapeHtml(invoice.invoiceCode)}</strong></div>
+            <div style="font-size:11px;color:#6b7280;margin-bottom:6px;">Đơn hàng: ${escapeHtml(invoice.orderCode)}</div>
             <span class="status-stamp ${
                 invoice.status === 'PAID'
                     ? 'stamp-paid'
@@ -944,20 +946,20 @@ export const adminInvoiceService = {
     </div>
 
     <div class="meta-box">
-        <div class="meta-row"><div class="meta-label">Họ tên người mua hàng:</div><div class="meta-val"><strong>${invoice.customerName}</strong></div></div>
-        <div class="meta-row"><div class="meta-label">Số điện thoại:</div><div class="meta-val">${invoice.customerPhone}</div></div>
+        <div class="meta-row"><div class="meta-label">Họ tên người mua hàng:</div><div class="meta-val"><strong>${escapeHtml(invoice.customerName)}</strong></div></div>
+        <div class="meta-row"><div class="meta-label">Số điện thoại:</div><div class="meta-val">${escapeHtml(invoice.customerPhone)}</div></div>
         ${
             invoice.invoiceType === 'VAT_COMPANY' && invoice.companyName
-                ? `<div class="meta-row"><div class="meta-label">Tên đơn vị (Công ty):</div><div class="meta-val"><strong>${invoice.companyName}</strong></div></div>`
+                ? `<div class="meta-row"><div class="meta-label">Tên đơn vị (Công ty):</div><div class="meta-val"><strong>${escapeHtml(invoice.companyName)}</strong></div></div>`
                 : ''
         }
         ${
             invoice.taxCode
-                ? `<div class="meta-row"><div class="meta-label">Mã số thuế:</div><div class="meta-val" style="font-family:monospace;font-weight:700;">${invoice.taxCode}</div></div>`
+                ? `<div class="meta-row"><div class="meta-label">Mã số thuế:</div><div class="meta-val" style="font-family:monospace;font-weight:700;">${escapeHtml(invoice.taxCode)}</div></div>`
                 : ''
         }
-        <div class="meta-row"><div class="meta-label">Địa chỉ:</div><div class="meta-val">${invoice.companyAddress || invoice.customerAddress || 'Mua trực tiếp tại cửa hàng PCStore'}</div></div>
-        <div class="meta-row"><div class="meta-label">Hình thức thanh toán:</div><div class="meta-val">${invoice.paymentMethod}</div></div>
+        <div class="meta-row"><div class="meta-label">Địa chỉ:</div><div class="meta-val">${escapeHtml(invoice.companyAddress || invoice.customerAddress || 'Mua trực tiếp tại cửa hàng PCStore')}</div></div>
+        <div class="meta-row"><div class="meta-label">Hình thức thanh toán:</div><div class="meta-val">${escapeHtml(invoice.paymentMethod)}</div></div>
     </div>
 
     <table>
@@ -992,7 +994,7 @@ export const adminInvoiceService = {
         <div class="sig-col">
             <div class="sig-title">Người mua hàng</div>
             <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
-            <div>${invoice.customerName}</div>
+            <div>${escapeHtml(invoice.customerName)}</div>
         </div>
         <div class="sig-col">
             <div class="sig-title">Người bán hàng / Kế toán</div>

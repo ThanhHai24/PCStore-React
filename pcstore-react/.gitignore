@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
+#file check
+FE_Audit_Report_*.xlsx
+
 .env
 
 # Agent & skill files

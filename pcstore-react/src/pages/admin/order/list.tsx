@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { escapeHtml } from '../../../utils/sanitize';
 import {
     ShoppingCart,
     Plus,
@@ -812,19 +813,20 @@ export default function OrderList() {
             toast.error('Trình duyệt đã chặn cửa sổ bật lên (popup). Vui lòng cho phép popup để in hóa đơn.');
             return;
         }
+        printWindow.opener = null;
 
         const itemsHtml = (order.items || [])
             .map((item, index) => `
                 <tr>
                     <td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0;">${index + 1}</td>
                     <td style="padding: 8px; border: 1px solid #e2e8f0;">
-                        <div style="font-weight: 600; color: #1e293b;">${item.productName || item.productCode}</div>
-                        <div style="font-size: 11px; color: #64748b;">Mã SP: ${item.productCode}</div>
+                        <div style="font-weight: 600; color: #1e293b;">${escapeHtml(item.productName || item.productCode)}</div>
+                        <div style="font-size: 11px; color: #64748b;">Mã SP: ${escapeHtml(item.productCode)}</div>
                     </td>
-                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">${formatVND(item.unitPrice)}</td>
+                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0;">${escapeHtml(formatVND(item.unitPrice))}</td>
                     <td style="text-align: center; padding: 8px; border: 1px solid #e2e8f0; font-weight: 600;">${item.quantity}</td>
-                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0; color: #dc2626;">${item.discountAmount > 0 ? '-' + formatVND(item.discountAmount) : '0 ₫'}</td>
-                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; color: #0284c7;">${formatVND(item.subtotal)}</td>
+                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0; color: #dc2626;">${item.discountAmount > 0 ? '-' + escapeHtml(formatVND(item.discountAmount)) : '0 ₫'}</td>
+                    <td style="text-align: right; padding: 8px; border: 1px solid #e2e8f0; font-weight: 700; color: #0284c7;">${escapeHtml(formatVND(item.subtotal))}</td>
                 </tr>
             `)
             .join('');
@@ -834,7 +836,7 @@ export default function OrderList() {
             <html lang="vi">
             <head>
                 <meta charset="UTF-8">
-                <title>Hóa đơn bán hàng - ${order.code}</title>
+                <title>Hóa đơn bán hàng - ${escapeHtml(order.code)}</title>
                 <style>
                     body {
                         font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -954,24 +956,24 @@ export default function OrderList() {
                         <div style="font-size: 12px; color: #64748b;">Hotline: 1900 6868 | Email: contact@pcstore.vn</div>
                     </div>
                     <div style="text-align: right; font-size: 12px; color: #64748b;">
-                        <div>Loại đơn: <strong>${ORDER_TYPE_CONFIG[order.type]?.label || order.type}</strong></div>
-                        <div>Trạng thái: <strong>${ORDER_STATUS_CONFIG[order.status]?.label || order.status}</strong></div>
-                        <div>Ngày in: <strong>${new Date().toLocaleDateString('vi-VN')}</strong></div>
+                        <div>Loại đơn: <strong>${escapeHtml(ORDER_TYPE_CONFIG[order.type]?.label || order.type)}</strong></div>
+                        <div>Trạng thái: <strong>${escapeHtml(ORDER_STATUS_CONFIG[order.status]?.label || order.status)}</strong></div>
+                        <div>Ngày in: <strong>${escapeHtml(new Date().toLocaleDateString('vi-VN'))}</strong></div>
                     </div>
                 </div>
 
                 <div class="title">HÓA ĐƠN BÁN HÀNG & PHIẾU XUẤT KHO</div>
-                <div class="order-code">Số đơn hàng: <strong>${order.code}</strong> (Ngày tạo: ${formatDateTime(order.createdDate)})</div>
+                <div class="order-code">Số đơn hàng: <strong>${escapeHtml(order.code)}</strong> (Ngày tạo: ${escapeHtml(formatDateTime(order.createdDate))})</div>
 
                 <div class="info-grid">
                     <div>
-                        <div class="info-line"><span class="info-label">Khách hàng:</span> ${order.recipientName}</div>
-                        <div class="info-line"><span class="info-label">Số điện thoại:</span> ${order.recipientPhone}</div>
-                        <div class="info-line"><span class="info-label">Địa chỉ nhận hàng:</span> ${order.address}</div>
+                        <div class="info-line"><span class="info-label">Khách hàng:</span> ${escapeHtml(order.recipientName)}</div>
+                        <div class="info-line"><span class="info-label">Số điện thoại:</span> ${escapeHtml(order.recipientPhone)}</div>
+                        <div class="info-line"><span class="info-label">Địa chỉ nhận hàng:</span> ${escapeHtml(order.address)}</div>
                     </div>
                     <div>
-                        <div class="info-line"><span class="info-label">Tài khoản đặt:</span> ${order.customerUsername}</div>
-                        <div class="info-line"><span class="info-label">Ghi chú giao hàng:</span> ${order.note || 'Không có ghi chú'}</div>
+                        <div class="info-line"><span class="info-label">Tài khoản đặt:</span> ${escapeHtml(order.customerUsername)}</div>
+                        <div class="info-line"><span class="info-label">Ghi chú giao hàng:</span> ${escapeHtml(order.note || 'Không có ghi chú')}</div>
                     </div>
                 </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { escapeHtml } from '../../../utils/sanitize';
 import {
     Barcode,
     RefreshCw,
@@ -512,12 +513,13 @@ export default function ProductSerialList() {
     const handlePrintBarcode = (item: ProductSerialUI) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+        printWindow.opener = null;
 
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-                <title>In tem Serial - ${item.serialNumber}</title>
+                <title>In tem Serial - ${escapeHtml(item.serialNumber)}</title>
                 <style>
                     body {
                         margin: 0;
@@ -593,11 +595,11 @@ export default function ProductSerialList() {
             <body>
                 <div class="label-box">
                     <div class="store-name">PCStore Vietnam - Warranty Seal</div>
-                    <div class="product-name">${item.productName}</div>
-                    <div class="product-code">Mã SP: ${item.productCode}</div>
+                    <div class="product-name">${escapeHtml(item.productName)}</div>
+                    <div class="product-code">Mã SP: ${escapeHtml(item.productCode)}</div>
                     <div class="barcode-lines"></div>
-                    <div class="serial-text">${item.serialNumber}</div>
-                    <div class="status-tag">TÌNH TRẠNG: ${item.status}</div>
+                    <div class="serial-text">${escapeHtml(item.serialNumber)}</div>
+                    <div class="status-tag">TÌNH TRẠNG: ${escapeHtml(item.status)}</div>
                 </div>
             </body>
             </html>

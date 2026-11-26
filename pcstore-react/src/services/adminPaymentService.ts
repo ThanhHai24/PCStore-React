@@ -1,5 +1,6 @@
 import { adminOrderService } from './adminOrderService';
 import { systemLogService } from './systemLogService';
+import { escapeHtml } from '../utils/sanitize';
 import type {
     CreatePaymentPayload,
     PaymentFilterParams,
@@ -660,12 +661,13 @@ export const adminPaymentService = {
     printReceipt(txn: PaymentTransaction): void {
         const win = window.open('', '_blank', 'width=720,height=640');
         if (!win) return;
+        win.opener = null;
 
         const html = `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<title>Biên lai thanh toán ${txn.transactionCode}</title>
+<title>Biên lai thanh toán ${escapeHtml(txn.transactionCode)}</title>
 <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
     body { margin: 0; padding: 24px; color: #111827; font-size: 13px; }
@@ -687,18 +689,18 @@ export const adminPaymentService = {
             <div style="font-size:11px;color:#6b7280;">128 Thái Hà, Đống Đa, Hà Nội • 1900 1903</div>
         </div>
         <div style="text-align:right;font-size:11px;color:#4b5563;">
-            <div>Mã GD: <strong style="font-family:monospace;">${txn.transactionCode}</strong></div>
-            <div>${new Date(txn.paidAt).toLocaleString('vi-VN')}</div>
+            <div>Mã GD: <strong style="font-family:monospace;">${escapeHtml(txn.transactionCode)}</strong></div>
+            <div>${escapeHtml(new Date(txn.paidAt).toLocaleString('vi-VN'))}</div>
         </div>
     </div>
     <div class="title">BIÊN LAI XÁC NHẬN THANH TOÁN</div>
-    <div class="row"><span class="label">Mã đơn hàng:</span><span class="val">${txn.orderCode}</span></div>
-    <div class="row"><span class="label">Khách hàng:</span><span class="val">${txn.customerName} (${txn.customerPhone})</span></div>
-    <div class="row"><span class="label">Phương thức:</span><span class="val">${txn.method} ${txn.bankName ? `(${txn.bankName})` : ''}</span></div>
-    <div class="row"><span class="label">Mã tham chiếu cổng:</span><span class="val" style="font-family:monospace;">${txn.gatewayRef || '—'}</span></div>
-    <div class="row"><span class="label">Trạng thái:</span><span class="val">${txn.status}</span></div>
-    <div class="row"><span class="label">Số tiền thanh toán:</span><span class="val amount">${formatVND(txn.amount)}</span></div>
-    ${txn.note ? `<div class="row"><span class="label">Ghi chú:</span><span class="val" style="font-weight:500;">${txn.note}</span></div>` : ''}
+    <div class="row"><span class="label">Mã đơn hàng:</span><span class="val">${escapeHtml(txn.orderCode)}</span></div>
+    <div class="row"><span class="label">Khách hàng:</span><span class="val">${escapeHtml(txn.customerName)} (${escapeHtml(txn.customerPhone)})</span></div>
+    <div class="row"><span class="label">Phương thức:</span><span class="val">${escapeHtml(txn.method)} ${txn.bankName ? `(${escapeHtml(txn.bankName)})` : ''}</span></div>
+    <div class="row"><span class="label">Mã tham chiếu cổng:</span><span class="val" style="font-family:monospace;">${escapeHtml(txn.gatewayRef || '—')}</span></div>
+    <div class="row"><span class="label">Trạng thái:</span><span class="val">${escapeHtml(txn.status)}</span></div>
+    <div class="row"><span class="label">Số tiền thanh toán:</span><span class="val amount">${escapeHtml(formatVND(txn.amount))}</span></div>
+    ${txn.note ? `<div class="row"><span class="label">Ghi chú:</span><span class="val" style="font-weight:500;">${escapeHtml(txn.note)}</span></div>` : ''}
     <div class="footer">
         <div style="width:45%;"><strong>Người nộp tiền</strong><br/><span style="color:#6b7280;font-style:italic;">(Ký, ghi rõ họ tên)</span></div>
         <div style="width:45%;"><strong>Thu ngân / Kế toán</strong><br/><span style="color:#6b7280;font-style:italic;">(Ký, đóng dấu)</span></div>

@@ -1,6 +1,4 @@
 
-export const IMGBB_API_KEY_FALLBACK = 'eb6f7a446f476715af2c6cc0701de314';
-
 /**
  * Kiểm tra tính hợp lệ của file ảnh trước khi xử lý
  */
@@ -36,7 +34,7 @@ export const getImgbbApiKey = (): string => {
     return cleanedEnv;
   }
 
-  return IMGBB_API_KEY_FALLBACK.trim();
+  return '';
 };
 
 export interface ImgBBImageInfo {

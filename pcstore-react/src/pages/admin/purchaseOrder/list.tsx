@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { escapeHtml } from '../../../utils/sanitize';
 import {
     Package,
     Plus,
@@ -940,6 +941,7 @@ export default function PurchaseOrderList() {
     const handlePrintOrder = (order: PurchaseOrderItemUI) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+        printWindow.opener = null;
 
         const itemsHtml = order.items
             .map((it, idx) => {
@@ -948,17 +950,17 @@ export default function PurchaseOrderList() {
                 <tr>
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${idx + 1}</td>
                     <td style="border: 1px solid #ddd; padding: 8px;">
-                        <strong>${prod?.name || 'Sản phẩm #' + it.productId}</strong><br/>
-                        <small style="color: #666;">Mã: ${prod?.code || '---'}</small>
+                        <strong>${escapeHtml(prod?.name || 'Sản phẩm #' + it.productId)}</strong><br/>
+                        <small style="color: #666;">Mã: ${escapeHtml(prod?.code || '---')}</small>
                     </td>
-                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatVND(
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${escapeHtml(formatVND(
                     it.unitCost
-                )}</td>
+                ))}</td>
                     <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${it.quantityOrder
                     }</td>
-                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">${formatVND(
+                    <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">${escapeHtml(formatVND(
                         it.subtotal || it.quantityOrder * it.unitCost
-                    )}</td>
+                    ))}</td>
                 </tr>
             `;
             })
@@ -968,7 +970,7 @@ export default function PurchaseOrderList() {
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Đơn đặt hàng nhập - ${order.code}</title>
+                <title>Đơn đặt hàng nhập - ${escapeHtml(order.code)}</title>
                 <style>
                     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 24px; color: #333; }
                     .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; }
@@ -989,8 +991,8 @@ export default function PurchaseOrderList() {
                         <p style="margin: 4px 0;">Hệ thống phân phối & bán lẻ linh kiện máy tính PCStore</p>
                     </div>
                     <div style="text-align: right;">
-                        <h2 style="margin: 0; color: #333;">${order.code}</h2>
-                        <p style="margin: 4px 0; color: #666;">Trạng thái: ${STATUS_CONFIG[order.status]?.label || order.status
+                        <h2 style="margin: 0; color: #333;">${escapeHtml(order.code)}</h2>
+                        <p style="margin: 4px 0; color: #666;">Trạng thái: ${escapeHtml(STATUS_CONFIG[order.status]?.label || order.status)
             }</p>
                     </div>
                 </div>
@@ -998,17 +1000,17 @@ export default function PurchaseOrderList() {
                 <div class="grid">
                     <div class="card">
                         <h4 style="margin: 0 0 6px 0; color: #0284c7;">THÔNG TIN NHÀ CUNG CẤP</h4>
-                        <div><strong>${order.supplierName}</strong></div>
-                        <div>Mã NCC: ${order.supplierCode}</div>
-                        <div>Điện thoại: ${order.supplierPhone}</div>
-                        <div>Email: ${order.supplierEmail}</div>
+                        <div><strong>${escapeHtml(order.supplierName)}</strong></div>
+                        <div>Mã NCC: ${escapeHtml(order.supplierCode)}</div>
+                        <div>Điện thoại: ${escapeHtml(order.supplierPhone)}</div>
+                        <div>Email: ${escapeHtml(order.supplierEmail)}</div>
                     </div>
                     <div class="card">
                         <h4 style="margin: 0 0 6px 0; color: #0284c7;">THÔNG TIN ĐƠN ĐẶT HÀNG</h4>
-                        <div>Tên đơn: ${order.name}</div>
-                        <div>Ngày đặt hàng: ${order.orderDate}</div>
-                        <div>Dự kiến giao: ${order.expectedDate}</div>
-                        <div>Ghi chú: ${order.description}</div>
+                        <div>Tên đơn: ${escapeHtml(order.name)}</div>
+                        <div>Ngày đặt hàng: ${escapeHtml(order.orderDate)}</div>
+                        <div>Dự kiến giao: ${escapeHtml(order.expectedDate)}</div>
+                        <div>Ghi chú: ${escapeHtml(order.description)}</div>
                     </div>
                 </div>
 

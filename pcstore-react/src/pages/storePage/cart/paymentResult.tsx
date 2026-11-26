@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, XCircle, ShoppingBag, ArrowRight, RefreshCw } from 'lucide-react';
 import { useCart } from '../../../context/CartContext';
+import { orderService } from '../../../services/orderService';
 
 export const PaymentResult: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -19,20 +20,57 @@ export const PaymentResult: React.FC = () => {
     const amount = rawAmount ? Number(rawAmount) / 100 : 0;
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (responseCode === '00' || !responseCode) {
-                setSuccess(true);
-                setMessage('Thanh toán thành công qua VNPAY Sandbox!');
-                clearCart();
-            } else {
-                setSuccess(false);
-                setMessage('Thanh toán thất bại hoặc giao dịch bị hủy.');
-            }
-            setLoading(false);
-        }, 300);
+        let cancelled = false;
 
-        return () => clearTimeout(timer);
-    }, [responseCode, clearCart]);
+        const verifyPayment = async () => {
+            if (!responseCode || !txnRef) {
+                if (!cancelled) {
+                    setSuccess(false);
+                    setMessage('Thiếu thông tin xác thực giao dịch từ cổng thanh toán VNPAY.');
+                    setLoading(false);
+                }
+                return;
+            }
+
+            if (responseCode !== '00') {
+                if (!cancelled) {
+                    setSuccess(false);
+                    setMessage('Thanh toán thất bại hoặc giao dịch bị hủy.');
+                    setLoading(false);
+                }
+                return;
+            }
+
+            try {
+                // Verify order existence on server when user session is present
+                const order = await orderService.getOrderByCode(txnRef).catch(() => null);
+                if (cancelled) return;
+
+                if (order && order.status === 'CANCELLED') {
+                    setSuccess(false);
+                    setMessage('Đơn hàng đã bị hủy trên hệ thống.');
+                } else {
+                    setSuccess(true);
+                    setMessage('Thanh toán thành công qua VNPAY Sandbox!');
+                    clearCart();
+                }
+            } catch {
+                if (!cancelled) {
+                    setSuccess(false);
+                    setMessage('Không thể xác thực trạng thái giao dịch với máy chủ.');
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        verifyPayment();
+        return () => {
+            cancelled = true;
+        };
+    }, [responseCode, txnRef, clearCart]);
 
     if (loading) {
         return (

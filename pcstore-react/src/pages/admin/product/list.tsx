@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { sanitizeHtml } from '../../../utils/sanitize';
 import {
     Package,
     Plus,
@@ -2333,7 +2334,7 @@ export default function ProductList() {
                                         /<[a-z][\s\S]*>/i.test(selectedProduct.description) ? (
                                             <div
                                                 className="sun-editor-editable text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-md border border-slate-200"
-                                                dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedProduct.description) }}
                                             />
                                         ) : (
                                             <p className="text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-md border border-slate-200 whitespace-pre-wrap">

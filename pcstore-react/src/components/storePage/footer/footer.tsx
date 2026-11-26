@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { sanitizeUrl } from '../../../utils/sanitize';
 import { Phone, Mail, ChevronUp, Truck, RefreshCcw, CircleDollarSign, Headphones, MapPin, X } from 'lucide-react';
 import MessendgerLogo from "../../../assets/images/facebook_messenger.png";
 import ZaloLogo from "../../../assets/images/zalo.png";
@@ -152,7 +153,7 @@ export const Footer: React.FC = () => {
                                         <div>
                                             <span>{branch.address}</span>
                                             <a
-                                                href={branch.mapUrl}
+                                                href={sanitizeUrl(branch.mapUrl)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline font-medium block mt-0.5"

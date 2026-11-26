@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import type { SpecItem } from '../../../types/product';
 import { detectCategoryType } from '../../../config/specDefinitions';
+import { sanitizeHtml } from '../../../utils/sanitize';
 
 interface ProductTabsProps {
     specsTable: SpecItem[];
@@ -123,7 +124,7 @@ export const ProductTabs: React.FC<ProductTabsProps> = ({
                     ) : (
                         <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
                             {descriptionHtml ? (
-                                <div dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(descriptionHtml) }} />
                             ) : (
                                 <p className="text-gray-500 italic">Đang cập nhật bài viết mô tả cho sản phẩm này...</p>
                             )}

@@ -152,6 +152,8 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/api/products/${productId}/comments/${id}/replies`,
   },
   WARRANTIES: {
+    PUBLIC_LOOKUP: (serialNumber: string) =>
+      `${API_BASE_URL}/api/public/warranties/serials?serialNumber=${encodeURIComponent(serialNumber)}`,
     BY_ORDER: (orderId: string | number) => `${API_BASE_URL}/api/warranties?orderId=${orderId}`,
     REQUESTS: `${API_BASE_URL}/api/warranty-requests`,
   },

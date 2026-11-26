@@ -1,7 +1,4 @@
 import { API_ENDPOINTS } from '../config/api';
-import { fetchWithAuth } from './apiClient';
-import { adminWarrantyService } from './adminWarrantyService';
-import { adminGoodsReceiptService } from './adminGoodsReceiptService';
 import { productService, getDefaultImageForProduct, parseSpecsTable } from './productService';
 import { brandService } from './brandService';
 import { categoryService } from './categoryService';
@@ -9,6 +6,21 @@ import { orderFulfillmentService } from './orderFulfillmentService';
 import type { ProductWarrantyStatus, WarrantyTimelineEvent } from '../types/adminWarranty';
 import type { ProductResponse } from '../types/adminProduct';
 import type { SpecItem } from '../types/product';
+
+interface PublicWarrantyResponse {
+  serialNumber: string;
+  productId?: number;
+  productName?: string;
+  productCode?: string;
+  brandName?: string;
+  policyName?: string;
+  durationDays: number;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  status: string;
+  remainingDays: number;
+}
 
 export interface WarrantyLookupResult {
   serialNumber: string;
@@ -378,55 +390,45 @@ export const warrantyLookupService = {
     const cleanSerial = serialInput.trim();
     if (!cleanSerial) return null;
 
-    // 1. Thử tra cứu trực tiếp từ API Bảo hành (Warranty by Serial & History)
+    // 1. Tra cứu trực tiếp từ Public Warranty API (GET /api/public/warranties/serials?serialNumber=...)
     try {
-      const [warrantyItem, historyItem] = await Promise.all([
-        adminWarrantyService.getWarrantyBySerial(cleanSerial).catch(() => null),
-        adminWarrantyService.getWarrantyHistoryBySerial(cleanSerial).catch(() => null),
-      ]);
+      const res = await fetch(API_ENDPOINTS.WARRANTIES.PUBLIC_LOOKUP(cleanSerial), {
+        method: 'GET',
+      });
 
-      let matchedWarranty = warrantyItem;
-      if (!matchedWarranty) {
-        const listRes = await adminWarrantyService
-          .getAllWarranties({ serialNumber: cleanSerial, size: 10 })
-          .catch(() => null);
-        if (listRes?.content && listRes.content.length > 0) {
-          matchedWarranty =
-            listRes.content.find(
-              (w) => w.serialNumber.toLowerCase() === cleanSerial.toLowerCase()
-            ) || listRes.content[0];
-        }
-      }
-
-      if (matchedWarranty || historyItem) {
-        const pId = matchedWarranty?.productId;
-        const pCode = matchedWarranty?.productCode || historyItem?.productCode || 'SP-CHINH-HANG';
-        const pName =
-          matchedWarranty?.productName ||
-          historyItem?.productName ||
-          `Sản phẩm chính hãng (${cleanSerial})`;
+      if (res.ok) {
+        const pub: PublicWarrantyResponse = await res.json();
+        const pId = pub.productId;
+        const pCode = pub.productCode || 'SP-CHINH-HANG';
+        const pName = pub.productName || `Sản phẩm chính hãng (${pub.serialNumber || cleanSerial})`;
 
         const enriched = await enrichProductInfo(pId, pCode, pName);
         const prod = enriched.product;
 
-        const firstImgUrl = (matchedWarranty?.productImage || prod?.imageUrl || '')
-          .split(/[;,\n]/)[0]
-          ?.trim();
+        const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
         const image =
           firstImgUrl && !firstImgUrl.includes('example.com')
             ? firstImgUrl
             : getDefaultImageForProduct(prod || { name: pName });
 
-        const startIso =
-          matchedWarranty?.startDate ||
-          historyItem?.warrantyStartDate ||
-          historyItem?.purchaseDate ||
-          new Date().toISOString();
-        const endIso = matchedWarranty?.endDate || historyItem?.warrantyEndDate;
-        const durationDays = matchedWarranty?.durationDays || 1095;
-        const isVoid = matchedWarranty ? !matchedWarranty.active : false;
+        const startIso = pub.startDate || new Date().toISOString();
+        const endIso = pub.endDate;
+        const durationDays = pub.durationDays || 1095;
+        const upperStatus = (pub.status || '').toUpperCase();
+        const isVoid = upperStatus === 'VOID' || (!pub.active && upperStatus !== 'EXPIRED');
 
         const computed = computeWarrantyDatesAndStatus(startIso, durationDays, endIso, isVoid);
+        const remainingDays = typeof pub.remainingDays === 'number' ? Math.max(0, pub.remainingDays) : computed.remainingDays;
+        const warrantyStatus: ProductWarrantyStatus | 'VOID' =
+          upperStatus === 'VOID'
+            ? 'VOID'
+            : upperStatus === 'EXPIRED'
+              ? 'EXPIRED'
+              : upperStatus === 'EXPIRING_SOON'
+                ? 'EXPIRING_SOON'
+                : upperStatus === 'ACTIVE'
+                  ? 'ACTIVE'
+                  : computed.warrantyStatus;
 
         const specs = parseSpecsTable(prod?.specification, prod?.name || pName);
 
@@ -435,205 +437,45 @@ export const warrantyLookupService = {
             id: 'evt-init-warranty',
             timestamp: computed.startDate,
             title: 'Kích hoạt bảo hành điện tử chính hãng',
-            description: `Thiết bị mang mã Serial ${matchedWarranty?.serialNumber || historyItem?.serialNumber || cleanSerial} đã được xuất bán và kích hoạt gói "${matchedWarranty?.policyName || historyItem?.policyName || 'Bảo hành chính hãng 36 tháng'}".`,
+            description: `Thiết bị mang mã Serial ${pub.serialNumber || cleanSerial} đã được kích hoạt gói "${pub.policyName || `Bảo hành chính hãng ${computed.durationMonths} tháng`}".`,
             actor: 'Hệ thống Bảo hành PCStore',
             type: 'WARRANTY_ACTIVE',
           },
         ];
 
         return {
-          serialNumber: matchedWarranty?.serialNumber || historyItem?.serialNumber || cleanSerial,
+          serialNumber: pub.serialNumber || cleanSerial,
           serialStatus: 'SOLD',
-          warrantyId: matchedWarranty?.id,
-          warrantyStatus: computed.warrantyStatus,
-          active: !isVoid && computed.warrantyStatus !== 'EXPIRED',
+          warrantyStatus,
+          active: pub.active && warrantyStatus !== 'EXPIRED' && warrantyStatus !== 'VOID',
           startDate: computed.startDate,
           endDate: computed.endDate,
           durationDays: computed.durationDays,
           durationMonths: computed.durationMonths,
-          remainingDays: computed.remainingDays,
+          remainingDays,
           usedDays: computed.usedDays,
           progressPercent: computed.progressPercent,
-          policyName:
-            matchedWarranty?.policyName ||
-            historyItem?.policyName ||
-            `Bảo hành chính hãng ${computed.durationMonths} tháng`,
+          policyName: pub.policyName || `Bảo hành chính hãng ${computed.durationMonths} tháng`,
           policyDescription:
-            matchedWarranty?.note ||
             'Sản phẩm được hưởng đầy đủ chế độ bảo hành chính hãng tại tất cả trung tâm bảo hành PCStore trên toàn quốc.',
-          productId: prod?.id || matchedWarranty?.productId,
+          productId: prod?.id || pub.productId,
           productName: prod?.name || pName,
           productCode: prod?.code || pCode,
           productImage: image,
-          brandName:
-            matchedWarranty?.brandName ||
-            enriched.brandName ||
-            'Chính hãng',
-          categoryName:
-            matchedWarranty?.categoryName ||
-            enriched.categoryName ||
-            'Linh kiện & Thiết bị PC',
-          productPrice: prod?.price ?? undefined,
-          specifications: specs,
-          orderCode: matchedWarranty?.orderCode || historyItem?.orderCode,
-          purchaseDate: historyItem?.purchaseDate || computed.startDate,
-          customerName: matchedWarranty?.customerName || historyItem?.customerName,
-          customerPhoneMasked: maskPhone(
-            matchedWarranty?.customerPhone || historyItem?.customerPhone
-          ),
-          note: matchedWarranty?.note,
-          requestsCount:
-            matchedWarranty?.requestsCount ??
-            historyItem?.totalRequests ??
-            0,
-          timeline:
-            historyItem?.timeline && historyItem.timeline.length > 0
-              ? historyItem.timeline
-              : defaultTimeline,
-        };
-      }
-    } catch {
-      // Fallback sang nguồn tiếp theo nếu API admin yêu cầu quyền hoặc không tìm thấy
-    }
-
-    // 2. Thử tra cứu từ API Product Serials (/api/product-serials/by-serial/{serial}) hoặc Goods Receipts
-    try {
-      let rawSerial = await fetchWithAuth(
-        API_ENDPOINTS.ADMIN.PRODUCT_SERIAL_BY_NUMBER(cleanSerial)
-      )
-        .then((res) => (res.ok ? res.json() : null))
-        .catch(() => null);
-
-      let receiptCode: string | undefined;
-      let receiptDate: string | undefined;
-
-      if (!rawSerial) {
-        const grRes = await adminGoodsReceiptService.getAllReceipts({ size: 100 }).catch(() => null);
-        if (grRes?.content) {
-          for (const gr of grRes.content) {
-            for (const item of gr.items || []) {
-              const found = (item.productSerials || []).find(
-                (s) => s.serialNumber.toLowerCase() === cleanSerial.toLowerCase()
-              );
-              if (found) {
-                rawSerial = found;
-                receiptCode = gr.code;
-                receiptDate = gr.receivedAt || gr.createdDate || undefined;
-                break;
-              }
-            }
-            if (rawSerial) break;
-          }
-        }
-      }
-
-      if (rawSerial) {
-        const enriched = await enrichProductInfo(rawSerial.productId);
-        const prod = enriched.product;
-        const pName = prod?.name || `Sản phẩm #${rawSerial.productId}`;
-        const pCode = prod?.code || `SP-${rawSerial.productId}`;
-
-        const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
-        const image =
-          firstImgUrl && !firstImgUrl.includes('example.com')
-            ? firstImgUrl
-            : getDefaultImageForProduct(prod || { name: pName });
-
-        // Xác định thời hạn bảo hành dựa trên loại sản phẩm
-        const isLaptop = (prod?.productType || '').toUpperCase() === 'LAPTOP';
-        const durationDays = isLaptop ? 730 : 1095;
-        const startIso =
-          rawSerial.lastModifiedDate ||
-          rawSerial.createdDate ||
-          receiptDate ||
-          new Date().toISOString();
-        const isTerminated = Boolean(rawSerial.isTerminated || rawSerial.terminated);
-
-        const computed = computeWarrantyDatesAndStatus(
-          startIso,
-          durationDays,
-          undefined,
-          isTerminated
-        );
-
-        const specs = parseSpecsTable(prod?.specification, pName);
-
-        // Kiểm tra xem có thông tin đơn hàng trong orderFulfillmentService không
-        const fulfillments = orderFulfillmentService.getFulfillments();
-        let matchedOrderCode: string | undefined;
-        let matchedCustomerName: string | undefined;
-        let matchedCustomerPhone: string | undefined;
-
-        for (const f of fulfillments) {
-          const foundAssigned = (f.assignedSerials || []).find(
-            (as) => as.serialNumber.toLowerCase() === rawSerial.serialNumber.toLowerCase()
-          );
-          if (foundAssigned) {
-            matchedOrderCode = f.orderCode;
-            matchedCustomerName = f.customerName;
-            matchedCustomerPhone = f.customerPhone;
-            break;
-          }
-        }
-
-        const timeline: WarrantyTimelineEvent[] = [];
-        if (receiptDate || rawSerial.createdDate) {
-          timeline.push({
-            id: `tl-gr-${rawSerial.id}`,
-            timestamp: receiptDate || rawSerial.createdDate,
-            title: 'Nhập kho & Kiểm định chất lượng chính hãng',
-            description: `Thiết bị Serial ${rawSerial.serialNumber} được nhập kho và kiểm định đạt chuẩn kỹ thuật${receiptCode ? ` (Phiếu nhập: ${receiptCode})` : ''}.`,
-            actor: 'Bộ phận Kho vận PCStore',
-            type: 'SALE',
-          });
-        }
-        timeline.push({
-          id: `tl-act-${rawSerial.id}`,
-          timestamp: computed.startDate,
-          title: 'Kích hoạt thời hạn bảo hành điện tử',
-          description: `Áp dụng chính sách bảo hành chính hãng ${computed.durationMonths} tháng (${computed.durationDays} ngày) cho sản phẩm ${pName}.`,
-          actor: 'Hệ thống Bảo hành Điện tử PCStore',
-          type: 'WARRANTY_ACTIVE',
-        });
-
-        return {
-          serialNumber: rawSerial.serialNumber,
-          serialStatus: rawSerial.status || 'SOLD',
-          warrantyId: rawSerial.id,
-          warrantyStatus: computed.warrantyStatus,
-          active: !isTerminated && computed.warrantyStatus !== 'EXPIRED',
-          startDate: computed.startDate,
-          endDate: computed.endDate,
-          durationDays: computed.durationDays,
-          durationMonths: computed.durationMonths,
-          remainingDays: computed.remainingDays,
-          usedDays: computed.usedDays,
-          progressPercent: computed.progressPercent,
-          policyName: `Bảo hành chính hãng ${computed.durationMonths} tháng (Tiêu chuẩn nhà sản xuất)`,
-          policyDescription:
-            'Áp dụng bảo hành chính hãng 1 đổi 1 trong 30 ngày đầu nếu có lỗi phần cứng từ nhà sản xuất và hỗ trợ kỹ thuật trọn đời tại PCStore.',
-          productId: prod?.id || rawSerial.productId,
-          productName: pName,
-          productCode: pCode,
-          productImage: image,
-          brandName: enriched.brandName || 'Chính hãng',
+          brandName: pub.brandName || enriched.brandName || 'Chính hãng',
           categoryName: enriched.categoryName || 'Linh kiện & Thiết bị PC',
           productPrice: prod?.price ?? undefined,
           specifications: specs,
-          orderCode: matchedOrderCode,
           purchaseDate: computed.startDate,
-          customerName: matchedCustomerName,
-          customerPhoneMasked: maskPhone(matchedCustomerPhone),
-          goodsReceiptCode: receiptCode,
           requestsCount: 0,
-          timeline,
+          timeline: defaultTimeline,
         };
       }
     } catch {
-      // ignore and continue to local / demo lookup
+      // Fallback sang dữ liệu mẫu / local nếu public API chưa có bản ghi hoặc lỗi mạng
     }
 
-    // 3. Kiểm tra dữ liệu mẫu DEMO_SERIAL_RECORDS (không phân biệt hoa thường)
+    // 2. Kiểm tra dữ liệu mẫu DEMO_SERIAL_RECORDS (không phân biệt hoa thường)
     const upperKey = Object.keys(DEMO_SERIAL_RECORDS).find(
       (k) => k.toLowerCase() === cleanSerial.toLowerCase()
     );
@@ -753,67 +595,13 @@ export const warrantyLookupService = {
   },
 
   /**
-   * Lấy danh sách các mã Serial gợi ý (kết hợp dữ liệu thật từ hệ thống và mẫu thử nghiệm)
+   * Lấy danh sách các mã Serial gợi ý (không gọi API admin để tránh lỗi 401/403 ở trang public)
    */
   async getSuggestedSerials(): Promise<SuggestedSerialItem[]> {
     const suggestions: SuggestedSerialItem[] = [];
     const seen = new Set<string>();
 
-    // 1. Thử lấy từ danh sách bảo hành thật trong backend
-    try {
-      const wRes = await adminWarrantyService.getAllWarranties({ size: 6 }).catch(() => null);
-      if (wRes?.content) {
-        for (const w of wRes.content) {
-          if (w.serialNumber && !seen.has(w.serialNumber.toLowerCase())) {
-            seen.add(w.serialNumber.toLowerCase());
-            suggestions.push({
-              serialNumber: w.serialNumber,
-              productName: w.productName || 'Sản phẩm chính hãng',
-              statusLabel:
-                w.status === 'ACTIVE'
-                  ? 'Còn hạn'
-                  : w.status === 'EXPIRING_SOON'
-                  ? 'Sắp hết hạn'
-                  : 'Đã hết hạn',
-              statusType: w.status || 'ACTIVE',
-            });
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    // 2. Thử lấy thêm từ danh sách phiếu nhập kho (Goods Receipts) nếu có
-    if (suggestions.length < 4) {
-      try {
-        const grRes = await adminGoodsReceiptService.getAllReceipts({ size: 10 }).catch(() => null);
-        if (grRes?.content) {
-          for (const gr of grRes.content) {
-            for (const item of gr.items || []) {
-              for (const s of item.productSerials || []) {
-                if (s.serialNumber && !seen.has(s.serialNumber.toLowerCase())) {
-                  seen.add(s.serialNumber.toLowerCase());
-                  suggestions.push({
-                    serialNumber: s.serialNumber,
-                    productName: `Serial #${s.serialNumber}`,
-                    statusLabel: 'Còn hạn',
-                    statusType: 'ACTIVE',
-                  });
-                  if (suggestions.length >= 4) break;
-                }
-              }
-              if (suggestions.length >= 4) break;
-            }
-            if (suggestions.length >= 4) break;
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    // 3. Bổ sung các mã Serial mẫu đa dạng trạng thái
+    // Bổ sung các mã Serial mẫu đa dạng trạng thái
     const demoSuggestions: SuggestedSerialItem[] = [
       {
         serialNumber: 'GIGA-M27Q-FIFO-8821',

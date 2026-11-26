@@ -1078,10 +1078,31 @@ export default function ProductList() {
     };
 
     // Open Modals
-    const handleOpenDetail = (p: AdminProductItem) => {
+    const handleOpenDetail = async (p: AdminProductItem) => {
         setSelectedProduct(p);
         setActiveDetailTab('overview');
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminProductService.getProductById(p.numericId);
+            setSelectedProduct((prev) =>
+                prev && prev.numericId === fresh.id
+                    ? {
+                          ...prev,
+                          name: fresh.name,
+                          code: fresh.code,
+                          slug: fresh.slug,
+                          price: fresh.price ?? prev.price,
+                          description: fresh.description || '',
+                          specification: fresh.specification || '',
+                          status: fresh.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+                          productType: (fresh.productType as ProductType) || prev.productType,
+                      }
+                    : prev
+            );
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     const handleOpenEdit = (p: AdminProductItem, e?: React.MouseEvent) => {

@@ -163,10 +163,19 @@ export default function ProductWarrantyList() {
     };
 
     // Actions
-    const handleOpenDetail = (w: ProductWarrantyItem) => {
+    const handleOpenDetail = async (w: ProductWarrantyItem) => {
         setSelectedWarranty(w);
         setDetailTab('general');
         setIsDetailOpen(true);
+
+        try {
+            const fresh = await adminWarrantyService.getWarrantyById(w.id);
+            setSelectedWarranty((prev) =>
+                prev && prev.id === fresh.id ? { ...prev, ...fresh } : prev
+            );
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     const handleOpenExtend = (w: ProductWarrantyItem) => {

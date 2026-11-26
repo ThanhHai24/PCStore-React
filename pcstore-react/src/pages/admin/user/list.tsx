@@ -546,9 +546,16 @@ export const UserList: React.FC<UserListProps> = ({ defaultTab }) => {
     };
 
     // Open detail modal
-    const handleOpenDetailModal = (user: UserItem) => {
+    const handleOpenDetailModal = async (user: UserItem) => {
         setDetailUser(user);
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminUserService.getUserById(user.id);
+            setDetailUser(mapBackendUserToItem(fresh));
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     // Open edit modal

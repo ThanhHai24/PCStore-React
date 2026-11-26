@@ -461,10 +461,16 @@ export default function SupplierList() {
         setIsDetailModalOpen(true);
         setSupplierOrders([]);
 
-        // Tải đơn nhập hàng nếu có
+        // Tải chi tiết NCC mới nhất và đơn nhập hàng song song
         setIsLoadingOrders(true);
         try {
-            const orders = await adminSupplierService.getSupplierOrders(supplier.numericId);
+            const [fresh, orders] = await Promise.all([
+                adminSupplierService.getSupplierById(supplier.numericId).catch(() => null),
+                adminSupplierService.getSupplierOrders(supplier.numericId).catch(() => []),
+            ]);
+            if (fresh) {
+                setSelectedSupplier(mapBackendSupplierToItem(fresh));
+            }
             setSupplierOrders(orders);
         } catch {
             setSupplierOrders([]);

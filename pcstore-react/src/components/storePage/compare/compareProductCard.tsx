@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Package, ShoppingCart, Loader2 } from 'lucide-react';
 import type { Product } from '../../../types/product';
-import { mockProducts } from '../../../data/mockProducts';
+import { getProducts, formatProductToDetail } from '../../../services/productService';
 
 interface CompareProductCardProps {
     slotNumber: 1 | 2;
@@ -37,25 +37,32 @@ export const CompareProductCard: React.FC<CompareProductCardProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter static mockProducts when search query changes or dropdown opens
+    // Search products from backend API when query changes or dropdown opens
     useEffect(() => {
         if (!openDropdown) return;
 
+        let cancelled = false;
         setIsSearching(true);
         const timer = setTimeout(() => {
-            const query = search.trim().toLowerCase();
-            const filtered = mockProducts.filter(
-                (p) =>
-                    !query ||
-                    p.title.toLowerCase().includes(query) ||
-                    p.id.toLowerCase().includes(query) ||
-                    p.categoryName?.toLowerCase().includes(query)
-            );
-            setSearchResults(filtered);
-            setIsSearching(false);
-        }, 150);
+            getProducts({ keyword: search.trim() || undefined, page: 0, size: 15 })
+                .then((res) => {
+                    if (!cancelled) {
+                        const list = (res.content || []).map((item) => formatProductToDetail(item));
+                        setSearchResults(list);
+                    }
+                })
+                .catch(() => {
+                    if (!cancelled) setSearchResults([]);
+                })
+                .finally(() => {
+                    if (!cancelled) setIsSearching(false);
+                });
+        }, 200);
 
-        return () => clearTimeout(timer);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
     }, [search, openDropdown]);
 
     const handleChoose = (p: Product) => {

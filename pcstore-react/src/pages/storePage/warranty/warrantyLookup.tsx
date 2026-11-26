@@ -28,7 +28,6 @@ import {
 import {
   warrantyLookupService,
   type WarrantyLookupResult,
-  type SuggestedSerialItem,
 } from '../../../services/warrantyLookupService';
 
 const RECENT_SERIALS_STORAGE_KEY = 'pcstore_recent_warranty_serials';
@@ -76,10 +75,9 @@ export const WarrantyLookup: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedSerial, setCopiedSerial] = useState<boolean>(false);
 
-  const [suggestedSerials, setSuggestedSerials] = useState<SuggestedSerialItem[]>([]);
   const [recentSerials, setRecentSerials] = useState<string[]>([]);
 
-  // Load recent searched serials from localStorage & suggested serials
+  // Load recent searched serials from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_SERIALS_STORAGE_KEY);
@@ -92,10 +90,6 @@ export const WarrantyLookup: React.FC = () => {
     } catch {
       // ignore
     }
-
-    warrantyLookupService.getSuggestedSerials().then((list) => {
-      setSuggestedSerials(list);
-    });
   }, []);
 
   const saveRecentSerial = useCallback((serial: string) => {

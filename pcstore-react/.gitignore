@@ -24,7 +24,7 @@ dist-ssr
 *.sw?
 
 #file check
-FE_Audit_Report_*.xlsx
+FE_*.xlsx
 
 .env
 

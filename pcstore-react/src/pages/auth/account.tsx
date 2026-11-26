@@ -791,7 +791,13 @@ export const Account: React.FC = () => {
                                                 <div className="flex items-center space-x-2">
                                                     <button
                                                         type="button"
-                                                        onClick={() => setSelectedOrderDetail(ord)}
+                                                        onClick={() => {
+                                                            setSelectedOrderDetail(ord);
+                                                            orderService
+                                                                .getOrderById(ord.id)
+                                                                .then((fresh) => setSelectedOrderDetail(fresh))
+                                                                .catch(() => {});
+                                                        }}
                                                         className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                                     >
                                                         Xem chi tiết
@@ -843,6 +849,10 @@ export const Account: React.FC = () => {
                                                                     );
                                                                 } else {
                                                                     setSelectedOrderDetail(ord);
+                                                                    orderService
+                                                                        .getOrderById(ord.id)
+                                                                        .then((fresh) => setSelectedOrderDetail(fresh))
+                                                                        .catch(() => {});
                                                                 }
                                                             }}
                                                             className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold px-3 py-1.5 rounded-lg border border-amber-200 transition-colors cursor-pointer flex items-center gap-1"

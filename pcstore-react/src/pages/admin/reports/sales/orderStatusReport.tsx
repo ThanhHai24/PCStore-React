@@ -31,7 +31,6 @@ import { adminAnalyticsService } from '../../../../services/adminAnalyticsServic
 import { adminOrderService } from '../../../../services/adminOrderService';
 import type { OrderStatusDistributionDto } from '../../../../types/adminAnalytics';
 import {
-    MOCK_ORDER_STATUS_RECORDS,
     ORDER_STATUS_META,
     ORDER_STATUS_LIST,
     PAYMENT_METHOD_LABELS,
@@ -223,7 +222,7 @@ export default function OrderStatusReportPage() {
 
     // ==================== 3. FILTERED RECORDS ====================
     // Lọc theo ngày, kênh, phương thức thanh toán (dùng để đếm số lượng từng trạng thái trên thanh pill)
-    const activeSourceRecords = backendOrders && backendOrders.length > 0 ? backendOrders : MOCK_ORDER_STATUS_RECORDS;
+    const activeSourceRecords = backendOrders ?? [];
 
     const baseFilteredRecords = useMemo(() => {
         return activeSourceRecords.filter((rec) => {

@@ -356,9 +356,16 @@ export const CategoryList: React.FC = () => {
     };
 
     // Open detail modal
-    const handleOpenDetailModal = (category: CategoryItem) => {
+    const handleOpenDetailModal = async (category: CategoryItem) => {
         setDetailCategory(category);
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminCategoryService.getCategoryById(category.numericId);
+            setDetailCategory(mapBackendCategoryToItem(fresh));
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     // Open edit modal

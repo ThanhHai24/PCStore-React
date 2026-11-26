@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import type { Product } from '../../../types/product';
-import { mockProducts } from '../../../data/mockProducts';
+import { getProducts, getProductById, formatProductToDetail } from '../../../services/productService';
 import { useCart } from '../../../context/CartContext';
 import { Scale, ArrowLeftRight } from 'lucide-react';
 import CompareProductCard from '../../../components/storePage/compare/compareProductCard';
@@ -20,34 +20,50 @@ export const ProductCompare: React.FC = () => {
     const [loading1, setLoading1] = useState<boolean>(false);
     const [loading2, setLoading2] = useState<boolean>(false);
 
-    // Load product 1 from static mockProducts
+    // Load product 1 from backend API
     useEffect(() => {
+        if (!id1Param) {
+            setProduct1(null);
+            return;
+        }
+        let cancelled = false;
         setLoading1(true);
-        const timer = setTimeout(() => {
-            if (id1Param) {
-                const found = mockProducts.find((p) => p.id === id1Param || p.id === `prod-${id1Param}`);
-                setProduct1(found || mockProducts[0] || null);
-            } else {
-                setProduct1(mockProducts[0] || null);
-            }
-            setLoading1(false);
-        }, 100);
-        return () => clearTimeout(timer);
+        getProductById(id1Param)
+            .then((res) => {
+                if (!cancelled) setProduct1(formatProductToDetail(res));
+            })
+            .catch(() => {
+                if (!cancelled) setProduct1(null);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading1(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [id1Param]);
 
-    // Load product 2 from static mockProducts
+    // Load product 2 from backend API
     useEffect(() => {
+        if (!id2Param) {
+            setProduct2(null);
+            return;
+        }
+        let cancelled = false;
         setLoading2(true);
-        const timer = setTimeout(() => {
-            if (id2Param) {
-                const found = mockProducts.find((p) => p.id === id2Param || p.id === `prod-${id2Param}`);
-                setProduct2(found || mockProducts[1] || null);
-            } else {
-                setProduct2(mockProducts[1] || mockProducts[0] || null);
-            }
-            setLoading2(false);
-        }, 100);
-        return () => clearTimeout(timer);
+        getProductById(id2Param)
+            .then((res) => {
+                if (!cancelled) setProduct2(formatProductToDetail(res));
+            })
+            .catch(() => {
+                if (!cancelled) setProduct2(null);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading2(false);
+            });
+        return () => {
+            cancelled = true;
+        };
     }, [id2Param]);
 
     const updateUrlParams = (p1: Product | null, p2: Product | null) => {

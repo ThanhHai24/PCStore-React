@@ -369,10 +369,18 @@ export default function WarrantyRequestList() {
             align: 'right',
             render: (item) => (
                 <AdminActionDropdown
-                    onView={() => {
+                    onView={async () => {
                         setSelectedRequest(item);
                         setDetailTab('overview');
                         setIsDetailOpen(true);
+                        try {
+                            const fresh = await adminWarrantyService.getRequestById(item.id);
+                            setSelectedRequest((prev) =>
+                                prev && prev.id === fresh.id ? { ...prev, ...fresh } : prev
+                            );
+                        } catch {
+                            // Keep optimistic row data if detail fetch fails
+                        }
                     }}
                     viewLabel="Xem chi tiết phiếu"
                     actions={[

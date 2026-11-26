@@ -572,10 +572,17 @@ export default function OrderList() {
     };
 
     // Open Detail Modal
-    const handleOpenDetail = (order: OrderUI) => {
+    const handleOpenDetail = async (order: OrderUI) => {
         setSelectedOrder(order);
         setActiveDetailTab('overview');
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminOrderService.getOrderById(order.numericId);
+            setSelectedOrder(mapToUI(fresh));
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     // Open Create Order Modal

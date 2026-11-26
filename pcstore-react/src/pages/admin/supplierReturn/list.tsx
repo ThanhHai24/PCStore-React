@@ -64,8 +64,6 @@ import {
 import { AdminConfirmModal } from '../../../components/admin/common/confirmModal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminSupplierService } from '../../../services/adminSupplierService';
-import { adminProductService } from '../../../services/adminProductService';
-import { adminGoodsReceiptService } from '../../../services/adminGoodsReceiptService';
 import { supplierReturnService } from '../../../services/supplierReturnService';
 import type {
     SupplierReturnOrder,
@@ -219,11 +217,13 @@ export default function SupplierReturnList() {
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [pageSize, setPageSize] = useState<number>(10);
 
-    // Search, Filters & Pagination cho Kho hàng lỗi (Tab 2)
+    // Search, Filters & Pagination cho Kho hàng lỗi (Tab 2 - server-side GET /api/product-serials?status=PENDING_RETURN)
     const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
     const [candidateSupplierFilter, setCandidateSupplierFilter] = useState<string>('ALL');
     const [candidatePage, setCandidatePage] = useState<number>(1);
     const [candidatePageSize, setCandidatePageSize] = useState<number>(10);
+    const [candidateTotalElements, setCandidateTotalElements] = useState<number>(0);
+    const [candidateTotalPages, setCandidateTotalPages] = useState<number>(1);
 
     // Modal Details & Execution State
     const [selectedOrder, setSelectedOrder] = useState<SupplierReturnOrder | null>(null);
@@ -285,18 +285,26 @@ export default function SupplierReturnList() {
         }
 
         try {
-            // Lấy suppliers
-            const [supRes, candidates] = await Promise.all([
+            // Tab 1: GET /api/purchase-returns | Tab 2: GET /api/product-serials?status=PENDING_RETURN
+            const [supRes, pendingRes, orders] = await Promise.all([
                 adminSupplierService.getAllSuppliers({ size: 100 }).catch(() => ({ content: [] })),
-                supplierReturnService.getDefectiveSerialsCandidates(),
+                supplierReturnService
+                    .getPendingReturnSerials({
+                        page: Math.max(0, candidatePage - 1),
+                        size: candidatePageSize,
+                        supplierId: candidateSupplierFilter,
+                        keyword: candidateSearchQuery,
+                        status: 'PENDING_RETURN',
+                    })
+                    .catch(() => ({ items: [], totalElements: 0, totalPages: 1 })),
+                supplierReturnService.getOrders(),
             ]);
 
             const sups = supRes.content || [];
             setSuppliers(sups);
-            setDefectiveCandidates(candidates);
-
-            // Lấy orders từ service
-            const orders = supplierReturnService.getOrders();
+            setDefectiveCandidates(pendingRes.items);
+            setCandidateTotalElements(pendingRes.totalElements);
+            setCandidateTotalPages(pendingRes.totalPages || 1);
             setReturnOrders(orders);
         } catch (err: any) {
             toast.error(err?.message || 'Không thể tải dữ liệu hoàn trả hàng cho NCC.');
@@ -304,7 +312,7 @@ export default function SupplierReturnList() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [toast]);
+    }, [toast, candidatePage, candidatePageSize, candidateSupplierFilter, candidateSearchQuery]);
 
     useEffect(() => {
         loadAllData();
@@ -508,7 +516,7 @@ export default function SupplierReturnList() {
     /**
      * Xác nhận tạo đơn hoàn hàng (Giai đoạn 1: Quản lý cửa hàng hoàn tất & gửi kho)
      */
-    const handleConfirmCreateOrder = () => {
+    const handleConfirmCreateOrder = async () => {
         const sup = suppliers.find((s) => s.id === createSupplierId);
         if (!sup) {
             toast.warning('Vui lòng chọn Nhà cung cấp hợp lệ.');
@@ -524,7 +532,7 @@ export default function SupplierReturnList() {
 
         setIsSubmittingCreate(true);
         try {
-            const newOrder = supplierReturnService.createOrder({
+            const newOrder = await supplierReturnService.createOrder({
                 supplierId: sup.id,
                 supplierName: sup.name,
                 supplierCode: sup.code,
@@ -562,10 +570,10 @@ export default function SupplierReturnList() {
         setIsPackModalOpen(true);
     };
 
-    const handleConfirmPackOrder = () => {
+    const handleConfirmPackOrder = async () => {
         if (!packTargetOrder) return;
         try {
-            const updated = supplierReturnService.confirmPacking(packTargetOrder.id, {
+            const updated = await supplierReturnService.confirmPacking(packTargetOrder.id, {
                 warehouseStaff: packStaffName,
                 warehouseNotes: packNotes,
                 packedItemIds: packedSerialItemIds,
@@ -597,7 +605,7 @@ export default function SupplierReturnList() {
         setIsHandoverModalOpen(true);
     };
 
-    const handleConfirmHandover = () => {
+    const handleConfirmHandover = async () => {
         if (!handoverTargetOrder) return;
         if (!handoverTracking.trim()) {
             toast.warning('Vui lòng nhập Mã vận đơn (Tracking number).');
@@ -605,7 +613,7 @@ export default function SupplierReturnList() {
         }
 
         try {
-            const updated = supplierReturnService.handoverToCarrier(handoverTargetOrder.id, {
+            const updated = await supplierReturnService.handoverToCarrier(handoverTargetOrder.id, {
                 carrierName: handoverCarrier,
                 trackingNumber: handoverTracking.trim(),
                 carrierPhone: handoverPhone.trim(),
@@ -635,10 +643,10 @@ export default function SupplierReturnList() {
         setIsDeliveredModalOpen(true);
     };
 
-    const handleConfirmDelivered = () => {
+    const handleConfirmDelivered = async () => {
         if (!deliveredTargetOrder) return;
         try {
-            const updated = supplierReturnService.confirmDeliveredToSupplier(deliveredTargetOrder.id, {
+            const updated = await supplierReturnService.confirmDeliveredToSupplier(deliveredTargetOrder.id, {
                 receivedByAtSupplier: deliveredRecipient,
                 deliveryNotes: deliveredNotes,
             });
@@ -667,10 +675,10 @@ export default function SupplierReturnList() {
         setIsCompleteModalOpen(true);
     };
 
-    const handleConfirmComplete = () => {
+    const handleConfirmComplete = async () => {
         if (!completeTargetOrder) return;
         try {
-            const updated = supplierReturnService.completeOrder(completeTargetOrder.id, {
+            const updated = await supplierReturnService.completeOrder(completeTargetOrder.id, {
                 managerName: completeManagerName,
                 supplierFeedbackNote: completeFeedback,
             });
@@ -1215,9 +1223,9 @@ export default function SupplierReturnList() {
                         }`}
                     >
                         <span>Kho linh kiện lỗi chờ hoàn trả</span>
-                        {kpiStats.activeDefectiveSerials > 0 && (
+                        {candidateTotalElements > 0 && (
                             <span className="text-xs px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 tabular-nums font-medium">
-                                {kpiStats.activeDefectiveSerials}
+                                {candidateTotalElements}
                             </span>
                         )}
                     </button>
@@ -1360,14 +1368,14 @@ export default function SupplierReturnList() {
 
                     <AdminTable<DefectiveSerialCandidate>
                         columns={candidateColumns}
-                        data={paginatedCandidates}
+                        data={defectiveCandidates}
                         rowKey="serialNumber"
                         loading={isLoading}
-                        emptyText="Hiện tại không có mã Serial lỗi nào đang tồn đọng trong kho phù hợp với bộ lọc."
+                        emptyText="Hiện tại không có mã Serial lỗi nào ở trạng thái chờ hoàn hàng (PENDING_RETURN)."
                         emptyIcon={CheckCircle2}
                         currentPage={candidatePage}
-                        totalPages={totalCandidatePages}
-                        totalItems={filteredCandidates.length}
+                        totalPages={candidateTotalPages}
+                        totalItems={candidateTotalElements}
                         pageSize={candidatePageSize}
                         pageSizeOptions={[10, 20, 30]}
                         onPageChange={setCandidatePage}

@@ -472,56 +472,10 @@ export const warrantyLookupService = {
         };
       }
     } catch {
-      // Fallback sang dữ liệu mẫu / local nếu public API chưa có bản ghi hoặc lỗi mạng
+      // Public API unreachable or serial not found
     }
 
-    // 2. Kiểm tra dữ liệu mẫu DEMO_SERIAL_RECORDS (không phân biệt hoa thường)
-    const upperKey = Object.keys(DEMO_SERIAL_RECORDS).find(
-      (k) => k.toLowerCase() === cleanSerial.toLowerCase()
-    );
-    if (upperKey) {
-      const demo = DEMO_SERIAL_RECORDS[upperKey];
-      const startIso = new Date(
-        Date.now() - demo.startOffsetDays * 24 * 60 * 60 * 1000
-      ).toISOString();
-      const computed = computeWarrantyDatesAndStatus(
-        startIso,
-        demo.durationDays,
-        undefined,
-        demo.isVoid
-      );
-
-      // Thử làm giàu thêm ảnh/giá từ backend nếu có
-      const enriched = await enrichProductInfo(
-        demo.productId,
-        demo.productCode,
-        demo.productName
-      );
-      const prod = enriched.product;
-      const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
-      const image =
-        firstImgUrl && !firstImgUrl.includes('example.com')
-          ? firstImgUrl
-          : demo.productImage;
-
-      return {
-        ...demo,
-        productId: prod?.id || demo.productId,
-        productImage: image,
-        productPrice: prod?.price ?? demo.productPrice,
-        startDate: computed.startDate,
-        endDate: computed.endDate,
-        durationDays: computed.durationDays,
-        durationMonths: computed.durationMonths,
-        remainingDays: computed.remainingDays,
-        usedDays: computed.usedDays,
-        progressPercent: computed.progressPercent,
-        warrantyStatus: computed.warrantyStatus,
-        purchaseDate: computed.startDate,
-      };
-    }
-
-    // 4. Kiểm tra trong OrderFulfillmentService (các serial đã gán trong đơn hàng)
+    // 2. Kiểm tra trong OrderFulfillmentService (các serial đã gán trong đơn hàng)
     try {
       const fulfillments = orderFulfillmentService.getFulfillments();
       for (const f of fulfillments) {

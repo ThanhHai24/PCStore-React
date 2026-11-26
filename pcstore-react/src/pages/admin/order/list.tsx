@@ -267,6 +267,8 @@ export default function OrderList() {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderUI | null>(null);
     const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'items' | 'payment'>('overview');
+    const [detailStockMap, setDetailStockMap] = useState<Record<number, number>>({});
+    const [isLoadingDetailStock, setIsLoadingDetailStock] = useState(false);
 
     // Create Order Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -576,6 +578,41 @@ export default function OrderList() {
         setActiveDetailTab('overview');
         setIsDetailModalOpen(true);
     };
+
+    // Fetch available stock for items in Detail Modal
+    useEffect(() => {
+        if (!isDetailModalOpen || !selectedOrder) {
+            return;
+        }
+        let isCancelled = false;
+        setIsLoadingDetailStock(true);
+        setDetailStockMap({});
+
+        orderFulfillmentService
+            .checkStockAvailability(selectedOrder.rawResponse)
+            .then((res) => {
+                if (isCancelled) return;
+                const map: Record<number, number> = {};
+                (res.itemsCheck || []).forEach((it) => {
+                    map[it.productId] = it.inStockQty;
+                });
+                setDetailStockMap(map);
+            })
+            .catch(() => {
+                if (!isCancelled) {
+                    setDetailStockMap({});
+                }
+            })
+            .finally(() => {
+                if (!isCancelled) {
+                    setIsLoadingDetailStock(false);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [isDetailModalOpen, selectedOrder]);
 
     // Open Create Order Modal
     const handleOpenCreateModal = () => {
@@ -1751,6 +1788,7 @@ export default function OrderList() {
                                             <th className="py-2 px-3">Sản phẩm</th>
                                             <th className="py-2 px-3 text-right">Đơn giá</th>
                                             <th className="py-2 px-3 text-right">SL</th>
+                                            <th className="py-2 px-3 text-right whitespace-nowrap">Kho khả dụng</th>
                                             <th className="py-2 px-3 text-right">Giảm giá</th>
                                             <th className="py-2 px-3 text-right">Thành tiền</th>
                                         </tr>
@@ -1803,6 +1841,28 @@ export default function OrderList() {
                                                     </td>
                                                     <td className="py-2.5 px-3 text-right font-semibold text-slate-900 font-mono tabular-nums">
                                                         {item.quantity}
+                                                    </td>
+                                                    <td className="py-2.5 px-3 text-right font-mono tabular-nums whitespace-nowrap">
+                                                        {isLoadingDetailStock ? (
+                                                            <span className="text-slate-400 text-[11px]">Đang tải...</span>
+                                                        ) : detailStockMap[item.productId] !== undefined ? (
+                                                            <span
+                                                                className={`font-semibold ${
+                                                                    detailStockMap[item.productId] < item.quantity
+                                                                        ? 'text-rose-600'
+                                                                        : 'text-emerald-700'
+                                                                }`}
+                                                                title={
+                                                                    detailStockMap[item.productId] < item.quantity
+                                                                        ? `Không đủ hàng (thiếu ${item.quantity - detailStockMap[item.productId]})`
+                                                                        : 'Đủ hàng trong kho'
+                                                                }
+                                                            >
+                                                                {detailStockMap[item.productId]}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-slate-400">---</span>
+                                                        )}
                                                     </td>
                                                     <td className="py-2.5 px-3 text-right font-mono text-rose-600 tabular-nums whitespace-nowrap">
                                                         {item.discountAmount > 0 ? `-${formatVND(item.discountAmount)}` : '0 ₫'}

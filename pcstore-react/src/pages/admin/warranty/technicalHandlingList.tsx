@@ -429,10 +429,18 @@ export default function TechnicalHandlingList() {
             align: 'right',
             render: (item) => (
                 <AdminActionDropdown
-                    onView={() => {
+                    onView={async () => {
                         setSelectedRequest(item);
                         setDetailTab('diagnostic');
                         setIsDetailOpen(true);
+                        try {
+                            const fresh = await adminWarrantyService.getRequestById(item.id);
+                            setSelectedRequest((prev) =>
+                                prev && prev.id === fresh.id ? { ...prev, ...fresh } : prev
+                            );
+                        } catch {
+                            // Keep optimistic row data if detail fetch fails
+                        }
                     }}
                     viewLabel="Xem chi tiết"
                     onEdit={() => handleOpenHandling(item)}

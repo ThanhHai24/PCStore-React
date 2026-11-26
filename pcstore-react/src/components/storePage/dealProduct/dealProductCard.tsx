@@ -2,6 +2,7 @@ import { Flame, ShoppingCart } from "lucide-react";
 import defaultPcImg from "../../../assets/images/products/pc.jpg";
 import { useCart } from "../../../context/CartContext";
 import type { Product } from "../../../types/product";
+import { sanitizeUrl } from "../../../utils/sanitize";
 
 export interface DealProductCardProps {
     id?: string | number;
@@ -59,9 +60,11 @@ export function DealProductCard({
         addToCart(productObj, 1);
     };
 
+    const safeLink = sanitizeUrl(link, '#');
+
     return (
         <div className="group/card relative flex flex-col justify-between bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 w-full h-full border border-gray-100">
-            <a href={link} className="block overflow-hidden mb-3">
+            <a href={safeLink} className="block overflow-hidden mb-3">
                 <img
                     src={image || defaultPcImg}
                     alt={title}
@@ -74,7 +77,7 @@ export function DealProductCard({
             </a>
 
             <div className="flex flex-col flex-1 justify-between">
-                <a href={link} className="block mb-3">
+                <a href={safeLink} className="block mb-3">
                     <h3 className="text-[#333333] font-medium text-[15px] leading-snug line-clamp-2 min-h-[42px] group-hover/card:text-[#e31233] transition-colors">
                         {title}
                     </h3>

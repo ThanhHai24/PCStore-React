@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { escapeHtml } from '../../../utils/sanitize';
 import {
     Barcode,
     RefreshCw,
@@ -37,7 +38,7 @@ import {
 } from '../../../components/admin/common/modal';
 import { useToast } from '../../../components/admin/common/toast';
 import { adminGoodsReceiptService } from '../../../services/adminGoodsReceiptService';
-import { adminProductService } from '../../../services/adminProductService';
+import { productService } from '../../../services/productService';
 import type {
     ProductSerialResponse,
     ProductSerialStatus,
@@ -259,13 +260,16 @@ export default function ProductSerialList() {
             setError(null);
 
             try {
-                // Fetch products and goods receipts in parallel
-                const [prodRes, grRes] = await Promise.all([
-                    adminProductService.getAllProducts({ size: 100 }).catch(() => ({ content: [] })),
-                    adminGoodsReceiptService.getAllReceipts({ size: 100 }).catch(() => ({ content: [] })),
+                // Call GET /api/product-serials as primary source of truth,
+                // and fetch public products + optional goods receipts metadata in parallel.
+                const [serialRes, prodRes, grRes] = await Promise.all([
+                    adminGoodsReceiptService.getAllSerials({ size: 500 }),
+                    productService.getProducts({ size: 200 }).catch(() => ({ content: [] as ProductResponse[] })),
+                    adminGoodsReceiptService.getAllReceipts({ size: 100 }).catch(() => ({ content: [] as GoodsReceiptResponse[] })),
                 ]);
 
-                const prods = prodRes.content || [];
+                const serialItems = serialRes.content || [];
+                const prods = (prodRes.content || []) as unknown as ProductResponse[];
                 const grs = grRes.content || [];
 
                 setProducts(prods);
@@ -274,46 +278,38 @@ export default function ProductSerialList() {
                 const pMap = new Map<number, ProductResponse>();
                 prods.forEach((p) => pMap.set(p.id, p));
 
-                const grMap = new Map<number, GoodsReceiptResponse>();
-                grs.forEach((r) => grMap.set(r.id, r));
-
-                // Aggregate all serials from all receipts
-                const aggregated: ProductSerialUI[] = [];
-                const seenSerials = new Set<string>();
-
+                const receiptByItemId = new Map<number, GoodsReceiptResponse>();
                 grs.forEach((gr) => {
                     (gr.items || []).forEach((item) => {
-                        (item.productSerials || []).forEach((ser) => {
-                            if (!seenSerials.has(ser.serialNumber.toLowerCase())) {
-                                seenSerials.add(ser.serialNumber.toLowerCase());
-
-                                const prod = pMap.get(ser.productId);
-                                aggregated.push({
-                                    id: String(ser.id || ser.serialNumber),
-                                    numericId: ser.id,
-                                    serialNumber: ser.serialNumber,
-                                    productId: ser.productId,
-                                    productName: prod?.name || `Sản phẩm #${ser.productId}`,
-                                    productCode: prod?.code || `SP-${ser.productId}`,
-                                    productImage: prod?.imageUrl,
-                                    goodsReceiptId: gr.id,
-                                    goodsReceiptCode: gr.code,
-                                    receiptDate: formatDateTime(gr.receivedAt),
-                                    status: ser.status,
-                                    isTerminated: Boolean(ser.isTerminated || ser.terminated),
-                                    createdDate: formatDateTime(ser.createdDate),
-                                    createdBy: ser.createdBy,
-                                    lastModifiedDate: formatDateTime(ser.lastModifiedDate),
-                                    lastModifiedBy: ser.lastModifiedBy,
-                                    rawSerial: ser,
-                                });
-                            }
-                        });
+                        receiptByItemId.set(item.id, gr);
                     });
                 });
 
-                // If user selected a specific product filter and has active serials
-                setSerials(aggregated);
+                const mappedSerials: ProductSerialUI[] = serialItems.map((ser) => {
+                    const prod = pMap.get(ser.productId);
+                    const gr = ser.receiptItemId ? receiptByItemId.get(ser.receiptItemId) : undefined;
+                    return {
+                        id: String(ser.id || ser.serialNumber),
+                        numericId: ser.id,
+                        serialNumber: ser.serialNumber,
+                        productId: ser.productId,
+                        productName: prod?.name || `Sản phẩm #${ser.productId}`,
+                        productCode: prod?.code || `SP-${ser.productId}`,
+                        productImage: prod?.imageUrl,
+                        goodsReceiptId: gr?.id,
+                        goodsReceiptCode: gr?.code,
+                        receiptDate: gr?.receivedAt ? formatDateTime(gr.receivedAt) : undefined,
+                        status: ser.status,
+                        isTerminated: Boolean(ser.isTerminated || ser.terminated),
+                        createdDate: formatDateTime(ser.createdDate),
+                        createdBy: ser.createdBy,
+                        lastModifiedDate: formatDateTime(ser.lastModifiedDate),
+                        lastModifiedBy: ser.lastModifiedBy,
+                        rawSerial: ser,
+                    };
+                });
+
+                setSerials(mappedSerials);
             } catch (err: any) {
                 const msg = err?.message || 'Không thể tải danh sách Serial từ hệ thống.';
                 setError(msg);
@@ -500,10 +496,30 @@ export default function ProductSerialList() {
     /**
      * View Details Modal
      */
-    const handleViewDetail = (item: ProductSerialUI) => {
+    const handleViewDetail = async (item: ProductSerialUI) => {
         setSelectedSerial(item);
         setActiveDetailTab('info');
         setIsDetailModalOpen(true);
+
+        if (item.numericId) {
+            try {
+                const fresh = await adminGoodsReceiptService.getSerialById(item.numericId);
+                setSelectedSerial((prev) =>
+                    prev && prev.numericId === fresh.id
+                        ? {
+                              ...prev,
+                              status: fresh.status,
+                              isTerminated: Boolean(fresh.isTerminated || fresh.terminated),
+                              lastModifiedDate: formatDateTime(fresh.lastModifiedDate),
+                              lastModifiedBy: fresh.lastModifiedBy,
+                              rawSerial: fresh,
+                          }
+                        : prev
+                );
+            } catch {
+                // Keep optimistic row data if detail fetch fails
+            }
+        }
     };
 
     /**
@@ -512,12 +528,13 @@ export default function ProductSerialList() {
     const handlePrintBarcode = (item: ProductSerialUI) => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
+        printWindow.opener = null;
 
         printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-                <title>In tem Serial - ${item.serialNumber}</title>
+                <title>In tem Serial - ${escapeHtml(item.serialNumber)}</title>
                 <style>
                     body {
                         margin: 0;
@@ -593,11 +610,11 @@ export default function ProductSerialList() {
             <body>
                 <div class="label-box">
                     <div class="store-name">PCStore Vietnam - Warranty Seal</div>
-                    <div class="product-name">${item.productName}</div>
-                    <div class="product-code">Mã SP: ${item.productCode}</div>
+                    <div class="product-name">${escapeHtml(item.productName)}</div>
+                    <div class="product-code">Mã SP: ${escapeHtml(item.productCode)}</div>
                     <div class="barcode-lines"></div>
-                    <div class="serial-text">${item.serialNumber}</div>
-                    <div class="status-tag">TÌNH TRẠNG: ${item.status}</div>
+                    <div class="serial-text">${escapeHtml(item.serialNumber)}</div>
+                    <div class="status-tag">TÌNH TRẠNG: ${escapeHtml(item.status)}</div>
                 </div>
             </body>
             </html>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { sanitizeHtml } from '../../../utils/sanitize';
 import {
     Package,
     Plus,
@@ -1077,10 +1078,31 @@ export default function ProductList() {
     };
 
     // Open Modals
-    const handleOpenDetail = (p: AdminProductItem) => {
+    const handleOpenDetail = async (p: AdminProductItem) => {
         setSelectedProduct(p);
         setActiveDetailTab('overview');
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminProductService.getProductById(p.numericId);
+            setSelectedProduct((prev) =>
+                prev && prev.numericId === fresh.id
+                    ? {
+                          ...prev,
+                          name: fresh.name,
+                          code: fresh.code,
+                          slug: fresh.slug,
+                          price: fresh.price ?? prev.price,
+                          description: fresh.description || '',
+                          specification: fresh.specification || '',
+                          status: fresh.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+                          productType: (fresh.productType as ProductType) || prev.productType,
+                      }
+                    : prev
+            );
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     const handleOpenEdit = (p: AdminProductItem, e?: React.MouseEvent) => {
@@ -2333,7 +2355,7 @@ export default function ProductList() {
                                         /<[a-z][\s\S]*>/i.test(selectedProduct.description) ? (
                                             <div
                                                 className="sun-editor-editable text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-md border border-slate-200"
-                                                dangerouslySetInnerHTML={{ __html: selectedProduct.description }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedProduct.description) }}
                                             />
                                         ) : (
                                             <p className="text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-md border border-slate-200 whitespace-pre-wrap">

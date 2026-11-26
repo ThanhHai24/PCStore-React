@@ -153,6 +153,7 @@ export function handleSessionPurge() {
   localStorage.removeItem(STORAGE_TOKEN_KEY);
   localStorage.removeItem(STORAGE_REFRESH_TOKEN_KEY);
   localStorage.removeItem(STORAGE_USER_KEY);
+  localStorage.removeItem('pcstore_user_profiles_cache_v1');
   window.dispatchEvent(new CustomEvent('auth:session_expired'));
 }
 

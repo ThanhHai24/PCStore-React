@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import { canAccessAdminPath } from '../../../utils/rbac';
 import {
     LayoutDashboard,
     Package,
@@ -204,17 +206,36 @@ const navItems: NavItem[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle }) => {
     const location = useLocation();
+    const { user } = useAuth();
     const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
+
+    const visibleNavItems = useMemo(() => {
+        return navItems
+            .map((item) => {
+                if (item.children) {
+                    const allowedChildren = item.children.filter((sub) =>
+                        canAccessAdminPath(user?.role, sub.path)
+                    );
+                    if (allowedChildren.length === 0) return null;
+                    return { ...item, children: allowedChildren };
+                }
+                if (item.path && !canAccessAdminPath(user?.role, item.path)) {
+                    return null;
+                }
+                return item;
+            })
+            .filter((item): item is NavItem => item !== null);
+    }, [user?.role]);
 
     // Auto expand parent menu if child path is active
     useEffect(() => {
-        const activeParent = navItems.find((item) =>
+        const activeParent = visibleNavItems.find((item) =>
             item.children?.some(
                 (sub) => location.pathname === sub.path || (sub.exact ? location.pathname === sub.path : location.pathname.startsWith(sub.path))
             )
         );
         setOpenSubmenuId(activeParent ? activeParent.id : null);
-    }, [location.pathname]);
+    }, [location.pathname, visibleNavItems]);
 
     const toggleSubmenu = (id: string) => {
         if (collapsed && onToggle) {
@@ -251,7 +272,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onToggle })
             {/* Navigation list */}
             <div className="flex-1 py-4 px-3 flex flex-col justify-between overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <div className="space-y-1">
-                    {navItems.map((item) => {
+                    {visibleNavItems.map((item) => {
                         // 1-Level Item (Single Link)
                         if (!item.children && item.path) {
                             return (

@@ -14,65 +14,10 @@ export interface NotificationItem {
     isNew?: boolean;
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-    {
-        id: 'notif-1',
-        title: 'Đơn hàng mới #DH-202411-089',
-        content: 'Khách hàng Nguyễn Văn An vừa đặt PC Gaming Intel i7-14700K / RTX 4070.',
-        time: 'Vừa xong',
-        gradient: 'linear-gradient(140deg,#8B6CFF,#5B8CFF)',
-        icon: '🛒',
-        isRead: false,
-        category: 'order',
-    },
-    {
-        id: 'notif-2',
-        title: 'Cảnh báo tồn kho thấp',
-        content: 'VGA ASUS ROG Strix GeForce RTX 4080 Super chỉ còn 1 sản phẩm trong kho.',
-        time: '15 phút trước',
-        gradient: 'linear-gradient(140deg,#FFB547,#FF7A45)',
-        icon: '⚠️',
-        isRead: false,
-        category: 'inventory',
-    },
-    {
-        id: 'notif-3',
-        title: 'Yêu cầu bảo hành mới #BH-041',
-        content: 'Khách hàng gửi yêu cầu kiểm tra kỹ thuật RAM Corsair Vengeance DDR5.',
-        time: '1 giờ trước',
-        gradient: 'linear-gradient(140deg,#22C3A6,#0EA5E9)',
-        icon: '🛡️',
-        isRead: true,
-        category: 'warranty',
-    },
-    {
-        id: 'notif-4',
-        title: 'Đánh giá 5 sao mới',
-        content: 'Trần Quốc Bảo vừa đánh giá 5 sao cho màn hình Dell UltraSharp 27" 4K.',
-        time: 'Hôm qua',
-        gradient: 'linear-gradient(140deg,#FF7A93,#B04FD0)',
-        icon: '⭐',
-        isRead: true,
-        category: 'review',
-    },
-];
-
-const NEW_NOTIFICATION: NotificationItem = {
-    id: 'notif-5',
-    title: 'Thanh toán thành công #DH-202411-092',
-    content: 'Đơn hàng vừa thanh toán qua VNPAY thành công: 32.500.000đ.',
-    time: 'Vừa xong',
-    gradient: 'linear-gradient(140deg,#3D8BFF,#22C3A6)',
-    icon: '💳',
-    isRead: false,
-    category: 'order',
-    isNew: true,
-};
-
 export const NotificationBell: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
-    const [items, setItems] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+    const [items, setItems] = useState<NotificationItem[]>([]);
     const [isRinging, setIsRinging] = useState(false);
     const [announcement, setAnnouncement] = useState('');
 
@@ -101,39 +46,6 @@ export const NotificationBell: React.FC = () => {
         }
         prevUnreadCountRef.current = unreadCount;
     }, [unreadCount]);
-
-    // Simulated incoming real-time notification
-    useEffect(() => {
-        const isReducedMotion =
-            typeof window !== 'undefined' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const delay = isReducedMotion ? 400 : 2400;
-
-        const timer = setTimeout(() => {
-            setItems((prev) => {
-                // Avoid duplicating if effect re-runs
-                if (prev.some((it) => it.id === NEW_NOTIFICATION.id)) return prev;
-                return [NEW_NOTIFICATION, ...prev];
-            });
-
-            // Bell shake animation
-            setIsRinging(true);
-            setAnnouncement(`Thông báo mới: ${NEW_NOTIFICATION.title}`);
-
-            // Release the 'new' push-in class on next frame
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    setItems((prev) =>
-                        prev.map((it) =>
-                            it.id === NEW_NOTIFICATION.id ? { ...it, isNew: false } : it
-                        )
-                    );
-                }, 50);
-            });
-        }, delay);
-
-        return () => clearTimeout(timer);
-    }, []);
 
     // Close on outside click
     useEffect(() => {

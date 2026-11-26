@@ -53,7 +53,6 @@ import type {
     DashboardKpiResponse,
 } from '../../../../types/adminAnalytics';
 import {
-    MOCK_REVENUE_TRANSACTIONS,
     PC_CATEGORIES,
     PC_CLASSIFICATIONS,
     PC_BRANDS,
@@ -223,15 +222,9 @@ export default function RevenueReportPage() {
 
     // ==================== 3. FILTERED TRANSACTIONS (CURRENT & PREVIOUS PERIOD) ====================
     // Lọc theo các chiều sản phẩm (Danh mục, Phân loại, Thương hiệu, Sản phẩm)
-    const dimensionFilteredRecords = useMemo(() => {
-        return MOCK_REVENUE_TRANSACTIONS.filter((tx) => {
-            if (selectedCategory !== 'ALL' && tx.categoryId !== selectedCategory) return false;
-            if (selectedClassification !== 'ALL' && tx.classificationId !== selectedClassification) return false;
-            if (selectedBrand !== 'ALL' && tx.brandId !== selectedBrand) return false;
-            if (selectedProduct !== 'ALL' && tx.productId !== selectedProduct) return false;
-            return true;
-        });
-    }, [selectedCategory, selectedClassification, selectedBrand, selectedProduct]);
+    const dimensionFilteredRecords = useMemo<RevenueTransactionRecord[]>(() => {
+        return [];
+    }, []);
 
     // Giao dịch trong khoảng thời gian đang chọn
     const currentPeriodRecords = useMemo(() => {

@@ -10,6 +10,8 @@ import type {
   GoodsReceiptStatus,
   PurchaseOrderItemReceiptInfo,
   ProductSerialResponse,
+  PageResponseProductSerialResponse,
+  GetProductSerialsParams,
 } from '../types/adminGoodsReceipt';
 
 /**
@@ -196,6 +198,49 @@ export const adminGoodsReceiptService = {
     });
 
     return handleResponse<PurchaseOrderItemReceiptInfo[]>(response);
+  },
+
+  /**
+   * Lấy danh sách serial sản phẩm phân trang & lọc trực tiếp từ GET /api/product-serials
+   */
+  async getAllSerials(params: GetProductSerialsParams = {}): Promise<PageResponseProductSerialResponse> {
+    const query = new URLSearchParams();
+
+    if (params.supplierId !== undefined && params.supplierId !== '' && params.supplierId !== 'ALL') {
+      query.set('supplierId', String(params.supplierId));
+    }
+    if (params.productId !== undefined && params.productId !== '' && params.productId !== 'ALL') {
+      query.set('productId', String(params.productId));
+    }
+    if (params.status && params.status !== 'ALL') {
+      query.set('status', params.status);
+    }
+    if (params.keyword && params.keyword.trim()) {
+      query.set('keyword', params.keyword.trim());
+    }
+    if (params.page !== undefined) {
+      query.set('page', String(params.page));
+    }
+    if (params.size !== undefined) {
+      query.set('size', String(params.size));
+    }
+    if (params.sort && params.sort.length > 0) {
+      params.sort.forEach((s) => query.append('sort', s));
+    } else {
+      query.set('sort', 'createdDate,DESC');
+    }
+
+    const queryString = query.toString();
+    const url = `${API_ENDPOINTS.ADMIN.PRODUCT_SERIALS}${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return handleResponse<PageResponseProductSerialResponse>(response);
   },
 
   /**

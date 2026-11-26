@@ -382,18 +382,6 @@ export default function SystemLogList() {
         });
     };
 
-    // Reset default logs
-    const handleResetDefaults = () => {
-        systemLogService.resetToDefaults();
-        setIsPurgeModalOpen(false);
-        loadLogs();
-        addToast({
-            type: 'info',
-            title: 'Đã khôi phục',
-            message: 'Đã thiết lập lại dữ liệu mẫu nhật ký hệ thống ban đầu.',
-        });
-    };
-
     // Add test log entry
     const handleCreateTestLog = (e: React.FormEvent) => {
         e.preventDefault();
@@ -1696,17 +1684,6 @@ export default function SystemLogList() {
                                 { label: 'Chỉ xóa các log Thành công (SUCCESS)', value: 'SUCCESS' },
                             ]}
                         />
-
-                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                            <span className="text-gray-500">Khôi phục về bộ log mẫu gốc:</span>
-                            <button
-                                type="button"
-                                onClick={handleResetDefaults}
-                                className="text-blue-600 font-bold hover:underline cursor-pointer"
-                            >
-                                Đặt lại mặc định
-                            </button>
-                        </div>
                     </div>
                 )}
             </AdminModal>

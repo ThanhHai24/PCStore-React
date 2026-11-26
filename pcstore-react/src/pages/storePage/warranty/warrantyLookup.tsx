@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { escapeHtml } from '../../../utils/sanitize';
 import {
   ShieldCheck,
   Barcode,
@@ -27,7 +28,6 @@ import {
 import {
   warrantyLookupService,
   type WarrantyLookupResult,
-  type SuggestedSerialItem,
 } from '../../../services/warrantyLookupService';
 
 const RECENT_SERIALS_STORAGE_KEY = 'pcstore_recent_warranty_serials';
@@ -75,10 +75,9 @@ export const WarrantyLookup: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedSerial, setCopiedSerial] = useState<boolean>(false);
 
-  const [suggestedSerials, setSuggestedSerials] = useState<SuggestedSerialItem[]>([]);
   const [recentSerials, setRecentSerials] = useState<string[]>([]);
 
-  // Load recent searched serials from localStorage & suggested serials
+  // Load recent searched serials from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(RECENT_SERIALS_STORAGE_KEY);
@@ -91,10 +90,6 @@ export const WarrantyLookup: React.FC = () => {
     } catch {
       // ignore
     }
-
-    warrantyLookupService.getSuggestedSerials().then((list) => {
-      setSuggestedSerials(list);
-    });
   }, []);
 
   const saveRecentSerial = useCallback((serial: string) => {
@@ -188,6 +183,7 @@ export const WarrantyLookup: React.FC = () => {
     if (!result) return;
     const printWin = window.open('', '_blank', 'width=850,height=700');
     if (!printWin) return;
+    printWin.opener = null;
 
     const statusText =
       result.warrantyStatus === 'ACTIVE'
@@ -201,7 +197,7 @@ export const WarrantyLookup: React.FC = () => {
     printWin.document.write(`
       <html>
         <head>
-          <title>Chứng Nhận Bảo Hành Điện Tử - ${result.serialNumber}</title>
+          <title>Chứng Nhận Bảo Hành Điện Tử - ${escapeHtml(result.serialNumber)}</title>
           <style>
             body { font-family: Arial, sans-serif; color: #1e293b; padding: 32px; margin: 0; }
             .cert-box { border: 2px solid #1d4ed8; border-radius: 16px; padding: 28px; max-width: 720px; margin: 0 auto; }
@@ -225,29 +221,29 @@ export const WarrantyLookup: React.FC = () => {
                 <div class="brand">PCSTORE VIETNAM</div>
                 <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Hệ thống Bảo hành Điện tử Chính hãng</div>
               </div>
-              <div class="badge">${statusText}</div>
+              <div class="badge">${escapeHtml(statusText)}</div>
             </div>
             <div class="title">CHỨNG NHẬN BẢO HÀNH ĐIỆN TỬ SẢN PHẨM</div>
             <div class="grid">
               <div class="card">
                 <div class="label">Tên sản phẩm</div>
-                <div class="val">${result.productName}</div>
-                <div style="font-size: 12px; color: #475569; margin-top: 4px;">Mã SP: ${result.productCode} | Hãng: ${result.brandName}</div>
+                <div class="val">${escapeHtml(result.productName)}</div>
+                <div style="font-size: 12px; color: #475569; margin-top: 4px;">Mã SP: ${escapeHtml(result.productCode)} | Hãng: ${escapeHtml(result.brandName)}</div>
               </div>
               <div class="card">
                 <div class="label">Số Serial (S/N) định danh</div>
-                <div class="val" style="font-family: monospace; font-size: 17px; color: #1d4ed8;">${result.serialNumber}</div>
-                <div style="font-size: 12px; color: #475569; margin-top: 4px;">Đơn hàng: ${result.orderCode || 'Chính hãng PCStore'}</div>
+                <div class="val" style="font-family: monospace; font-size: 17px; color: #1d4ed8;">${escapeHtml(result.serialNumber)}</div>
+                <div style="font-size: 12px; color: #475569; margin-top: 4px;">Đơn hàng: ${escapeHtml(result.orderCode || 'Chính hãng PCStore')}</div>
               </div>
             </div>
             <div class="dates">
               <div class="date-card">
                 <div class="label">Ngày kích hoạt bảo hành</div>
-                <div class="val" style="color: #0284c7;">${formatDateVN(result.startDate)}</div>
+                <div class="val" style="color: #0284c7;">${escapeHtml(formatDateVN(result.startDate))}</div>
               </div>
               <div class="date-card">
                 <div class="label">Ngày hết hạn bảo hành</div>
-                <div class="val" style="color: #e11d48;">${formatDateVN(result.endDate)}</div>
+                <div class="val" style="color: #e11d48;">${escapeHtml(formatDateVN(result.endDate))}</div>
               </div>
               <div class="date-card">
                 <div class="label">Thời hạn còn lại</div>
@@ -256,8 +252,8 @@ export const WarrantyLookup: React.FC = () => {
             </div>
             <div class="card">
               <div class="label">Chính sách bảo hành áp dụng</div>
-              <div class="val" style="font-size: 14px;">${result.policyName} (${result.durationMonths} tháng / ${result.durationDays} ngày)</div>
-              <div style="font-size: 12px; color: #475569; margin-top: 4px;">${result.policyDescription}</div>
+              <div class="val" style="font-size: 14px;">${escapeHtml(result.policyName)} (${result.durationMonths} tháng / ${result.durationDays} ngày)</div>
+              <div style="font-size: 12px; color: #475569; margin-top: 4px;">${escapeHtml(result.policyDescription)}</div>
             </div>
             <div class="footer">
               <span>Thời điểm trích xuất: ${new Date().toLocaleString('vi-VN')}</span>

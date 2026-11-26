@@ -78,6 +78,27 @@ export interface PageResponseGoodsReceiptResponse {
   empty: boolean;
 }
 
+export interface PageResponseProductSerialResponse {
+  content: ProductSerialResponse[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+export interface GetProductSerialsParams {
+  supplierId?: number | string;
+  productId?: number | string;
+  status?: ProductSerialStatus | '' | 'ALL';
+  keyword?: string;
+  page?: number;
+  size?: number;
+  sort?: string[];
+}
+
 export interface GoodsReceiptCreateRequest {
   code: string;
   name?: string;

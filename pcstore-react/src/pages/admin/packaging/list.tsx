@@ -171,14 +171,19 @@ export default function PackagingList() {
                 const res = await adminOrderService.getAllOrders({ size: 100 });
                 if (res?.content) {
                     setOrders(res.content);
-                    // Đảm bảo mỗi backend order đều có fulfillment
+                    // Đảm bảo mỗi backend order đều có fulfillment và chỉ hiển thị đơn thật từ BE
                     res.content.forEach((ord) => {
                         orderFulfillmentService.ensureFulfillmentRecord(ord);
                     });
-                    setFulfillments(orderFulfillmentService.getFulfillments());
+                    const backendIds = new Set(res.content.map((o) => o.id));
+                    setFulfillments(
+                        orderFulfillmentService.getFulfillments().filter((f) => backendIds.has(f.orderId))
+                    );
                 }
             } catch (err) {
-                console.warn('Lấy đơn từ backend gặp lỗi, dùng dữ liệu fulfillment cục bộ:', err);
+                setOrders([]);
+                setFulfillments([]);
+                toast.error((err as Error)?.message || 'Không thể tải danh sách đơn hàng từ hệ thống');
             }
         } catch (error: any) {
             toast.error(error.message || 'Không thể tải danh sách đóng gói đơn hàng');
@@ -469,32 +474,8 @@ export default function PackagingList() {
             try {
                 orderObj = await adminOrderService.getOrderById(record.orderId);
             } catch {
-                // Mock items nếu backend không phản hồi
-                orderObj = {
-                    id: record.orderId,
-                    code: record.orderCode,
-                    userId: 1,
-                    recipientName: record.recipientName,
-                    recipientPhone: record.recipientPhone,
-                    address: record.address,
-                    type: record.orderType,
-                    totalAmount: record.totalAmount,
-                    discountAmount: 0,
-                    finalAmount: record.finalAmount,
-                    status: record.backendStatus,
-                    items: [
-                        {
-                            id: 1,
-                            productId: 1,
-                            productCode: 'MB-ASUS-Z790-ROG',
-                            productName: 'Mainboard ASUS ROG MAXIMUS Z790 HERO',
-                            quantity: 1,
-                            unitPrice: 16500000,
-                            discountAmount: 0,
-                            subtotal: 16500000,
-                        },
-                    ],
-                };
+                toast.error(`Không thể tải chi tiết đơn hàng ${record.orderCode} từ hệ thống.`);
+                return;
             }
         }
         setTargetOrder(orderObj);

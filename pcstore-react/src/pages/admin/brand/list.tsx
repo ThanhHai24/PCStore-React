@@ -470,10 +470,17 @@ export default function BrandList() {
     };
 
     // Open Detail Modal
-    const handleOpenDetail = (brand: BrandItem) => {
+    const handleOpenDetail = async (brand: BrandItem) => {
         setSelectedBrand(brand);
         setActiveDetailTab('info');
         setIsDetailModalOpen(true);
+
+        try {
+            const fresh = await adminBrandService.getBrandById(brand.numericId);
+            setSelectedBrand(mapBackendBrandToItem(fresh));
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     // Open Edit Modal

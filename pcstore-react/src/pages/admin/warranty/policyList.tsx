@@ -368,10 +368,29 @@ export default function WarrantyPolicyList() {
     };
 
     // Open Detail Modal
-    const handleOpenDetail = (p: PolicyUI) => {
+    const handleOpenDetail = async (p: PolicyUI) => {
         setSelectedPolicy(p);
         setDetailTab('info');
         setIsDetailOpen(true);
+
+        try {
+            const fresh = await adminWarrantyService.getPolicyById(p.numericId);
+            const active = fresh.status === 'ACTIVE' || fresh.status === 1;
+            setSelectedPolicy((prev) =>
+                prev && prev.numericId === fresh.id
+                    ? {
+                          ...prev,
+                          name: fresh.name,
+                          durationDays: fresh.durationDays,
+                          description: fresh.description || prev.description,
+                          status: active ? 1 : 0,
+                          isActive: active,
+                      }
+                    : prev
+            );
+        } catch {
+            // Keep optimistic row data if detail fetch fails
+        }
     };
 
     // Submit Create

@@ -93,6 +93,7 @@ function App() {
               <Route path="bao-hanh" element={<WarrantyLookup />} />
               <Route path="cart" element={<Cart />} />
               <Route path="vnpay-return" element={<PaymentResult />} />
+              <Route path="payment/zalopay-return" element={<PaymentResult />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
               <Route path="account" element={<Account />} />

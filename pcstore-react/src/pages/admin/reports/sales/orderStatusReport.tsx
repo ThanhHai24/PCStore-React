@@ -125,7 +125,7 @@ export default function OrderStatusReportPage() {
                         const mapped: OrderStatusRecord[] = ordersRes.value.content.map((o) => {
                             let status: DetailedOrderStatus = 'PENDING';
                             if (o.status === 'CONFIRMED') status = 'CONFIRMED';
-                            else if (o.status === 'PROCESSING') status = 'SHIPPING';
+                            else if (o.status === 'DELIVERING') status = 'SHIPPING';
                             else if (o.status === 'COMPLETED') status = 'DELIVERED';
                             else if (o.status === 'CANCELLED') status = 'CANCELLED';
                             else if (o.status === 'RETURNED') status = 'RETURNED';

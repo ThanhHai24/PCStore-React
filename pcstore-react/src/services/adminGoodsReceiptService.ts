@@ -10,8 +10,11 @@ import type {
   GoodsReceiptStatus,
   PurchaseOrderItemReceiptInfo,
   ProductSerialResponse,
+  ProductSerialStatus,
   PageResponseProductSerialResponse,
   GetProductSerialsParams,
+  GetProductSerialsByProductParams,
+  GoodsReceiptDuplicateResponse,
 } from '../types/adminGoodsReceipt';
 
 /**
@@ -272,15 +275,93 @@ export const adminGoodsReceiptService = {
   },
 
   /**
-   * Lấy danh sách serial còn hiệu lực theo sản phẩm
+   * Lấy dữ liệu mẫu nhân bản từ phiếu nhập đã hủy hoặc bị từ chối
    */
-  async getActiveSerialsByProduct(productId: string | number): Promise<ProductSerialResponse[]> {
-    const response = await fetchWithAuth(API_ENDPOINTS.ADMIN.PRODUCT_SERIALS_BY_PRODUCT(productId), {
+  async getDuplicateTemplate(id: string | number): Promise<GoodsReceiptDuplicateResponse> {
+    const response = await fetchWithAuth(API_ENDPOINTS.ADMIN.GOODS_RECEIPT_DUPLICATE_TEMPLATE(id), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
+
+    return handleResponse<GoodsReceiptDuplicateResponse>(response);
+  },
+
+  /**
+   * Lấy danh sách serial còn hiệu lực theo sản phẩm (phân trang)
+   */
+  async getActiveSerialsByProduct(
+    productId: string | number,
+    params: GetProductSerialsByProductParams = {}
+  ): Promise<PageResponseProductSerialResponse> {
+    const query = new URLSearchParams();
+
+    if (params.status && params.status !== 'ALL') {
+      query.set('status', params.status);
+    }
+    if (params.page !== undefined) {
+      query.set('page', String(params.page));
+    }
+    if (params.size !== undefined) {
+      query.set('size', String(params.size));
+    }
+    if (params.sort && params.sort.length > 0) {
+      params.sort.forEach((s) => query.append('sort', s));
+    }
+
+    const queryString = query.toString();
+    const url = `${API_ENDPOINTS.ADMIN.PRODUCT_SERIALS_BY_PRODUCT(productId)}${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return handleResponse<PageResponseProductSerialResponse>(response);
+  },
+
+  /**
+   * Cập nhật trạng thái một serial sản phẩm
+   */
+  async updateSerialStatus(
+    id: string | number,
+    status: ProductSerialStatus
+  ): Promise<ProductSerialResponse> {
+    const query = new URLSearchParams({ status });
+    const response = await fetchWithAuth(
+      `${API_ENDPOINTS.ADMIN.PRODUCT_SERIAL_STATUS(id)}?${query.toString()}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return handleResponse<ProductSerialResponse>(response);
+  },
+
+  /**
+   * Cập nhật trạng thái hàng loạt serial sản phẩm theo danh sách serialNumber
+   */
+  async bulkUpdateSerialStatus(
+    serialNumbers: string[],
+    status: ProductSerialStatus
+  ): Promise<ProductSerialResponse[]> {
+    const query = new URLSearchParams({ status });
+    const response = await fetchWithAuth(
+      `${API_ENDPOINTS.ADMIN.PRODUCT_SERIALS_BULK_STATUS}?${query.toString()}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(serialNumbers),
+      }
+    );
 
     return handleResponse<ProductSerialResponse[]>(response);
   },

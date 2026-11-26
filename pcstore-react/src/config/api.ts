@@ -70,8 +70,11 @@ export const API_ENDPOINTS = {
     GOODS_RECEIPT_DETAIL: (id: string | number) => `${API_BASE_URL}/api/goods-receipts/${id}`,
     GOODS_RECEIPT_STATUS: (id: string | number) => `${API_BASE_URL}/api/goods-receipts/${id}/status`,
     GOODS_RECEIPT_BY_CODE: (code: string) => `${API_BASE_URL}/api/goods-receipts/by-code/${encodeURIComponent(code)}`,
+    GOODS_RECEIPT_DUPLICATE_TEMPLATE: (id: string | number) => `${API_BASE_URL}/api/goods-receipts/${id}/duplicate-template`,
     PRODUCT_SERIALS: `${API_BASE_URL}/api/product-serials`,
     PRODUCT_SERIAL_DETAIL: (id: string | number) => `${API_BASE_URL}/api/product-serials/${id}`,
+    PRODUCT_SERIAL_STATUS: (id: string | number) => `${API_BASE_URL}/api/product-serials/${id}/status`,
+    PRODUCT_SERIALS_BULK_STATUS: `${API_BASE_URL}/api/product-serials/bulk-status`,
     PRODUCT_SERIAL_BY_NUMBER: (serialNumber: string) => `${API_BASE_URL}/api/product-serials/by-serial/${encodeURIComponent(serialNumber)}`,
     PRODUCT_SERIALS_BY_PRODUCT: (productId: string | number) => `${API_BASE_URL}/api/product-serials/by-product/${productId}`,
     WARRANTY_POLICIES: `${API_BASE_URL}/api/admin/warranty-policies`,
@@ -89,8 +92,28 @@ export const API_ENDPOINTS = {
     WARRANTY_REQUEST_PARTS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-requests/${id}/parts`,
     WARRANTY_PARTS: `${API_BASE_URL}/api/admin/warranty-parts`,
     WARRANTY_PART_STATUS: (id: string | number) => `${API_BASE_URL}/api/admin/warranty-parts/${id}/status`,
-    SYSTEM_LOGS: `${API_BASE_URL}/api/admin/logs`,
-    SYSTEM_LOG_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/logs/${id}`,
+    SYSTEM_LOGS: `${API_BASE_URL}/api/admin/system-logs`,
+    SYSTEM_LOGS_SUMMARY: `${API_BASE_URL}/api/admin/system-logs/summary`,
+    SYSTEM_LOGS_BY_RESOURCE: (resourceType: string, resourceId: string | number) =>
+      `${API_BASE_URL}/api/admin/system-logs/by-resource/${encodeURIComponent(resourceType)}/${resourceId}`,
+    SYSTEM_LOG_DETAIL: (id: string | number) => `${API_BASE_URL}/api/admin/system-logs/${id}`,
+  },
+  DELIVERIES: {
+    LIST: `${API_BASE_URL}/api/deliveries`,
+    DETAIL: (id: string | number) => `${API_BASE_URL}/api/deliveries/${id}`,
+    STATUS: (id: string | number) => `${API_BASE_URL}/api/deliveries/${id}/status`,
+    BY_RESOURCE: (resourceType: string, resourceId: string | number) =>
+      `${API_BASE_URL}/api/deliveries/by-resource/${encodeURIComponent(resourceType)}/${resourceId}`,
+  },
+  PAYMENTS: {
+    METHODS: `${API_BASE_URL}/api/payments/methods`,
+    COD: `${API_BASE_URL}/api/payments/cod`,
+    COD_CONFIRM: (orderId: string | number) => `${API_BASE_URL}/api/payments/${orderId}/cod/confirm`,
+    ZALOPAY_CREATE: `${API_BASE_URL}/api/payments/zalopay/create`,
+    ZALOPAY_RETURN: `${API_BASE_URL}/api/payments/zalopay/return`,
+    ZALOPAY_STATUS: (appTransId: string) =>
+      `${API_BASE_URL}/api/payments/zalopay/status/${encodeURIComponent(appTransId)}`,
+    BY_ORDER: (orderId: string | number) => `${API_BASE_URL}/api/payments/order/${orderId}`,
   },
   ANALYTICS: {
     DASHBOARD: {
@@ -156,9 +179,23 @@ export const API_ENDPOINTS = {
     COMMENT_REPLIES: (productId: string | number, id: string | number) =>
       `${API_BASE_URL}/api/products/${productId}/comments/${id}/replies`,
   },
+  RECOMMENDATIONS: {
+    SIMILAR: (productId: string | number, limit: number = 8) =>
+      `${API_BASE_URL}/api/recommendations/products/${productId}/similar?limit=${limit}`,
+    FREQUENTLY_BOUGHT_TOGETHER: (productId: string | number, limit: number = 8) =>
+      `${API_BASE_URL}/api/recommendations/products/${productId}/frequently-bought-together?limit=${limit}`,
+    PERSONALIZED: (limit: number = 8) =>
+      `${API_BASE_URL}/api/recommendations/personalized?limit=${limit}`,
+  },
+  FAVORITES: {
+    LIST: `${API_BASE_URL}/api/favorites`,
+    ITEM: (productId: string | number) => `${API_BASE_URL}/api/favorites/${productId}`,
+  },
   WARRANTIES: {
-    PUBLIC_LOOKUP: (serialNumber: string) =>
-      `${API_BASE_URL}/api/public/warranties/serials?serialNumber=${encodeURIComponent(serialNumber)}`,
+    BY_SERIAL: (serialNumber: string) =>
+      `${API_BASE_URL}/api/admin/warranties/by-serial/${encodeURIComponent(serialNumber)}`,
+    HISTORY: (serialNumber: string) =>
+      `${API_BASE_URL}/api/admin/warranties/history/${encodeURIComponent(serialNumber)}`,
     BY_ORDER: (orderId: string | number) => `${API_BASE_URL}/api/warranties?orderId=${orderId}`,
     REQUESTS: `${API_BASE_URL}/api/warranty-requests`,
   },

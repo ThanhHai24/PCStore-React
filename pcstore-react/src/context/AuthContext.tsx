@@ -178,6 +178,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const loggedUser = mapAuthResponseToUser(response);
 
+      // Ghi đồng bộ vào localStorage trước khi setState để các child useEffect (vd: WishlistProvider)
+      // gọi fetchWithAuth ngay sau login luôn đọc được token mới nhất
+      try {
+        localStorage.setItem(STORAGE_TOKEN_KEY, response.accessToken);
+        if (response.refreshToken) {
+          localStorage.setItem(STORAGE_REFRESH_TOKEN_KEY, response.refreshToken);
+        }
+        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(loggedUser));
+      } catch {
+        // ignore storage errors
+      }
+
       setToken(response.accessToken);
       if (response.refreshToken) {
         setRefreshToken(response.refreshToken);
@@ -223,6 +235,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authService.register(payload);
       if (response.accessToken) {
         const loggedUser = mapAuthResponseToUser(response);
+        try {
+          localStorage.setItem(STORAGE_TOKEN_KEY, response.accessToken);
+          if (response.refreshToken) {
+            localStorage.setItem(STORAGE_REFRESH_TOKEN_KEY, response.refreshToken);
+          }
+          localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(loggedUser));
+        } catch {
+          // ignore storage errors
+        }
         setToken(response.accessToken);
         if (response.refreshToken) {
           setRefreshToken(response.refreshToken);

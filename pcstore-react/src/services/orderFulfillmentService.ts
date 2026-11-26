@@ -1,6 +1,7 @@
 import { adminOrderService } from './adminOrderService';
 import { adminGoodsReceiptService } from './adminGoodsReceiptService';
 import { adminProductService } from './adminProductService';
+import { deliveryService, type DeliveryResponse, type DeliveryStatus } from './deliveryService';
 import type { OrderResponse, OrderStatus } from '../types/adminOrder';
 import type {
   OrderFulfillmentRecord,
@@ -71,7 +72,7 @@ export const orderFulfillmentService = {
           existing.stage = 3;
           existing.stageName = 'GĐ 3: Soạn hàng FIFO & Đóng gói';
           existing.fulfillmentStatus = 'READY_TO_PACK';
-        } else if (order.status === 'PROCESSING' && existing.stage < 3) {
+        } else if (order.status === 'DELIVERING' && existing.stage < 3) {
           existing.stage = 3;
           existing.stageName = 'GĐ 3: Soạn hàng FIFO & Đóng gói';
           existing.fulfillmentStatus = 'PACKING_IN_PROGRESS';
@@ -92,7 +93,7 @@ export const orderFulfillmentService = {
         ? 'PENDING_REVIEW'
         : order.status === 'CONFIRMED'
         ? 'READY_TO_PACK'
-        : order.status === 'PROCESSING'
+        : order.status === 'DELIVERING'
         ? 'PACKING_IN_PROGRESS'
         : order.status === 'COMPLETED'
         ? 'COMPLETED'
@@ -510,7 +511,7 @@ export const orderFulfillmentService = {
       stage: 3,
       stageName: 'GĐ 3: Đóng gói hoàn tất',
       fulfillmentStatus: 'PACKED_WAITING_HANDOVER',
-      backendStatus: 'PROCESSING',
+      backendStatus: 'DELIVERING',
       warehouseStaffName: payload.warehouseStaffName,
       packedAt: now,
       packingNotes: payload.packingNotes,
@@ -544,7 +545,7 @@ export const orderFulfillmentService = {
       if (Object.keys(itemSerialsMap).length > 0) {
         await adminOrderService.assignSerials(orderId, itemSerialsMap);
       } else {
-        await adminOrderService.updateOrderStatus(orderId, 'PROCESSING');
+        await adminOrderService.updateOrderStatus(orderId, 'DELIVERING');
       }
     } catch (e) {
       console.warn('Backend sync assignSerials warning:', e);
@@ -633,7 +634,28 @@ export const orderFulfillmentService = {
     }
     this.saveFulfillments(list);
 
-    // Đồng bộ sang backend API (cập nhật trạng thái serial sang DELIVERING)
+    // Đồng bộ sang backend API: tạo hoặc cập nhật vận đơn qua /api/deliveries và đồng bộ trạng thái bàn giao
+    try {
+      const existingDelivery = await deliveryService.getDeliveryByResource('ORDER', orderId);
+      if (existingDelivery) {
+        await deliveryService.updateDeliveryMetadata(existingDelivery.id, {
+          carrierName: payload.carrierName,
+          trackingCode: payload.trackingNumber,
+          shippingFee: payload.shippingFee ?? 0,
+        });
+      } else {
+        await deliveryService.createDelivery({
+          resourceType: 'ORDER',
+          resourceId: orderId,
+          carrierName: payload.carrierName,
+          trackingCode: payload.trackingNumber,
+          shippingFee: payload.shippingFee ?? 0,
+        });
+      }
+    } catch (deliveryErr) {
+      console.warn('Backend sync /api/deliveries warning:', deliveryErr);
+    }
+
     try {
       await adminOrderService.handoverToCarrier(orderId);
     } catch (e) {
@@ -641,6 +663,100 @@ export const orderFulfillmentService = {
     }
 
     return updatedRecord;
+  },
+
+  /**
+   * Đồng bộ danh sách vận đơn thực tế từ Backend GET /api/deliveries (resourceType=ORDER)
+   */
+  async syncFromBackendDeliveries(): Promise<OrderFulfillmentRecord[]> {
+    try {
+      const [deliveryPage, ordersPage] = await Promise.all([
+        deliveryService.getDeliveries({ resourceType: 'ORDER', page: 0, size: 100 }),
+        adminOrderService.getAllOrders({ page: 0, size: 100 }).catch(() => ({ content: [] as OrderResponse[] })),
+      ]);
+
+      const orderMap = new Map<number, OrderResponse>();
+      (ordersPage?.content || []).forEach((o) => orderMap.set(o.id, o));
+
+      // Đảm bảo các đơn hàng đang đóng gói/giao có hồ sơ fulfillment
+      (ordersPage?.content || []).forEach((o) => {
+        if (o.status === 'CONFIRMED' || o.status === 'DELIVERING' || o.status === 'COMPLETED') {
+          this.ensureFulfillmentRecord(o);
+        }
+      });
+
+      const list = this.getFulfillments();
+      const mapDeliveryStatus = (st: DeliveryStatus): OrderFulfillmentStatus => {
+        if (st === 'DELIVERED') return 'COMPLETED';
+        if (st === 'IN_TRANSIT') return 'SHIPPING_IN_TRANSIT';
+        if (st === 'RETURNED') return 'OUT_OF_STOCK_CANCELLED';
+        return 'HANDED_OVER_TO_CARRIER';
+      };
+
+      const applyDelivery = (deliv: DeliveryResponse) => {
+        let rec = list.find((r) => r.orderId === deliv.resourceId);
+        if (!rec) {
+          const order = orderMap.get(deliv.resourceId);
+          if (order) {
+            rec = this.ensureFulfillmentRecord(order);
+            list.unshift(rec);
+          } else {
+            return;
+          }
+        }
+        const mappedStatus = mapDeliveryStatus(deliv.status);
+        rec.stage = 4;
+        rec.stageName = mappedStatus === 'COMPLETED'
+          ? 'GĐ 4: Hoàn tất quy trình bán hàng'
+          : 'GĐ 4: Vận chuyển (ĐVVC ngoài)';
+        rec.fulfillmentStatus = mappedStatus;
+        if (deliv.status === 'DELIVERED') {
+          rec.backendStatus = 'COMPLETED';
+        }
+        rec.carrierInfo = {
+          ...(rec.carrierInfo || {
+            carrierName: deliv.carrierName || 'ĐVVC ngoài',
+            trackingNumber: deliv.trackingCode || `VD-${deliv.id}`,
+            handoverStaffName: 'Hệ thống',
+            handoverAt: deliv.createdDate || new Date().toISOString(),
+          }),
+          carrierName: deliv.carrierName || rec.carrierInfo?.carrierName || 'ĐVVC ngoài',
+          trackingNumber: deliv.trackingCode || rec.carrierInfo?.trackingNumber || `VD-${deliv.id}`,
+          shippingFee: deliv.shippingFee ?? rec.carrierInfo?.shippingFee ?? 0,
+        };
+      };
+
+      deliveryPage.content.forEach(applyDelivery);
+      this.saveFulfillments(list);
+      return list;
+    } catch (e) {
+      console.warn('Backend sync /api/deliveries failed, fallback local cache:', e);
+      return this.getFulfillments();
+    }
+  },
+
+  /**
+   * Cập nhật thông tin mã vận đơn / ĐVVC / cước phí qua PATCH /api/deliveries/{id}
+   */
+  async updateDeliveryMetadata(
+    orderId: number,
+    payload: { carrierName?: string; trackingCode?: string; shippingFee?: number }
+  ): Promise<DeliveryResponse | null> {
+    const existing = await deliveryService.getDeliveryByResource('ORDER', orderId);
+    if (!existing) return null;
+    const updated = await deliveryService.updateDeliveryMetadata(existing.id, payload);
+    const list = this.getFulfillments();
+    const idx = list.findIndex((r) => r.orderId === orderId);
+    if (idx !== -1 && list[idx].carrierInfo) {
+      list[idx].carrierInfo = {
+        ...list[idx].carrierInfo!,
+        carrierName: updated.carrierName || list[idx].carrierInfo!.carrierName,
+        trackingNumber: updated.trackingCode || list[idx].carrierInfo!.trackingNumber,
+        shippingFee: updated.shippingFee,
+      };
+      this.saveFulfillments(list);
+    }
+    return updated;
   },
 
   /**
@@ -680,6 +796,27 @@ export const orderFulfillmentService = {
 
     list[idx] = updatedRecord;
     this.saveFulfillments(list);
+
+    // Đồng bộ trạng thái vận đơn sang BE PATCH /api/deliveries/{id}/status
+    try {
+      const existingDelivery = await deliveryService.getDeliveryByResource('ORDER', orderId);
+      if (existingDelivery) {
+        const targetStatus: DeliveryStatus | null =
+          event.fulfillmentStatus === 'SHIPPING_IN_TRANSIT' || event.fulfillmentStatus === 'OUT_FOR_DELIVERY'
+            ? 'IN_TRANSIT'
+            : event.fulfillmentStatus === 'DELIVERED_SUCCESS' || event.fulfillmentStatus === 'COMPLETED'
+            ? 'DELIVERED'
+            : event.fulfillmentStatus === 'OUT_OF_STOCK_CANCELLED'
+            ? 'RETURNED'
+            : null;
+        if (targetStatus && existingDelivery.status !== targetStatus) {
+          await deliveryService.updateDeliveryStatus(existingDelivery.id, targetStatus);
+        }
+      }
+    } catch (e) {
+      console.warn('Backend sync delivery status warning:', e);
+    }
+
     return updatedRecord;
   },
 
@@ -748,15 +885,28 @@ export const orderFulfillmentService = {
     }
     this.saveFulfillments(list);
 
-    // Đồng bộ sang backend API (hoàn tất đơn hàng và cập nhật serial sang SOLD)
+    // Đồng bộ sang backend API: cập nhật trạng thái vận đơn DELIVERED (BE tự đồng bộ đơn COMPLETED & serial SOLD)
+    let syncedViaDelivery = false;
     try {
-      await adminOrderService.completeOrder(orderId);
+      const existingDelivery = await deliveryService.getDeliveryByResource('ORDER', orderId);
+      if (existingDelivery && existingDelivery.status !== 'DELIVERED') {
+        await deliveryService.updateDeliveryStatus(existingDelivery.id, 'DELIVERED');
+        syncedViaDelivery = true;
+      }
     } catch (e) {
-      console.warn('Backend sync completeOrder warning:', e);
+      console.warn('Backend sync delivery DELIVERED warning:', e);
+    }
+
+    if (!syncedViaDelivery) {
       try {
-        await adminOrderService.updateOrderStatus(orderId, 'COMPLETED');
-      } catch (err) {
-        console.warn('Backend sync updateOrderStatus COMPLETED warning:', err);
+        await adminOrderService.completeOrder(orderId);
+      } catch (e) {
+        console.warn('Backend sync completeOrder warning:', e);
+        try {
+          await adminOrderService.updateOrderStatus(orderId, 'COMPLETED');
+        } catch (err) {
+          console.warn('Backend sync updateOrderStatus COMPLETED warning:', err);
+        }
       }
     }
 

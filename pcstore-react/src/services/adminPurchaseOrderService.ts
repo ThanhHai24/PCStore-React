@@ -113,7 +113,7 @@ export const adminPurchaseOrderService = {
    * Lấy chi tiết đơn nhập hàng theo Mã đơn
    */
   async getOrderByCode(code: string): Promise<PurchaseOrderResponse> {
-    const response = await fetchWithAuth(API_ENDPOINTS.ADMIN.PURCHASE_ORDER_BY_CODE(encodeURIComponent(code)), {
+    const response = await fetchWithAuth(API_ENDPOINTS.ADMIN.PURCHASE_ORDER_BY_CODE(code), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -99,6 +99,51 @@ export interface GetProductSerialsParams {
   sort?: string[];
 }
 
+export interface GetProductSerialsByProductParams {
+  status?: ProductSerialStatus | '' | 'ALL';
+  page?: number;
+  size?: number;
+  sort?: string[];
+}
+
+export interface ProductSerialDuplicateResponse {
+  serialNumber: string;
+  status: ProductSerialStatus;
+  originalStatus: ProductSerialStatus;
+  alreadyInUse?: boolean;
+  isAlreadyInUse?: boolean;
+}
+
+export interface ReceiptItemDuplicateResponse {
+  purchaseOrderItemId: number;
+  productId: number;
+  productCode: string;
+  productName: string;
+  actualUnitCost: number;
+  unitCost: number;
+  quantityOrder: number;
+  quantityReceivedInPo: number;
+  remainingQuantityInOrder: number;
+  quantityReceived: number;
+  quantityAccepted: number;
+  quantityDefective: number;
+  productSerials: ProductSerialDuplicateResponse[];
+}
+
+export interface GoodsReceiptDuplicateResponse {
+  originalReceiptId: number;
+  originalReceiptCode: string;
+  code: string;
+  name?: string | null;
+  purchaseOrderId: number;
+  purchaseOrderCode?: string | null;
+  supplierId?: number | null;
+  supplierName?: string | null;
+  receivedAt?: string | null;
+  status: GoodsReceiptStatus;
+  items: ReceiptItemDuplicateResponse[];
+}
+
 export interface GoodsReceiptCreateRequest {
   code: string;
   name?: string;

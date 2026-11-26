@@ -434,10 +434,10 @@ export const Account: React.FC = () => {
                         Đã xác nhận
                     </span>
                 );
-            case 'PROCESSING':
+            case 'DELIVERING':
                 return (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                        Đang đóng gói/giao
+                        Đang giao hàng
                     </span>
                 );
             case 'COMPLETED':
@@ -803,7 +803,7 @@ export const Account: React.FC = () => {
                                                         Xem chi tiết
                                                     </button>
 
-                                                    {ord.status === 'PROCESSING' && (
+                                                    {ord.status === 'DELIVERING' && (
                                                         <button
                                                             type="button"
                                                             onClick={async () => {

@@ -206,8 +206,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
             {/* Horizontal Tabs Row (if tabs provided) */}
             {tabs.length > 0 && (
-                <div className="px-6 bg-white shrink-0">
-                    <nav className="flex space-x-2 overflow-x-auto pt-2 no-scrollbar" aria-label="Tabs">
+                <div className="px-6 bg-white border-b border-slate-200 shrink-0">
+                    <nav className="flex items-center gap-1 overflow-x-auto no-scrollbar -mb-px" aria-label="Tabs">
                         {tabs.map((tab) => {
                             const isActive = tab.id === currentTabId;
 
@@ -217,22 +217,20 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                     type="button"
                                     onClick={() => !tab.disabled && handleTabClick(tab.id)}
                                     disabled={tab.disabled}
-                                    className={`relative flex items-center gap-2 px-3 py-2 text font-semibold transition-all cursor-pointer ${isActive
-                                            ? `bg-white text-blue-600 border-b-2 border-b-blue-600 z-10
-                                                before:content-[''] before:absolute before:bottom-0 before:-left-3 before:w-3 before:h-3 before:bg-[radial-gradient(circle_at_top_left,transparent_12px,#ffffff_12px)]
-                                                after:content-[''] after:absolute after:bottom-0 after:-right-3 after:w-3 after:h-3 after:bg-[radial-gradient(circle_at_top_right,transparent_12px,#ffffff_12px)]`
+                                    className={`relative inline-flex items-center gap-2 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/40 ${isActive
+                                            ? 'text-blue-600 border-blue-600'
                                             : tab.disabled
-                                                ? 'text-gray-300 cursor-not-allowed'
-                                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-t-lg'
+                                                ? 'text-slate-300 border-transparent cursor-not-allowed'
+                                                : 'text-slate-600 border-transparent hover:text-slate-900 hover:border-slate-300'
                                         }`}
                                 >
-                                    {tab.icon && renderIconNode(tab.icon, `w-4 h-4 shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`)}
+                                    {tab.icon && renderIconNode(tab.icon, `w-3.5 h-3.5 shrink-0 ${isActive ? 'text-blue-600' : 'text-slate-400'}`)}
                                     <span>{tab.label}</span>
                                     {tab.badge !== undefined && (
                                         <span
-                                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isActive
-                                                    ? 'bg-blue-700 text-blue-100'
-                                                    : 'bg-gray-200 text-gray-600'
+                                            className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums ${isActive
+                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    : 'bg-slate-100 text-slate-600'
                                                 }`}
                                         >
                                             {tab.badge}
@@ -246,13 +244,13 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             )}
 
             {/* Modal Body */}
-            <div className={`p-6 overflow-y-auto flex-1 ${bodyClassName}`}>
+            <div className={`p-5 sm:p-6 overflow-y-auto flex-1 ${bodyClassName}`}>
                 {renderBodyContent()}
             </div>
 
             {/* Modal Footer */}
             {showFooter && (
-                <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-wrap items-center justify-end gap-3 shrink-0">
+                <div className="px-6 py-3.5 bg-slate-50/70 border-t border-slate-200 flex flex-wrap items-center justify-end gap-2.5 shrink-0">
                     <div className="flex items-center justify-end gap-3 w-full">
                         {footer ? (
                             footer

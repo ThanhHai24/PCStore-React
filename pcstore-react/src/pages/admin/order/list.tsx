@@ -164,13 +164,13 @@ export const ORDER_STATUS_CONFIG: Record<
         icon: CheckCircle2,
         description: 'Đơn hàng đã được duyệt, chuyển sang bộ phận đóng gói/xuất kho',
     },
-    PROCESSING: {
-        label: 'Đang xử lý / Đóng gói',
+    DELIVERING: {
+        label: 'Đang giao hàng',
         color: 'text-indigo-800',
         bgColor: 'bg-indigo-100',
         borderColor: 'border-indigo-300',
-        icon: Package,
-        description: 'Đơn đang được kiểm hàng, đóng gói hoặc giao cho vận chuyển',
+        icon: Truck,
+        description: 'Đơn hàng đã đóng gói / bàn giao và đang giao tới khách hàng',
     },
     COMPLETED: {
         label: 'Hoàn tất giao dịch',
@@ -546,7 +546,7 @@ export default function OrderList() {
 
         orders.forEach((o) => {
             if (o.status === 'PENDING') pendingCount += 1;
-            if (o.status === 'CONFIRMED' || o.status === 'PROCESSING') processingCount += 1;
+            if (o.status === 'CONFIRMED' || o.status === 'DELIVERING') processingCount += 1;
             if (o.status === 'COMPLETED') {
                 completedCount += 1;
                 completedRevenue += o.finalAmount;
@@ -1086,7 +1086,7 @@ export default function OrderList() {
             { key: 'ALL', label: 'Tất cả đơn', icon: ShoppingCart },
             { key: 'PENDING', label: 'Chờ xác nhận', icon: Clock },
             { key: 'CONFIRMED', label: 'Đã xác nhận', icon: CheckCircle2 },
-            { key: 'PROCESSING', label: 'Đang đóng gói', icon: Package },
+            { key: 'DELIVERING', label: 'Đang giao hàng', icon: Truck },
             { key: 'COMPLETED', label: 'Hoàn tất giao dịch', icon: CheckCircle2 },
             { key: 'CANCELLED', label: 'Đã hủy', icon: XCircle },
             { key: 'RETURNED', label: 'Trả hàng / Hoàn tiền', icon: RotateCcw },
@@ -1107,7 +1107,7 @@ export default function OrderList() {
                 options: [
                     { label: 'Chờ xác nhận (PENDING)', value: 'PENDING' },
                     { label: 'Đã xác nhận (CONFIRMED)', value: 'CONFIRMED' },
-                    { label: 'Đang xử lý / Đóng gói (PROCESSING)', value: 'PROCESSING' },
+                    { label: 'Đang giao hàng (DELIVERING)', value: 'DELIVERING' },
                     { label: 'Hoàn tất giao dịch (COMPLETED)', value: 'COMPLETED' },
                     { label: 'Đã hủy (CANCELLED)', value: 'CANCELLED' },
                     { label: 'Trả hàng / Hoàn tiền (RETURNED)', value: 'RETURNED' },
@@ -1235,7 +1235,7 @@ export default function OrderList() {
         let dotClass = 'bg-slate-400';
         if (status === 'PENDING') dotClass = 'bg-amber-500';
         else if (status === 'CONFIRMED') dotClass = 'bg-blue-600';
-        else if (status === 'PROCESSING') dotClass = 'bg-sky-500';
+        else if (status === 'DELIVERING') dotClass = 'bg-sky-500';
         else if (status === 'COMPLETED') dotClass = 'bg-emerald-600';
         else if (status === 'CANCELLED' || status === 'REJECTED') dotClass = 'bg-rose-500';
         else if (status === 'RETURNED') dotClass = 'bg-slate-500';
@@ -1368,7 +1368,7 @@ export default function OrderList() {
                     const canCancel =
                         order.status === 'PENDING' ||
                         order.status === 'CONFIRMED' ||
-                        order.status === 'PROCESSING';
+                        order.status === 'DELIVERING';
 
                     return (
                         <div
@@ -1402,7 +1402,7 @@ export default function OrderList() {
                                         icon: Truck,
                                         variant: 'primary',
                                         highlight: true,
-                                        hidden: order.status !== 'PROCESSING',
+                                        hidden: order.status !== 'DELIVERING',
                                         onClick: () => navigate('/admin/warehouse/handover'),
                                     },
                                     {
@@ -2521,7 +2521,7 @@ export default function OrderList() {
                                     [
                                         'PENDING',
                                         'CONFIRMED',
-                                        'PROCESSING',
+                                        'DELIVERING',
                                         'COMPLETED',
                                         'CANCELLED',
                                         'RETURNED',

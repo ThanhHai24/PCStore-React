@@ -8,6 +8,10 @@ import {
 } from '../../../services/productService';
 import { categoryService } from '../../../services/categoryService';
 import { brandService } from '../../../services/brandService';
+import {
+    recommendationService,
+    mapRecommendationToProduct,
+} from '../../../services/recommendationService';
 import type { Product } from '../../../types/product';
 import type { ProductResponse } from '../../../types/adminProduct';
 import ProductGallery from '../../../components/storePage/detail/productGallery';
@@ -23,6 +27,7 @@ export const ProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [product, setProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [frequentlyBoughtProducts, setFrequentlyBoughtProducts] = useState<Product[]>([]);
     const [recentlyViewedProducts, setRecentlyViewedProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -119,40 +124,64 @@ export const ProductDetail: React.FC = () => {
                 );
                 setRecentlyViewedProducts(recentList);
 
-                // 3. Lấy danh sách sản phẩm liên quan từ API
+                // 3. Lấy danh sách sản phẩm liên quan từ Recommendation API (Similar & Frequently Bought Together)
                 try {
-                    const relParams: any = { size: 9, sort: ['id,desc'] };
-                    if (rawProduct.primaryCategoryId) {
-                        relParams.categoryId = rawProduct.primaryCategoryId;
-                    } else if (rawProduct.productType) {
-                        relParams.productType = rawProduct.productType;
+                    const [similarRes, fbtRes] = await Promise.allSettled([
+                        recommendationService.getSimilarProducts(rawProduct.id, 8),
+                        recommendationService.getFrequentlyBoughtTogether(rawProduct.id, 8),
+                    ]);
+
+                    let mappedSimilar: Product[] = [];
+                    if (similarRes.status === 'fulfilled' && similarRes.value.length > 0) {
+                        mappedSimilar = similarRes.value
+                            .filter((item) => String(item.productId) !== String(rawProduct.id))
+                            .map(mapRecommendationToProduct);
                     }
 
-                    const relRes = await getProducts(relParams);
-                    let relList = (relRes.content || []).filter(
-                        (p) => String(p.id) !== String(rawProduct.id)
-                    );
+                    let mappedFbt: Product[] = [];
+                    if (fbtRes.status === 'fulfilled' && fbtRes.value.length > 0) {
+                        mappedFbt = fbtRes.value
+                            .filter((item) => String(item.productId) !== String(rawProduct.id))
+                            .map(mapRecommendationToProduct);
+                    }
 
-                    // Nếu không đủ 4 sản phẩm cùng danh mục, lấy thêm sản phẩm chung từ API
-                    if (relList.length < 4) {
-                        const fallbackRes = await getProducts({ size: 9, sort: ['id,desc'] });
-                        const fallbackList = (fallbackRes.content || []).filter(
-                            (p) => String(p.id) !== String(rawProduct.id) && !relList.some((r) => r.id === p.id)
+                    // Fallback sang API danh sách sản phẩm cùng danh mục nếu BE chưa có dữ liệu gợi ý
+                    if (mappedSimilar.length === 0) {
+                        const relParams: any = { size: 9, sort: ['id,desc'] };
+                        if (rawProduct.primaryCategoryId) {
+                            relParams.categoryId = rawProduct.primaryCategoryId;
+                        } else if (rawProduct.productType) {
+                            relParams.productType = rawProduct.productType;
+                        }
+
+                        const relRes = await getProducts(relParams);
+                        let relList = (relRes.content || []).filter(
+                            (p) => String(p.id) !== String(rawProduct.id)
                         );
-                        relList = [...relList, ...fallbackList];
-                    }
 
-                    const mappedRelated = relList.slice(0, 8).map((p) => {
-                        const pCat = p.primaryCategoryId ? categoryMap.get(p.primaryCategoryId) : undefined;
-                        const pBrand = p.brandId ? brandMap.get(p.brandId) : undefined;
-                        return formatProductToDetail(p, pCat?.name, pBrand);
-                    });
+                        if (relList.length < 4) {
+                            const fallbackRes = await getProducts({ size: 9, sort: ['id,desc'] });
+                            const fallbackList = (fallbackRes.content || []).filter(
+                                (p) =>
+                                    String(p.id) !== String(rawProduct.id) &&
+                                    !relList.some((r) => r.id === p.id)
+                            );
+                            relList = [...relList, ...fallbackList];
+                        }
+
+                        mappedSimilar = relList.slice(0, 8).map((p) => {
+                            const pCat = p.primaryCategoryId ? categoryMap.get(p.primaryCategoryId) : undefined;
+                            const pBrand = p.brandId ? brandMap.get(p.brandId) : undefined;
+                            return formatProductToDetail(p, pCat?.name, pBrand);
+                        });
+                    }
 
                     if (isMounted) {
-                        setRelatedProducts(mappedRelated);
+                        setRelatedProducts(mappedSimilar);
+                        setFrequentlyBoughtProducts(mappedFbt);
                     }
                 } catch (relErr) {
-                    console.warn('Lỗi tải sản phẩm liên quan từ API:', relErr);
+                    console.warn('Lỗi tải sản phẩm liên quan từ API gợi ý:', relErr);
                 }
 
             } catch (err: any) {
@@ -260,7 +289,10 @@ export const ProductDetail: React.FC = () => {
             {/* Middle Row (Related & Recently Viewed Products) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div className="lg:col-span-8">
-                    <RelatedProducts products={relatedProducts} />
+                    <RelatedProducts
+                        products={relatedProducts}
+                        frequentlyBoughtTogether={frequentlyBoughtProducts}
+                    />
                 </div>
                 <div className="lg:col-span-4">
                     <RecentlyViewed products={recentlyViewedProducts} />

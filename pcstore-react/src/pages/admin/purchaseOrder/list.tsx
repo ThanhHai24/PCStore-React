@@ -219,7 +219,7 @@ export default function PurchaseOrderList() {
     const navigate = useNavigate();
 
     // Data State
-    const [orders, setOrders] = useState<PurchaseOrderItemUI[]>([]);
+    const [rawOrders, setRawOrders] = useState<PurchaseOrderResponse[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -385,6 +385,11 @@ export default function PurchaseOrderList() {
         [supplierMap]
     );
 
+    const orders = useMemo(
+        () => rawOrders.map(mapBackendToUI),
+        [rawOrders, mapBackendToUI]
+    );
+
     /**
      * Load Purchase Orders from API
      */
@@ -422,21 +427,20 @@ export default function PurchaseOrderList() {
 
                 const res = await adminPurchaseOrderService.getAllOrders(params);
 
-                const mapped = (res.content || []).map(mapBackendToUI);
-                setOrders(mapped);
+                setRawOrders(res.content || []);
                 setTotalElements(res.totalElements || 0);
                 setTotalPages(res.totalPages || 1);
             } catch (err: any) {
                 console.error('Error loading purchase orders:', err);
                 const msg = err?.message || 'Không thể tải danh sách đơn nhập hàng từ máy chủ.';
                 setError(msg);
-                setOrders([]);
+                setRawOrders([]);
             } finally {
                 setIsLoading(false);
                 setIsRefreshing(false);
             }
         },
-        [currentPage, pageSize, searchQuery, statusFilter, supplierFilter, fromDate, toDate, mapBackendToUI]
+        [currentPage, pageSize, searchQuery, statusFilter, supplierFilter, fromDate, toDate]
     );
 
     // Trigger load on state changes

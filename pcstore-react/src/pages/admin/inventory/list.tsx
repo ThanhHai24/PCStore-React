@@ -315,9 +315,9 @@ export default function WarehouseInventoryList() {
                     return {
                         id: String(p.id),
                         productId: p.id,
-                        productName: p.name,
-                        productCode: p.code,
-                        slug: p.slug,
+                        productName: p.name || '',
+                        productCode: p.code || '',
+                        slug: p.slug || '',
                         imageUrl: p.imageUrl || null,
                         productType: String(p.productType || 'COMPONENT'),
                         status: p.status as BackendProductStatus,
@@ -361,16 +361,16 @@ export default function WarehouseInventoryList() {
     const filteredItems = useMemo(() => {
         return inventoryItems.filter((item) => {
             // Search query
-            const q = searchQuery.trim().toLowerCase();
+            const q = (searchQuery || '').trim().toLowerCase();
             const matchSearch =
                 !q ||
-                item.productName.toLowerCase().includes(q) ||
-                item.productCode.toLowerCase().includes(q) ||
-                String(item.productId).includes(q) ||
-                item.slug.toLowerCase().includes(q) ||
-                item.brandName.toLowerCase().includes(q) ||
-                item.categoryName.toLowerCase().includes(q) ||
-                item.serials.some((s) => s.serialNumber.toLowerCase().includes(q));
+                (item.productName || '').toLowerCase().includes(q) ||
+                (item.productCode || '').toLowerCase().includes(q) ||
+                String(item.productId ?? '').includes(q) ||
+                (item.slug || '').toLowerCase().includes(q) ||
+                (item.brandName || '').toLowerCase().includes(q) ||
+                (item.categoryName || '').toLowerCase().includes(q) ||
+                (item.serials || []).some((s) => (s?.serialNumber || '').toLowerCase().includes(q));
 
             // Stock status filter
             const matchStock =
@@ -453,8 +453,10 @@ export default function WarehouseInventoryList() {
         // Fetch fresh active serials for this product
         setProductSerialsLoading(true);
         try {
-            const activeSers = await adminGoodsReceiptService.getActiveSerialsByProduct(item.productId);
-            setActiveProductSerials(activeSers || []);
+            const activeSersPage = await adminGoodsReceiptService.getActiveSerialsByProduct(item.productId, {
+                size: 500,
+            });
+            setActiveProductSerials(activeSersPage.content || []);
         } catch {
             setActiveProductSerials(item.serials || []);
         } finally {
@@ -833,9 +835,9 @@ export default function WarehouseInventoryList() {
     // Filtered serials in modal
     const filteredModalSerials = useMemo(() => {
         if (!selectedItem) return [];
-        const query = serialSearchFilter.trim().toLowerCase();
-        const list = activeProductSerials.length > 0 ? activeProductSerials : selectedItem.serials;
-        return list.filter((s) => !query || s.serialNumber.toLowerCase().includes(query));
+        const query = (serialSearchFilter || '').trim().toLowerCase();
+        const list = activeProductSerials.length > 0 ? activeProductSerials : (selectedItem.serials || []);
+        return list.filter((s) => !query || (s?.serialNumber || '').toLowerCase().includes(query));
     }, [selectedItem, activeProductSerials, serialSearchFilter]);
 
     return (

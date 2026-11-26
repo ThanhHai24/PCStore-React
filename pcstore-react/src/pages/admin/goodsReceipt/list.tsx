@@ -49,6 +49,7 @@ import { AdminConfirmModal } from '../../../components/admin/common/confirmModal
 import { useToast } from '../../../components/admin/common/toast';
 import { adminGoodsReceiptService } from '../../../services/adminGoodsReceiptService';
 import { adminPurchaseOrderService } from '../../../services/adminPurchaseOrderService';
+import { adminSupplierService } from '../../../services/adminSupplierService';
 import type {
     GoodsReceiptResponse,
     GoodsReceiptStatus,
@@ -58,6 +59,7 @@ import type {
     ReceiptItemRequest,
 } from '../../../types/adminGoodsReceipt';
 import type { PurchaseOrderResponse } from '../../../types/adminPurchaseOrder';
+import type { SupplierResponse } from '../../../types/adminSupplier';
 
 // Flattened UI Model for Table & Details
 export interface GoodsReceiptUI {
@@ -139,6 +141,17 @@ function toInputDateTime(isoString?: string | null): string {
         return d.toISOString().slice(0, 16);
     } catch {
         return '';
+    }
+}
+
+function toIsoDateTime(value?: string | null): string | undefined {
+    if (!value) return undefined;
+    try {
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return undefined;
+        return d.toISOString();
+    } catch {
+        return undefined;
     }
 }
 
@@ -278,13 +291,14 @@ export default function GoodsReceiptList() {
     const location = useLocation();
 
     // Data State
-    const [receipts, setReceipts] = useState<GoodsReceiptUI[]>([]);
+    const [rawReceipts, setRawReceipts] = useState<GoodsReceiptResponse[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Purchase Orders lookup
+    // Purchase Orders & Suppliers lookup
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderResponse[]>([]);
+    const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
 
     // Search, Filters & Pagination
     const [searchQuery, setSearchQuery] = useState('');
@@ -309,6 +323,7 @@ export default function GoodsReceiptList() {
     // Detail Modal State
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState<GoodsReceiptUI | null>(null);
+    const [detailPoItemsMap, setDetailPoItemsMap] = useState<Map<number, PurchaseOrderItemReceiptInfo>>(new Map());
     const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'items' | 'serials' | 'defective' | 'print'>('overview');
     const [serialSearchFilter, setSerialSearchFilter] = useState('');
     const [serialStatusFilter, setSerialStatusFilter] = useState<string>('ALL');
@@ -374,12 +389,18 @@ export default function GoodsReceiptList() {
     const [deleteTargetReceipt, setDeleteTargetReceipt] = useState<GoodsReceiptUI | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Map POs dictionary
+    // Map POs & Suppliers dictionaries
     const poMap = useMemo(() => {
         const map = new Map<number, PurchaseOrderResponse>();
         purchaseOrders.forEach((po) => map.set(po.id, po));
         return map;
     }, [purchaseOrders]);
+
+    const supplierMap = useMemo(() => {
+        const map = new Map<number, SupplierResponse>();
+        suppliers.forEach((s) => map.set(s.id, s));
+        return map;
+    }, [suppliers]);
 
     // Load POs for filtering and creating receipt
     const loadPurchaseOrders = useCallback(async () => {
@@ -393,9 +414,22 @@ export default function GoodsReceiptList() {
         }
     }, []);
 
+    // Load Suppliers for displaying supplier name/phone
+    const loadSuppliers = useCallback(async () => {
+        try {
+            const res = await adminSupplierService.getAllSuppliers({
+                size: 200,
+            });
+            setSuppliers(res.content || []);
+        } catch {
+            // Non-blocking
+        }
+    }, []);
+
     useEffect(() => {
         loadPurchaseOrders();
-    }, [loadPurchaseOrders]);
+        loadSuppliers();
+    }, [loadPurchaseOrders, loadSuppliers]);
 
     /**
      * Map backend GoodsReceiptResponse to GoodsReceiptUI
@@ -403,6 +437,7 @@ export default function GoodsReceiptList() {
     const mapBackendToUI = useCallback(
         (b: GoodsReceiptResponse): GoodsReceiptUI => {
             const po = poMap.get(b.purchaseOrderId);
+            const sup = po ? supplierMap.get(po.supplierId) : undefined;
             let totalRecv = 0;
             let totalAcc = 0;
             let totalDef = 0;
@@ -422,7 +457,8 @@ export default function GoodsReceiptList() {
                 name: b.name || `Phiếu nhập #${b.code}`,
                 purchaseOrderId: b.purchaseOrderId,
                 poCode: po?.code || `PO #${b.purchaseOrderId}`,
-                supplierName: po?.name || '---',
+                supplierName: sup?.name || (po ? `Nhà cung cấp #${po.supplierId}` : '---'),
+                supplierPhone: sup?.phoneNumber || undefined,
                 receivedAt: formatDateTime(b.receivedAt),
                 rawReceivedAt: b.receivedAt,
                 status: b.status,
@@ -439,7 +475,12 @@ export default function GoodsReceiptList() {
                 rawResponse: b,
             };
         },
-        [poMap]
+        [poMap, supplierMap]
+    );
+
+    const receipts = useMemo(
+        () => rawReceipts.map(mapBackendToUI),
+        [rawReceipts, mapBackendToUI]
     );
 
     /**
@@ -479,8 +520,7 @@ export default function GoodsReceiptList() {
 
                 const res = await adminGoodsReceiptService.getAllReceipts(params);
 
-                const mapped = (res.content || []).map(mapBackendToUI);
-                setReceipts(mapped);
+                setRawReceipts(res.content || []);
                 setTotalElements(res.totalElements || 0);
                 setTotalPages(res.totalPages || 1);
             } catch (err: any) {
@@ -492,7 +532,7 @@ export default function GoodsReceiptList() {
                 setIsRefreshing(false);
             }
         },
-        [currentPage, pageSize, debouncedSearch, statusFilter, poFilter, fromDate, toDate, mapBackendToUI, toast]
+        [currentPage, pageSize, debouncedSearch, statusFilter, poFilter, fromDate, toDate, toast]
     );
 
     useEffect(() => {
@@ -687,19 +727,32 @@ export default function GoodsReceiptList() {
         }
 
         const currentItem = formItems[activeItemIndex];
+        const maxAllowed = Math.max(0, currentItem.remainingQuantity);
 
-        // Check for duplicate in current item or across all items in receipt
-        const duplicateInItem = currentItem.serials.some((s) => s.serialNumber.toLowerCase() === clean.toLowerCase());
-        if (duplicateInItem) {
-            toast.error(`Mã Serial "${clean}" đã tồn tại trong dòng sản phẩm này!`);
+        if (currentItem.serials.length >= maxAllowed) {
+            toast.error(
+                `Đã đủ số lượng tối đa (${maxAllowed}) cho "${currentItem.productName}". Không thể nhập vượt quá số lượng sản phẩm đặt!`
+            );
             return;
         }
 
-        const updated = [...formItems];
-        updated[activeItemIndex].serials.push({
-            serialNumber: clean,
-            status: barcodeStatus,
-        });
+        // Check for duplicate across all items in receipt
+        const duplicateInReceipt = formItems.some((it) =>
+            it.serials.some((s) => s.serialNumber.toLowerCase() === clean.toLowerCase())
+        );
+        if (duplicateInReceipt) {
+            toast.error(`Mã Serial "${clean}" đã tồn tại trong phiếu nhập này!`);
+            return;
+        }
+
+        const updated = formItems.map((it, idx) =>
+            idx === activeItemIndex
+                ? {
+                      ...it,
+                      serials: [...it.serials, { serialNumber: clean, status: barcodeStatus }],
+                  }
+                : it
+        );
 
         setFormItems(updated);
         setBarcodeInput('');
@@ -720,6 +773,18 @@ export default function GoodsReceiptList() {
             return;
         }
 
+        const currentItem = formItems[activeItemIndex];
+        const maxAllowed = Math.max(0, currentItem.remainingQuantity);
+        const slotsLeft = Math.max(0, maxAllowed - currentItem.serials.length);
+
+        if (slotsLeft <= 0) {
+            toast.error(
+                `Đã đủ số lượng tối đa (${maxAllowed}) cho "${currentItem.productName}". Không thể nạp thêm Serial!`
+            );
+            setIsBulkModalOpen(false);
+            return;
+        }
+
         const lines = bulkSerialsInput
             .split(/[\n,;]+/)
             .map((s) => s.trim())
@@ -730,9 +795,10 @@ export default function GoodsReceiptList() {
             return;
         }
 
-        const currentItem = formItems[activeItemIndex];
-        const existingSet = new Set(currentItem.serials.map((s) => s.serialNumber.toLowerCase()));
-        const newSerials: FormReceiptSerial[] = [];
+        const existingSet = new Set(
+            formItems.flatMap((it) => it.serials.map((s) => s.serialNumber.toLowerCase()))
+        );
+        const uniqueNewSerials: FormReceiptSerial[] = [];
         let duplicateCount = 0;
 
         lines.forEach((num) => {
@@ -740,20 +806,39 @@ export default function GoodsReceiptList() {
                 duplicateCount++;
             } else {
                 existingSet.add(num.toLowerCase());
-                newSerials.push({
+                uniqueNewSerials.push({
                     serialNumber: num,
                     status: barcodeStatus,
                 });
             }
         });
 
-        const updated = [...formItems];
-        updated[activeItemIndex].serials.push(...newSerials);
-        setFormItems(updated);
+        const acceptedSerials = uniqueNewSerials.slice(0, slotsLeft);
+        const overflowCount = Math.max(0, uniqueNewSerials.length - slotsLeft);
+
+        if (acceptedSerials.length > 0) {
+            const updated = formItems.map((it, idx) =>
+                idx === activeItemIndex
+                    ? { ...it, serials: [...it.serials, ...acceptedSerials] }
+                    : it
+            );
+            setFormItems(updated);
+        }
+
         setBulkSerialsInput('');
         setIsBulkModalOpen(false);
 
-        toast.success(`Đã nạp thêm ${newSerials.length} serial thành công! ${duplicateCount > 0 ? `(Bỏ qua ${duplicateCount} serial trùng lặp)` : ''}`);
+        if (overflowCount > 0) {
+            toast.warning(
+                `Chỉ nạp ${acceptedSerials.length} serial (đạt giới hạn tối đa ${maxAllowed}). Đã bỏ qua ${overflowCount} serial vượt số lượng đặt${duplicateCount > 0 ? ` và ${duplicateCount} serial trùng` : ''}!`
+            );
+        } else if (acceptedSerials.length > 0) {
+            toast.success(
+                `Đã nạp thêm ${acceptedSerials.length} serial thành công!${duplicateCount > 0 ? ` (Bỏ qua ${duplicateCount} serial trùng lặp)` : ''}`
+            );
+        } else {
+            toast.warning('Tất cả serial vừa dán đều đã trùng lặp.');
+        }
     };
 
     /**
@@ -821,7 +906,7 @@ export default function GoodsReceiptList() {
                 code: formCode.trim(),
                 name: formName.trim() || undefined,
                 purchaseOrderId: formPoId,
-                receivedAt: formReceivedAt ? `${formReceivedAt}:00Z` : undefined,
+                receivedAt: toIsoDateTime(formReceivedAt),
                 status: 'DRAFT',
                 items: [],
             });
@@ -855,10 +940,23 @@ export default function GoodsReceiptList() {
 
         setIsSubmitting(true);
         try {
+            const existingReceipt = rawReceipts.find((r) => r.id === editingReceiptId);
+            const preservedItems: ReceiptItemRequest[] | undefined = existingReceipt
+                ? (existingReceipt.items || []).map((it) => ({
+                      purchaseOrderItemId: it.purchaseOrderItemId,
+                      actualUnitCost: Number(it.actualUnitCost) || 0,
+                      productSerials: (it.productSerials || []).map((s) => ({
+                          serialNumber: s.serialNumber,
+                          status: s.status,
+                      })),
+                  }))
+                : undefined;
+
             await adminGoodsReceiptService.updateReceipt(editingReceiptId, {
                 code: formCode.trim(),
                 name: formName.trim() || undefined,
-                receivedAt: formReceivedAt ? `${formReceivedAt}:00Z` : undefined,
+                receivedAt: toIsoDateTime(formReceivedAt),
+                items: preservedItems,
             });
             toast.success('Cập nhật thông tin phiếu nhập hàng thành công!');
             setIsEditModalOpen(false);
@@ -897,7 +995,7 @@ export default function GoodsReceiptList() {
             await adminGoodsReceiptService.updateReceipt(scanningReceipt.numericId, {
                 code: scanningReceipt.code,
                 name: scanningReceipt.name,
-                receivedAt: scanningReceipt.rawReceivedAt ? `${scanningReceipt.rawReceivedAt.slice(0, 19)}Z` : undefined,
+                receivedAt: toIsoDateTime(scanningReceipt.rawReceivedAt),
                 items: selectedItems,
             });
 
@@ -946,7 +1044,7 @@ export default function GoodsReceiptList() {
                 await adminGoodsReceiptService.updateReceipt(scanningReceipt.numericId, {
                     code: scanningReceipt.code,
                     name: scanningReceipt.name,
-                    receivedAt: scanningReceipt.rawReceivedAt ? `${scanningReceipt.rawReceivedAt.slice(0, 19)}Z` : undefined,
+                    receivedAt: toIsoDateTime(scanningReceipt.rawReceivedAt),
                     items: selectedItems,
                 });
 
@@ -1086,7 +1184,13 @@ export default function GoodsReceiptList() {
      */
     const handleViewDetail = async (receipt: GoodsReceiptUI) => {
         try {
-            const full = await adminGoodsReceiptService.getReceiptById(receipt.numericId);
+            const [full, poItems] = await Promise.all([
+                adminGoodsReceiptService.getReceiptById(receipt.numericId),
+                adminGoodsReceiptService.getOrderItemsForReceipt(receipt.purchaseOrderId).catch(() => [] as PurchaseOrderItemReceiptInfo[]),
+            ]);
+            const poItemsMap = new Map<number, PurchaseOrderItemReceiptInfo>();
+            poItems.forEach((it) => poItemsMap.set(it.id, it));
+            setDetailPoItemsMap(poItemsMap);
             setSelectedReceipt(mapBackendToUI(full));
             setActiveDetailTab('overview');
             setSerialSearchFilter('');
@@ -1096,6 +1200,17 @@ export default function GoodsReceiptList() {
             toast.error(err?.message || 'Không thể tải chi tiết phiếu nhập.');
         }
     };
+
+    const getDetailItemInfo = useCallback(
+        (purchaseOrderItemId: number) => {
+            const info = detailPoItemsMap.get(purchaseOrderItemId);
+            return {
+                name: info?.productName || `Mặt hàng PO #${purchaseOrderItemId}`,
+                code: info?.productCode || null,
+            };
+        },
+        [detailPoItemsMap]
+    );
 
     // Filter fields configuration for AdminFilter component
     const filterFields: FilterField[] = useMemo(
@@ -1896,10 +2011,13 @@ export default function GoodsReceiptList() {
                                             </div>
 
                                             {/* Barcode input row (Only in DRAFT) */}
-                                            {scanningReceipt.status === 'DRAFT' && (
+                                            {scanningReceipt.status === 'DRAFT' && (() => {
+                                                const activeItem = formItems[activeItemIndex];
+                                                const isQuotaFull = activeItem.serials.length >= Math.max(0, activeItem.remainingQuantity);
+                                                return (
                                                 <div className="space-y-2">
                                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                                        <div className="flex-1">
+                                                        <div className="flex-1 min-w-0">
                                                             <AdminInput
                                                                 type="text"
                                                                 value={barcodeInput}
@@ -1910,26 +2028,36 @@ export default function GoodsReceiptList() {
                                                                         handleAddSerial();
                                                                     }
                                                                 }}
-                                                                placeholder="Quét Barcode hoặc nhập Serial rồi nhấn Enter..."
+                                                                placeholder={
+                                                                    isQuotaFull
+                                                                        ? 'Đã quét đủ số lượng đặt cho mặt hàng này'
+                                                                        : 'Quét Barcode hoặc nhập Serial rồi nhấn Enter...'
+                                                                }
                                                                 prefixIcon={Barcode}
-                                                                className="font-mono tabular-nums"
+                                                                className="font-mono tabular-nums w-full"
+                                                                disabled={isQuotaFull}
                                                                 autoFocus
                                                             />
                                                         </div>
 
-                                                        <AdminSelect
-                                                            value={barcodeStatus}
-                                                            onChange={(e) => setBarcodeStatus(e.target.value as any)}
-                                                            className="!w-auto font-medium"
-                                                        >
-                                                            <option value="GOOD_CONDITION">Đạt chuẩn</option>
-                                                            <option value="DEFECTIVE">Hàng lỗi</option>
-                                                        </AdminSelect>
+                                                        <div className="w-full sm:w-[140px] shrink-0">
+                                                            <AdminSelect
+                                                                value={barcodeStatus}
+                                                                onChange={(e) => setBarcodeStatus(e.target.value as any)}
+                                                                className="font-medium w-full"
+                                                                disabled={isQuotaFull}
+                                                            >
+                                                                <option value="GOOD_CONDITION">Đạt chuẩn</option>
+                                                                <option value="DEFECTIVE">Hàng lỗi</option>
+                                                            </AdminSelect>
+                                                        </div>
 
                                                         <AdminButton
                                                             type="button"
                                                             onClick={handleAddSerial}
                                                             variant="primary"
+                                                            disabled={isQuotaFull}
+                                                            className="shrink-0 whitespace-nowrap"
                                                         >
                                                             Thêm
                                                         </AdminButton>
@@ -1937,17 +2065,26 @@ export default function GoodsReceiptList() {
 
                                                     {/* Tool buttons: Bulk paste, Clear */}
                                                     <div className="flex items-center justify-between gap-2">
-                                                        <AdminButton
-                                                            type="button"
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            onClick={() => setIsBulkModalOpen(true)}
-                                                            icon={FileText}
-                                                        >
-                                                            Dán nhiều serial
-                                                        </AdminButton>
+                                                        <div className="flex items-center gap-2">
+                                                            <AdminButton
+                                                                type="button"
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                onClick={() => setIsBulkModalOpen(true)}
+                                                                disabled={isQuotaFull}
+                                                                icon={FileText}
+                                                            >
+                                                                Dán nhiều serial
+                                                            </AdminButton>
+                                                            {isQuotaFull && (
+                                                                <span className="text-xs font-medium text-emerald-700 inline-flex items-center gap-1">
+                                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                                    Đã đủ số lượng ({activeItem.remainingQuantity})
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                                                        {formItems[activeItemIndex].serials.length > 0 && (
+                                                        {activeItem.serials.length > 0 && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleClearAllSerials(activeItemIndex)}
@@ -1958,7 +2095,8 @@ export default function GoodsReceiptList() {
                                                         )}
                                                     </div>
                                                 </div>
-                                            )}
+                                                );
+                                            })()}
 
                                             {/* Serials list */}
                                             <div className="space-y-1.5">
@@ -2268,15 +2406,23 @@ export default function GoodsReceiptList() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200/80">
-                                        {(selectedReceipt.items || []).map((it, idx) => (
+                                        {(selectedReceipt.items || []).map((it, idx) => {
+                                            const itemInfo = getDetailItemInfo(it.purchaseOrderItemId);
+                                            return (
                                             <tr key={it.id || idx} className="hover:bg-slate-50/80">
                                                 <td className="px-3.5 py-2.5 text-center text-slate-400 font-mono tabular-nums">{idx + 1}</td>
                                                 <td className="px-3.5 py-2.5">
                                                     <div className="font-medium text-slate-900">
-                                                        Mặt hàng PO #{it.purchaseOrderItemId}
+                                                        {itemInfo.name}
                                                     </div>
-                                                    <div className="text-slate-500 text-[11px] tabular-nums">
-                                                        {it.productSerials?.length || 0} serial được định danh
+                                                    <div className="text-slate-500 text-[11px] tabular-nums flex items-center gap-1.5 flex-wrap">
+                                                        {itemInfo.code && (
+                                                            <>
+                                                                <span className="font-mono text-slate-600">{itemInfo.code}</span>
+                                                                <span className="text-slate-300">·</span>
+                                                            </>
+                                                        )}
+                                                        <span>{it.productSerials?.length || 0} serial được định danh</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-3.5 py-2.5 text-right text-slate-700 tabular-nums whitespace-nowrap">
@@ -2295,7 +2441,8 @@ export default function GoodsReceiptList() {
                                                     {formatVND((it.actualUnitCost || 0) * (it.quantityReceived || 0))}
                                                 </td>
                                             </tr>
-                                        ))}
+                                            );
+                                        })}
                                     </tbody>
                                     <tfoot className="bg-slate-50 font-semibold border-t border-slate-200 text-slate-900 tabular-nums">
                                         <tr>
@@ -2398,8 +2545,13 @@ export default function GoodsReceiptList() {
                                                                 {conf.label}
                                                             </span>
                                                         </td>
-                                                        <td className="px-3.5 py-2.5 text-slate-600 tabular-nums">
-                                                            PO Item #{purchaseOrderItemId}
+                                                        <td className="px-3.5 py-2.5 text-slate-700">
+                                                            <div className="font-medium text-slate-900">{getDetailItemInfo(purchaseOrderItemId).name}</div>
+                                                            {getDetailItemInfo(purchaseOrderItemId).code && (
+                                                                <div className="text-[11px] font-mono text-slate-500">
+                                                                    {getDetailItemInfo(purchaseOrderItemId).code}
+                                                                </div>
+                                                            )}
                                                         </td>
                                                         <td className="px-3.5 py-2.5 text-right">
                                                             {serial.isTerminated || serial.terminated ? (
@@ -2451,8 +2603,13 @@ export default function GoodsReceiptList() {
                                                     <td className="px-3.5 py-2.5 font-mono font-semibold tabular-nums text-rose-700">
                                                         {serial.serialNumber}
                                                     </td>
-                                                    <td className="px-3.5 py-2.5 text-slate-700 tabular-nums">
-                                                        Mặt hàng PO #{purchaseOrderItemId}
+                                                    <td className="px-3.5 py-2.5 text-slate-700">
+                                                        <div className="font-medium text-slate-900">{getDetailItemInfo(purchaseOrderItemId).name}</div>
+                                                        {getDetailItemInfo(purchaseOrderItemId).code && (
+                                                            <div className="text-[11px] font-mono text-slate-500">
+                                                                {getDetailItemInfo(purchaseOrderItemId).code}
+                                                            </div>
+                                                        )}
                                                     </td>
                                                     <td className="px-3.5 py-2.5 text-slate-600">
                                                         Ngoại quan lỗi / Không lên nguồn / Sai tem kiểm định
@@ -2522,7 +2679,14 @@ export default function GoodsReceiptList() {
                                         {(selectedReceipt.items || []).map((it, idx) => (
                                             <tr key={idx}>
                                                 <td className="border border-slate-400 p-2 text-center">{idx + 1}</td>
-                                                <td className="border border-slate-400 p-2">Mặt hàng PO #{it.purchaseOrderItemId}</td>
+                                                <td className="border border-slate-400 p-2">
+                                                    <div className="font-medium">{getDetailItemInfo(it.purchaseOrderItemId).name}</div>
+                                                    {getDetailItemInfo(it.purchaseOrderItemId).code && (
+                                                        <div className="text-[11px] font-mono text-slate-600">
+                                                            {getDetailItemInfo(it.purchaseOrderItemId).code}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="border border-slate-400 p-2 text-right font-semibold">{it.quantityReceived}</td>
                                                 <td className="border border-slate-400 p-2 text-right text-emerald-700 font-semibold">{it.quantityAccepted}</td>
                                                 <td className="border border-slate-400 p-2 text-right text-rose-700 font-semibold">{it.quantityDefective}</td>

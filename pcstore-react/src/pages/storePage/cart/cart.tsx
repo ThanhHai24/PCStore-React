@@ -26,6 +26,7 @@ import type { OrderCreateRequest, OrderItemRequest, OrderResponse } from '../../
 import defaultPcImg from '../../../assets/images/products/pc.jpg';
 import { provinceService } from '../../../services/provinceService';
 import { orderService } from '../../../services/orderService';
+import { paymentService } from '../../../services/paymentService';
 import type { ProvinceResponse, WardResponse } from '../../../types/province';
 
 export const Cart: React.FC = () => {
@@ -64,8 +65,8 @@ export const Cart: React.FC = () => {
     const [isLoadingProvinces, setIsLoadingProvinces] = useState<boolean>(true);
     const [isLoadingWards, setIsLoadingWards] = useState<boolean>(false);
 
-    // Mặc định chọn hình thức COD
-    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay'>('cod');
+    // Mặc định chọn hình thức COD (hỗ trợ cả ZaloPay Sandbox)
+    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'zalopay'>('cod');
     const [orderSuccessModal, setOrderSuccessModal] = useState<boolean>(false);
     const [createdOrderData, setCreatedOrderData] = useState<OrderResponse | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -359,15 +360,37 @@ export const Cart: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            // Gọi API Backend thật lưu đơn hàng COD
+            // 1. Tạo đơn hàng trên Backend
             const createdOrder = await orderService.createOrder(orderPayload);
             setCreatedOrderData(createdOrder);
 
-            // Xóa sạch giỏ hàng sau khi đặt thành công
-            clearCart();
+            // 2. Đăng ký thanh toán tương ứng với phương thức khách chọn
+            if (paymentMethod === 'zalopay') {
+                const redirectUrl = `${window.location.origin}/payment/zalopay-return`;
+                const zaloRes = await paymentService.createZaloPayOrder({
+                    orderId: createdOrder.id,
+                    redirectUrl,
+                });
+                clearCart();
+                if (zaloRes?.orderUrl) {
+                    window.location.href = zaloRes.orderUrl;
+                    return;
+                }
+                setOrderSuccessModal(true);
+            } else {
+                // Đăng ký COD qua POST /api/payments/cod
+                try {
+                    await paymentService.createCodPayment(createdOrder.id);
+                } catch (codErr) {
+                    console.warn('Đăng ký bản ghi COD cảnh báo:', codErr);
+                }
 
-            // Hiển thị modal đặt hàng COD thành công
-            setOrderSuccessModal(true);
+                // Xóa sạch giỏ hàng sau khi đặt thành công
+                clearCart();
+
+                // Hiển thị modal đặt hàng COD thành công
+                setOrderSuccessModal(true);
+            }
         } catch (err: any) {
             console.error('Lỗi khi đặt hàng:', err);
             const errMsg =
@@ -843,7 +866,7 @@ export const Cart: React.FC = () => {
                                 <span>PHƯƠNG THỨC THANH TOÁN</span>
                             </h2>
                             <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold border border-emerald-100">
-                                Thanh toán khi nhận hàng (COD)
+                                {paymentMethod === 'zalopay' ? 'ZaloPay Sandbox' : 'Thanh toán khi nhận hàng (COD)'}
                             </span>
                         </div>
 
@@ -877,36 +900,40 @@ export const Cart: React.FC = () => {
                                 </div>
                             </label>
 
-                            {/* Option 2: VNPAY (Tạm thời thông báo chưa mở) */}
-                            <div className="p-3.5 rounded-xl border border-dashed border-gray-300 bg-gray-50/70">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start space-x-3">
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="vnpay"
-                                            disabled
-                                            className="mt-0.5 text-gray-300 cursor-not-allowed"
-                                        />
-                                        <div>
-                                            <div className="flex items-center space-x-2">
-                                                <span className="font-bold text-xs text-gray-600">
-                                                    Cổng thanh toán điện tử VNPAY (QR / Thẻ ATM / Thẻ quốc tế)
-                                                </span>
-                                                <span className="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.2 rounded border border-amber-200">
-                                                    Tạm ẩn / Sắp ra mắt
-                                                </span>
-                                            </div>
-                                            <p className="text-[11px] text-gray-400 font-normal mt-0.5 leading-relaxed">
-                                                Thanh toán trực tuyến qua cổng VNPAY đang được tích hợp thêm.
-                                            </p>
+                            {/* Option 2: ZaloPay Sandbox (Active) */}
+                            <label
+                                className={`flex items-start justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'zalopay'
+                                    ? 'border-blue-600 bg-blue-50/50 text-blue-950 font-bold ring-1 ring-blue-500'
+                                    : 'border-gray-200 hover:bg-gray-50 text-gray-800'
+                                    }`}
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <input
+                                        type="radio"
+                                        name="payment"
+                                        value="zalopay"
+                                        checked={paymentMethod === 'zalopay'}
+                                        onChange={() => setPaymentMethod('zalopay')}
+                                        className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="font-extrabold text-xs text-gray-900">
+                                                Cổng thanh toán ZaloPay (QR / Ví ZaloPay / ATM / Thẻ quốc tế)
+                                            </span>
+                                            <span className="text-[9px] bg-sky-100 text-sky-800 font-extrabold px-1.5 py-0.5 rounded border border-sky-200">
+                                                Sandbox
+                                            </span>
                                         </div>
+                                        <p className="text-[11px] text-gray-500 font-normal mt-0.5 leading-relaxed">
+                                            Chuyển hướng an toàn sang cổng ZaloPay để thanh toán trực tuyến và tự động xác nhận đơn hàng
+                                        </p>
                                     </div>
-                                    <span className="bg-gray-200 text-gray-500 font-black text-[9px] px-1.5 py-0.5 rounded tracking-wider shrink-0">
-                                        VNPAY
-                                    </span>
                                 </div>
-                            </div>
+                                <span className="bg-sky-600 text-white font-black text-[9px] px-1.5 py-0.5 rounded tracking-wider shrink-0">
+                                    ZALOPAY
+                                </span>
+                            </label>
                         </div>
                     </div>
 

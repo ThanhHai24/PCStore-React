@@ -67,6 +67,7 @@ function formatDateTimeVN(dateStr?: string | null): string {
 export const WarrantyLookup: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastQueriedSerialRef = useRef<string | null>(null);
 
   const [serialInput, setSerialInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -117,6 +118,7 @@ export const WarrantyLookup: React.FC = () => {
       setIsLoading(true);
       setErrorMessage(null);
       setHasSearched(true);
+      lastQueriedSerialRef.current = clean;
 
       if (updateUrl) {
         setSearchParams({ serial: clean }, { replace: true });
@@ -145,12 +147,12 @@ export const WarrantyLookup: React.FC = () => {
     [saveRecentSerial, setSearchParams]
   );
 
-  // Auto-lookup if ?serial=... is in URL
+  // Auto-lookup if ?serial=... is in URL (avoid duplicate call when updated from submit)
   useEffect(() => {
-    const urlSerial = searchParams.get('serial') || searchParams.get('sn');
-    if (urlSerial && urlSerial.trim()) {
-      setSerialInput(urlSerial.trim());
-      performLookup(urlSerial.trim(), false);
+    const urlSerial = (searchParams.get('serial') || searchParams.get('sn') || '').trim();
+    if (urlSerial && urlSerial !== lastQueriedSerialRef.current) {
+      setSerialInput(urlSerial);
+      performLookup(urlSerial, false);
     }
   }, [searchParams, performLookup]);
 
@@ -343,6 +345,30 @@ export const WarrantyLookup: React.FC = () => {
               )}
             </button>
           </form>
+
+          {/* Recent Searched Serials */}
+          {recentSerials.length > 0 && (
+            <div className="max-w-2xl mx-auto flex flex-wrap items-center justify-center gap-2 text-xs">
+              <span className="text-blue-100/90 font-medium">Tra cứu gần đây:</span>
+              {recentSerials.map((sn) => (
+                <button
+                  key={sn}
+                  type="button"
+                  onClick={() => handleSelectQuickSerial(sn)}
+                  className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-mono font-semibold transition-colors cursor-pointer"
+                >
+                  {sn}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={handleClearRecent}
+                className="text-blue-200 hover:text-white underline ml-1 cursor-pointer"
+              >
+                Xóa
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -473,11 +499,20 @@ export const WarrantyLookup: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handlePrintCertificate}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-gray-200 hover:border-blue-400 text-xs font-bold text-gray-700 hover:text-blue-600 shadow-xs transition-colors shrink-0 cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>In chứng nhận BH</span>
+              </button>
             </div>
 
             {/* 2. Highlight Warranty Dates Row (Ngày kích hoạt, Ngày hết hạn, Thời gian còn lại) */}
             <div className="p-6 bg-gradient-to-b from-gray-50/70 to-white border-b border-gray-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Card 1: Ngày kích hoạt bảo hành */}
                 <div className="bg-white rounded-2xl p-5 border border-blue-100 shadow-xs flex items-start space-x-4 relative overflow-hidden">
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
@@ -504,6 +539,25 @@ export const WarrantyLookup: React.FC = () => {
                     </span>
                     <div className="text-xl sm:text-2xl font-black text-rose-600 font-mono">
                       {formatDateVN(result.endDate)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3: Thời gian bảo hành còn lại */}
+                <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-xs flex items-start space-x-4 relative overflow-hidden">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 block">
+                      Thời hạn còn lại
+                    </span>
+                    <div className="text-xl sm:text-2xl font-black text-emerald-700 font-mono">
+                      {result.warrantyStatus === 'VOID'
+                        ? 'Đã hủy'
+                        : result.remainingDays > 0
+                          ? `${result.remainingDays} ngày`
+                          : 'Hết hạn'}
                     </div>
                   </div>
                 </div>
@@ -675,6 +729,12 @@ export const WarrantyLookup: React.FC = () => {
                         {result.requestsCount} lần
                       </span>
                     </div>
+                    {result.note && (
+                      <div className="pt-2 border-t border-blue-100">
+                        <span className="text-gray-500 block mb-1">Ghi chú bảo hành:</span>
+                        <p className="text-gray-700 font-medium leading-relaxed">{result.note}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

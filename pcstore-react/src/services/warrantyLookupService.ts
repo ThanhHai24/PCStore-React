@@ -1,25 +1,70 @@
 import { API_ENDPOINTS } from '../config/api';
+import { fetchWithAuth } from './apiClient';
 import { productService, getDefaultImageForProduct, parseSpecsTable } from './productService';
 import { brandService } from './brandService';
 import { categoryService } from './categoryService';
-import { orderFulfillmentService } from './orderFulfillmentService';
 import type { ProductWarrantyStatus, WarrantyTimelineEvent } from '../types/adminWarranty';
 import type { ProductResponse } from '../types/adminProduct';
 import type { SpecItem } from '../types/product';
 
-interface PublicWarrantyResponse {
+/**
+ * Schema AdminWarrantyResponse từ BE (GET /api/admin/warranties/by-serial/{serialNumber})
+ */
+interface BackendWarrantyResponse {
+  id: number;
+  orderItemId?: number;
+  orderId?: number;
+  orderCode?: string | null;
+  productSerialId?: number;
   serialNumber: string;
   productId?: number;
-  productName?: string;
-  productCode?: string;
-  brandName?: string;
-  policyName?: string;
-  durationDays: number;
-  startDate: string;
-  endDate: string;
-  active: boolean;
-  status: string;
-  remainingDays: number;
+  productName?: string | null;
+  productCode?: string | null;
+  brandName?: string | null;
+  categoryName?: string | null;
+  customerId?: number;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  warrantyPolicyId?: number;
+  policyName?: string | null;
+  durationDays?: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  active?: boolean;
+  status?: string | null;
+  remainingDays?: number;
+  note?: string | null;
+  requestsCount?: number;
+}
+
+/**
+ * Schema TimelineEvent & WarrantyHistoryResponse từ BE (GET /api/admin/warranties/history/{serialNumber})
+ */
+interface BackendTimelineEvent {
+  id?: string;
+  timestamp?: string;
+  title?: string;
+  description?: string;
+  actor?: string;
+  type?: string;
+  badgeColor?: string;
+}
+
+interface BackendWarrantyHistoryResponse {
+  serialNumber?: string;
+  productName?: string | null;
+  productCode?: string | null;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  orderCode?: string | null;
+  purchaseDate?: string | null;
+  warrantyStartDate?: string | null;
+  warrantyEndDate?: string | null;
+  policyName?: string | null;
+  status?: string | null;
+  totalRequests?: number;
+  timeline?: BackendTimelineEvent[];
 }
 
 export interface WarrantyLookupResult {
@@ -135,194 +180,29 @@ function computeWarrantyDatesAndStatus(
   };
 }
 
-// Built-in demo records so users/evaluators can test all warranty states immediately
-const DEMO_SERIAL_RECORDS: Record<string, Omit<WarrantyLookupResult, 'startDate' | 'endDate' | 'durationDays' | 'durationMonths' | 'remainingDays' | 'usedDays' | 'progressPercent' | 'warrantyStatus'> & {
-  startOffsetDays: number;
-  durationDays: number;
-  isVoid?: boolean;
-}> = {
-  'GIGA-M27Q-FIFO-8821': {
-    serialNumber: 'GIGA-M27Q-FIFO-8821',
-    serialStatus: 'SOLD',
-    warrantyId: 5001,
-    active: true,
-    startOffsetDays: 45,
-    durationDays: 1095,
-    policyName: 'Bảo hành chính hãng GIGABYTE 36 tháng (1 đổi 1 trong 30 ngày đầu)',
-    policyDescription: 'Bảo hành toàn diện tấm nền IPS, mạch nguồn và cổng kết nối theo tiêu chuẩn nhà sản xuất GIGABYTE Việt Nam.',
-    productId: 5,
-    productName: 'Màn hình GIGABYTE M27Q 27" IPS 2K 170Hz KVM Gaming',
-    productCode: 'MON-GIGA-M27Q',
-    productImage: getDefaultImageForProduct({ name: 'Màn hình GIGABYTE M27Q', productType: 'COMPONENT' }),
-    brandName: 'GIGABYTE',
-    categoryName: 'Màn hình Gaming',
-    productPrice: 12500000,
-    specifications: [
-      { key: 'Kích thước', name: '27 inch phẳng', warranty: '36TH' },
-      { key: 'Độ phân giải', name: 'QHD 2K (2560 x 1440)', warranty: '36TH' },
-      { key: 'Tấm nền & Tần số', name: 'SuperSpeed IPS / 170Hz / 0.5ms', warranty: '36TH' },
-      { key: 'Tính năng đặc biệt', name: 'Tích hợp KVM Switch, HDR400', warranty: '36TH' },
-    ],
-    orderCode: 'ORD-2026-007',
-    customerName: 'Bùi Anh Tuấn',
-    customerPhoneMasked: '0918.***.333',
-    goodsReceiptCode: 'GR-2026-0019',
-    requestsCount: 0,
-    timeline: [
-      {
-        id: 'tl-1',
-        timestamp: new Date(Date.now() - 48 * 86400000).toISOString(),
-        title: 'Nhập kho & Kiểm định chất lượng (QC Passed)',
-        description: 'Sản phẩm được nhập kho chính hãng theo lô GR-2026-0019, đạt tiêu chuẩn kỹ thuật 100%.',
-        actor: 'Bộ phận Kho vận PCStore',
-        type: 'SALE',
-      },
-      {
-        id: 'tl-2',
-        timestamp: new Date(Date.now() - 45 * 86400000).toISOString(),
-        title: 'Xuất bán & Kích hoạt bảo hành điện tử chính hãng',
-        description: 'Sản phẩm được xuất bán theo đơn hàng #ORD-2026-007 và tự động kích hoạt gói bảo hành 36 tháng.',
-        actor: 'Hệ thống Bảo hành Điện tử PCStore',
-        type: 'WARRANTY_ACTIVE',
-      },
-    ],
-  },
-  'ASUS-ROG-Z790-FIFO-001': {
-    serialNumber: 'ASUS-ROG-Z790-FIFO-001',
-    serialStatus: 'SOLD',
-    warrantyId: 5002,
-    active: true,
-    startOffsetDays: 120,
-    durationDays: 1095,
-    policyName: 'Bảo hành chính hãng ASUS ROG VIP 36 tháng',
-    policyDescription: 'Bảo hành chính hãng 36 tháng tại trung tâm bảo hành ủy quyền ASUS và hệ thống PCStore toàn quốc.',
-    productId: 1,
-    productName: 'Mainboard ASUS ROG MAXIMUS Z790 HERO DDR5',
-    productCode: 'MB-ASUS-Z790-ROG',
-    productImage: getDefaultImageForProduct({ name: 'Mainboard ASUS ROG MAXIMUS Z790 HERO', productType: 'COMPONENT' }),
-    brandName: 'ASUS',
-    categoryName: 'Bo mạch chủ (Mainboard)',
-    productPrice: 16500000,
-    specifications: [
-      { key: 'Socket / Chipset', name: 'Intel LGA1700 / Z790', warranty: '36TH' },
-      { key: 'Hỗ trợ RAM', name: '4 khe DDR5 tối đa 192GB 7800+ MHz (OC)', warranty: '36TH' },
-      { key: 'Khe mở rộng', name: 'PCIe 5.0 x16, 5 khe M.2 NVMe Gen 5/4', warranty: '36TH' },
-      { key: 'Kết nối mạng', name: 'Wi-Fi 6E, Intel 2.5Gb Ethernet, Thunderbolt 4', warranty: '36TH' },
-    ],
-    orderCode: 'ORD-2026-004',
-    customerName: 'Lê Thanh Tùng',
-    customerPhoneMasked: '0979.***.999',
-    goodsReceiptCode: 'GR-2026-0028',
-    requestsCount: 0,
-    timeline: [
-      {
-        id: 'tl-z790-1',
-        timestamp: new Date(Date.now() - 125 * 86400000).toISOString(),
-        title: 'Nhập kho chính hãng ASUS Việt Nam',
-        description: 'Nhập kho theo phiếu GR-2026-0028, nguyên seal niêm phong nhà sản xuất.',
-        actor: 'Bộ phận Kho vận PCStore',
-        type: 'SALE',
-      },
-      {
-        id: 'tl-z790-2',
-        timestamp: new Date(Date.now() - 120 * 86400000).toISOString(),
-        title: 'Kích hoạt bảo hành điện tử (36 tháng)',
-        description: 'Kích hoạt bảo hành tự động theo hóa đơn #ORD-2026-004.',
-        actor: 'Hệ thống Bảo hành Điện tử PCStore',
-        type: 'WARRANTY_ACTIVE',
-      },
-    ],
-  },
-  'ASUS-RTX4070TI-FIFO-993': {
-    serialNumber: 'ASUS-RTX4070TI-FIFO-993',
-    serialStatus: 'SOLD',
-    warrantyId: 5003,
-    active: true,
-    startOffsetDays: 712,
-    durationDays: 730,
-    policyName: 'Bảo hành chính hãng Card đồ họa 24 tháng',
-    policyDescription: 'Bảo hành lỗi kỹ thuật GPU, VRAM và hệ thống tản nhiệt theo tiêu chuẩn nhà sản xuất.',
-    productId: 2,
-    productName: 'VGA ASUS TUF Gaming GeForce RTX 4070 Ti SUPER 16GB GDDR6X',
-    productCode: 'VGA-ASUS-4070TI',
-    productImage: getDefaultImageForProduct({ name: 'VGA ASUS TUF Gaming GeForce RTX 4070 Ti', productType: 'COMPONENT' }),
-    brandName: 'ASUS',
-    categoryName: 'Card màn hình (VGA)',
-    productPrice: 24990000,
-    specifications: [
-      { key: 'GPU', name: 'NVIDIA GeForce RTX 4070 Ti SUPER', warranty: '24TH' },
-      { key: 'Bộ nhớ VRAM', name: '16GB GDDR6X (256-bit)', warranty: '24TH' },
-      { key: 'Xung nhịp Boost', name: '2670 MHz (OC Mode)', warranty: '24TH' },
-      { key: 'Nguồn khuyến nghị', name: '750W (1x 16-pin PCIe 5.0)', warranty: '24TH' },
-    ],
-    orderCode: 'ORD-2025-105',
-    customerName: 'Vũ Quốc Cường',
-    customerPhoneMasked: '0938.***.122',
-    goodsReceiptCode: 'GR-2025-0025',
-    requestsCount: 1,
-    timeline: [
-      {
-        id: 'tl-vga-1',
-        timestamp: new Date(Date.now() - 712 * 86400000).toISOString(),
-        title: 'Xuất bán & Kích hoạt bảo hành',
-        description: 'Kích hoạt bảo hành chính hãng 24 tháng khi giao thành công đơn #ORD-2025-105.',
-        actor: 'Hệ thống Bảo hành Điện tử PCStore',
-        type: 'WARRANTY_ACTIVE',
-      },
-      {
-        id: 'tl-vga-2',
-        timestamp: new Date(Date.now() - 180 * 86400000).toISOString(),
-        title: 'Bảo dưỡng định kỳ & Tra keo tản nhiệt miễn phí',
-        description: 'Vệ sinh bụi bẩn lồng quạt, kiểm tra nhiệt độ Full-load ổn định ở mức 64°C.',
-        actor: 'Kỹ thuật viên Lê Hoàng Long',
-        type: 'COMPLETE',
-      },
-    ],
-  },
-  'INTEL-I9-14900K-FIFO-441': {
-    serialNumber: 'INTEL-I9-14900K-FIFO-441',
-    serialStatus: 'SOLD',
-    warrantyId: 5004,
-    active: false,
-    startOffsetDays: 1120,
-    durationDays: 1095,
-    policyName: 'Bảo hành chính hãng Vi xử lý Intel Box 36 tháng',
-    policyDescription: 'Bảo hành 1 đổi 1 vi xử lý chính hãng phân phối tại Việt Nam.',
-    productId: 8,
-    productName: 'CPU Intel Core i9-14900K (Up to 6.0GHz, 24 Nhân 32 Luồng, 36MB Cache)',
-    productCode: 'CPU-INTEL-14900K',
-    productImage: getDefaultImageForProduct({ name: 'CPU Intel Core i9-14900K', productType: 'COMPONENT' }),
-    brandName: 'Intel',
-    categoryName: 'Bộ vi xử lý (CPU)',
-    productPrice: 14900000,
-    specifications: [
-      { key: 'Số nhân / Số luồng', name: '24 Nhân (8 P-core + 16 E-core) / 32 Luồng', warranty: '36TH' },
-      { key: 'Xung nhịp tối đa', name: 'Turbo Boost Max 6.0 GHz', warranty: '36TH' },
-      { key: 'Bộ nhớ đệm', name: '36MB Intel Smart Cache', warranty: '36TH' },
-      { key: 'Socket', name: 'Intel LGA 1700', warranty: '36TH' },
-    ],
-    orderCode: 'ORD-2023-892',
-    customerName: 'Ngô Thanh Trúc',
-    customerPhoneMasked: '0908.***.666',
-    goodsReceiptCode: 'GR-2023-0022',
-    requestsCount: 0,
-    timeline: [
-      {
-        id: 'tl-cpu-1',
-        timestamp: new Date(Date.now() - 1120 * 86400000).toISOString(),
-        title: 'Xuất bán & Kích hoạt bảo hành',
-        description: 'Kích hoạt bảo hành chính hãng 36 tháng theo đơn hàng #ORD-2023-892.',
-        actor: 'Hệ thống Bảo hành Điện tử PCStore',
-        type: 'WARRANTY_ACTIVE',
-      },
-    ],
-  },
-};
+function mapTimelineType(rawType?: string): WarrantyTimelineEvent['type'] {
+  const upper = (rawType || '').toUpperCase();
+  if (
+    upper === 'SALE' ||
+    upper === 'WARRANTY_ACTIVE' ||
+    upper === 'REQUEST_CREATE' ||
+    upper === 'DIAGNOSIS' ||
+    upper === 'PART_REPLACE' ||
+    upper === 'COMPLETE' ||
+    upper === 'EXTEND' ||
+    upper === 'VOID'
+  ) {
+    return upper;
+  }
+  return 'WARRANTY_ACTIVE';
+}
 
 async function enrichProductInfo(
   productId?: number,
-  productCode?: string,
-  productName?: string
+  productCode?: string | null,
+  productName?: string | null,
+  hasBrandName?: boolean,
+  hasCategoryName?: boolean
 ): Promise<{
   product?: ProductResponse;
   brandName?: string;
@@ -341,7 +221,7 @@ async function enrichProductInfo(
   if (!prod && (productCode || productName)) {
     try {
       const searchRes = await productService.getProducts({
-        keyword: productCode || productName,
+        keyword: (productCode || productName || '').trim(),
         size: 5,
       });
       if (searchRes?.content && searchRes.content.length > 0) {
@@ -360,7 +240,7 @@ async function enrichProductInfo(
   let brandName: string | undefined;
   let categoryName: string | undefined;
 
-  if (prod?.brandId) {
+  if (!hasBrandName && prod?.brandId) {
     try {
       const b = await brandService.getBrandById(prod.brandId);
       brandName = b?.name;
@@ -370,7 +250,7 @@ async function enrichProductInfo(
   }
 
   const catId = prod?.primaryCategoryId || prod?.categoryIds?.[0];
-  if (catId) {
+  if (!hasCategoryName && catId) {
     try {
       const c = await categoryService.getCategoryById(catId);
       categoryName = c?.name;
@@ -384,215 +264,145 @@ async function enrichProductInfo(
 
 export const warrantyLookupService = {
   /**
-   * Tra cứu thông tin bảo hành đầy đủ theo mã Serial (S/N)
+   * Tra cứu thông tin & lịch sử bảo hành theo mã Serial (S/N) từ BE:
+   * - GET /api/admin/warranties/by-serial/{serialNumber}
+   * - GET /api/admin/warranties/history/{serialNumber}
    */
   async lookupBySerial(serialInput: string): Promise<WarrantyLookupResult | null> {
     const cleanSerial = serialInput.trim();
     if (!cleanSerial) return null;
 
-    // 1. Tra cứu trực tiếp từ Public Warranty API (GET /api/public/warranties/serials?serialNumber=...)
-    try {
-      const res = await fetch(API_ENDPOINTS.WARRANTIES.PUBLIC_LOOKUP(cleanSerial), {
-        method: 'GET',
-      });
+    const [warrantyRes, historyRes] = await Promise.all([
+      fetchWithAuth(API_ENDPOINTS.WARRANTIES.BY_SERIAL(cleanSerial), { method: 'GET' }),
+      fetchWithAuth(API_ENDPOINTS.WARRANTIES.HISTORY(cleanSerial), { method: 'GET' }).catch(() => null),
+    ]);
 
-      if (res.ok) {
-        const pub: PublicWarrantyResponse = await res.json();
-        const pId = pub.productId;
-        const pCode = pub.productCode || 'SP-CHINH-HANG';
-        const pName = pub.productName || `Sản phẩm chính hãng (${pub.serialNumber || cleanSerial})`;
-
-        const enriched = await enrichProductInfo(pId, pCode, pName);
-        const prod = enriched.product;
-
-        const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
-        const image =
-          firstImgUrl && !firstImgUrl.includes('example.com')
-            ? firstImgUrl
-            : getDefaultImageForProduct(prod || { name: pName });
-
-        const startIso = pub.startDate || new Date().toISOString();
-        const endIso = pub.endDate;
-        const durationDays = pub.durationDays || 1095;
-        const upperStatus = (pub.status || '').toUpperCase();
-        const isVoid = upperStatus === 'VOID' || (!pub.active && upperStatus !== 'EXPIRED');
-
-        const computed = computeWarrantyDatesAndStatus(startIso, durationDays, endIso, isVoid);
-        const remainingDays = typeof pub.remainingDays === 'number' ? Math.max(0, pub.remainingDays) : computed.remainingDays;
-        const warrantyStatus: ProductWarrantyStatus | 'VOID' =
-          upperStatus === 'VOID'
-            ? 'VOID'
-            : upperStatus === 'EXPIRED'
-              ? 'EXPIRED'
-              : upperStatus === 'EXPIRING_SOON'
-                ? 'EXPIRING_SOON'
-                : upperStatus === 'ACTIVE'
-                  ? 'ACTIVE'
-                  : computed.warrantyStatus;
-
-        const specs = parseSpecsTable(prod?.specification, prod?.name || pName);
-
-        const defaultTimeline: WarrantyTimelineEvent[] = [
-          {
-            id: 'evt-init-warranty',
-            timestamp: computed.startDate,
-            title: 'Kích hoạt bảo hành điện tử chính hãng',
-            description: `Thiết bị mang mã Serial ${pub.serialNumber || cleanSerial} đã được kích hoạt gói "${pub.policyName || `Bảo hành chính hãng ${computed.durationMonths} tháng`}".`,
-            actor: 'Hệ thống Bảo hành PCStore',
-            type: 'WARRANTY_ACTIVE',
-          },
-        ];
-
-        return {
-          serialNumber: pub.serialNumber || cleanSerial,
-          serialStatus: 'SOLD',
-          warrantyStatus,
-          active: pub.active && warrantyStatus !== 'EXPIRED' && warrantyStatus !== 'VOID',
-          startDate: computed.startDate,
-          endDate: computed.endDate,
-          durationDays: computed.durationDays,
-          durationMonths: computed.durationMonths,
-          remainingDays,
-          usedDays: computed.usedDays,
-          progressPercent: computed.progressPercent,
-          policyName: pub.policyName || `Bảo hành chính hãng ${computed.durationMonths} tháng`,
-          policyDescription:
-            'Sản phẩm được hưởng đầy đủ chế độ bảo hành chính hãng tại tất cả trung tâm bảo hành PCStore trên toàn quốc.',
-          productId: prod?.id || pub.productId,
-          productName: prod?.name || pName,
-          productCode: prod?.code || pCode,
-          productImage: image,
-          brandName: pub.brandName || enriched.brandName || 'Chính hãng',
-          categoryName: enriched.categoryName || 'Linh kiện & Thiết bị PC',
-          productPrice: prod?.price ?? undefined,
-          specifications: specs,
-          purchaseDate: computed.startDate,
-          requestsCount: 0,
-          timeline: defaultTimeline,
-        };
-      }
-    } catch {
-      // Public API unreachable or serial not found
+    if (warrantyRes.status === 404) {
+      return null;
     }
 
-    // 2. Kiểm tra trong OrderFulfillmentService (các serial đã gán trong đơn hàng)
-    try {
-      const fulfillments = orderFulfillmentService.getFulfillments();
-      for (const f of fulfillments) {
-        const assigned = (f.assignedSerials || []).find(
-          (s) => s.serialNumber.toLowerCase() === cleanSerial.toLowerCase()
-        );
-        if (assigned) {
-          const enriched = await enrichProductInfo(
-            assigned.productId,
-            assigned.productCode,
-            assigned.productName
-          );
-          const prod = enriched.product;
-          const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
-          const image =
-            firstImgUrl && !firstImgUrl.includes('example.com')
-              ? firstImgUrl
-              : getDefaultImageForProduct({ name: assigned.productName });
-
-          const startIso = f.completedAt || assigned.assignedAt || f.createdAt;
-          const computed = computeWarrantyDatesAndStatus(startIso, 1095);
-          const specs = parseSpecsTable(prod?.specification, assigned.productName);
-
-          return {
-            serialNumber: assigned.serialNumber,
-            serialStatus: assigned.status || 'SOLD',
-            warrantyStatus: computed.warrantyStatus,
-            active: computed.warrantyStatus !== 'EXPIRED',
-            startDate: computed.startDate,
-            endDate: computed.endDate,
-            durationDays: computed.durationDays,
-            durationMonths: computed.durationMonths,
-            remainingDays: computed.remainingDays,
-            usedDays: computed.usedDays,
-            progressPercent: computed.progressPercent,
-            policyName: 'Bảo hành chính hãng 36 tháng (1 đổi 1 trong 30 ngày đầu)',
-            policyDescription:
-              'Bảo hành chính hãng theo tiêu chuẩn nhà sản xuất tại hệ thống showroom PCStore toàn quốc.',
-            productId: prod?.id || assigned.productId,
-            productName: prod?.name || assigned.productName,
-            productCode: prod?.code || assigned.productCode,
-            productImage: image,
-            brandName: enriched.brandName || 'Chính hãng',
-            categoryName: enriched.categoryName || 'Linh kiện PC',
-            productPrice: prod?.price ?? assigned.productPrice,
-            specifications: specs,
-            orderCode: f.orderCode,
-            purchaseDate: computed.startDate,
-            customerName: f.customerName,
-            customerPhoneMasked: maskPhone(f.customerPhone),
-            goodsReceiptCode: assigned.goodsReceiptCode,
-            requestsCount: 0,
-            timeline: [
-              {
-                id: `tl-ord-${f.orderId}`,
-                timestamp: computed.startDate,
-                title: 'Xuất bán & Kích hoạt bảo hành điện tử',
-                description: `Thiết bị được xuất bán theo đơn hàng #${f.orderCode} và kích hoạt bảo hành 36 tháng.`,
-                actor: 'Hệ thống Bảo hành PCStore',
-                type: 'WARRANTY_ACTIVE',
-              },
-            ],
-          };
-        }
-      }
-    } catch {
-      // ignore
+    if (warrantyRes.status === 401 || warrantyRes.status === 403) {
+      throw new Error(
+        'Vui lòng đăng nhập tài khoản có quyền truy cập để tra cứu thông tin bảo hành từ hệ thống.'
+      );
     }
 
-    return null;
-  },
-
-  /**
-   * Lấy danh sách các mã Serial gợi ý (không gọi API admin để tránh lỗi 401/403 ở trang public)
-   */
-  async getSuggestedSerials(): Promise<SuggestedSerialItem[]> {
-    const suggestions: SuggestedSerialItem[] = [];
-    const seen = new Set<string>();
-
-    // Bổ sung các mã Serial mẫu đa dạng trạng thái
-    const demoSuggestions: SuggestedSerialItem[] = [
-      {
-        serialNumber: 'GIGA-M27Q-FIFO-8821',
-        productName: 'Màn hình GIGABYTE M27Q 27" 2K 170Hz',
-        statusLabel: 'Còn hạn BH',
-        statusType: 'ACTIVE',
-      },
-      {
-        serialNumber: 'ASUS-ROG-Z790-FIFO-001',
-        productName: 'Mainboard ASUS ROG MAXIMUS Z790 HERO',
-        statusLabel: 'Còn hạn BH',
-        statusType: 'ACTIVE',
-      },
-      {
-        serialNumber: 'ASUS-RTX4070TI-FIFO-993',
-        productName: 'VGA ASUS TUF RTX 4070 Ti SUPER 16GB',
-        statusLabel: 'Sắp hết hạn',
-        statusType: 'EXPIRING_SOON',
-      },
-      {
-        serialNumber: 'INTEL-I9-14900K-FIFO-441',
-        productName: 'CPU Intel Core i9-14900K',
-        statusLabel: 'Đã hết hạn',
-        statusType: 'EXPIRED',
-      },
-    ];
-
-    for (const d of demoSuggestions) {
-      if (!seen.has(d.serialNumber.toLowerCase())) {
-        seen.add(d.serialNumber.toLowerCase());
-        suggestions.push(d);
-      }
+    if (!warrantyRes.ok) {
+      const errData = await warrantyRes.json().catch(() => null);
+      const errMsg =
+        errData?.detail ||
+        errData?.message ||
+        `Không thể tra cứu thông tin bảo hành (mã lỗi ${warrantyRes.status}).`;
+      throw new Error(errMsg);
     }
 
-    return suggestions.slice(0, 6);
+    const w: BackendWarrantyResponse = await warrantyRes.json();
+    const history: BackendWarrantyHistoryResponse | null =
+      historyRes && historyRes.ok ? await historyRes.json().catch(() => null) : null;
+
+    const pId = w.productId;
+    const pCode = w.productCode || history?.productCode || 'SP-CHINH-HANG';
+    const pName =
+      w.productName || history?.productName || `Sản phẩm chính hãng (${w.serialNumber || cleanSerial})`;
+
+    const enriched = await enrichProductInfo(
+      pId,
+      pCode,
+      pName,
+      Boolean(w.brandName),
+      Boolean(w.categoryName)
+    );
+    const prod = enriched.product;
+
+    const firstImgUrl = (prod?.imageUrl || '').split(/[;,\n]/)[0]?.trim();
+    const image =
+      firstImgUrl && !firstImgUrl.includes('example.com')
+        ? firstImgUrl
+        : getDefaultImageForProduct(prod || { name: pName });
+
+    const startIso = w.startDate || history?.warrantyStartDate || new Date().toISOString();
+    const endIso = w.endDate || history?.warrantyEndDate;
+    const durationDays = w.durationDays || 1095;
+    const upperStatus = (w.status || history?.status || '').toUpperCase();
+    const isVoid = upperStatus === 'VOID' || (w.active === false && upperStatus !== 'EXPIRED');
+
+    const computed = computeWarrantyDatesAndStatus(startIso, durationDays, endIso, isVoid);
+    const remainingDays =
+      typeof w.remainingDays === 'number' ? Math.max(0, w.remainingDays) : computed.remainingDays;
+
+    const warrantyStatus: ProductWarrantyStatus | 'VOID' =
+      upperStatus === 'VOID'
+        ? 'VOID'
+        : upperStatus === 'EXPIRED'
+          ? 'EXPIRED'
+          : upperStatus === 'EXPIRING_SOON'
+            ? 'EXPIRING_SOON'
+            : upperStatus === 'ACTIVE'
+              ? 'ACTIVE'
+              : computed.warrantyStatus;
+
+    const specs = parseSpecsTable(prod?.specification, prod?.name || pName);
+
+    const policyName =
+      w.policyName || history?.policyName || `Bảo hành chính hãng ${computed.durationMonths} tháng`;
+
+    const backendTimeline: WarrantyTimelineEvent[] = (history?.timeline || []).map((ev, idx) => ({
+      id: ev.id || `evt-${idx}`,
+      timestamp: ev.timestamp || computed.startDate,
+      title: ev.title || 'Sự kiện bảo hành',
+      description: ev.description || '',
+      actor: ev.actor,
+      type: mapTimelineType(ev.type),
+      badgeColor: ev.badgeColor,
+    }));
+
+    const timeline: WarrantyTimelineEvent[] =
+      backendTimeline.length > 0
+        ? backendTimeline
+        : [
+            {
+              id: 'evt-init-warranty',
+              timestamp: computed.startDate,
+              title: 'Kích hoạt bảo hành điện tử chính hãng',
+              description: `Thiết bị mang mã Serial ${w.serialNumber || cleanSerial} đã được kích hoạt gói "${policyName}".`,
+              actor: 'Hệ thống Bảo hành PCStore',
+              type: 'WARRANTY_ACTIVE',
+            },
+          ];
+
+    return {
+      serialNumber: w.serialNumber || cleanSerial,
+      serialStatus: 'SOLD',
+      warrantyId: w.id,
+      warrantyStatus,
+      active: w.active !== false && warrantyStatus !== 'EXPIRED' && warrantyStatus !== 'VOID',
+      startDate: computed.startDate,
+      endDate: computed.endDate,
+      durationDays: computed.durationDays,
+      durationMonths: computed.durationMonths,
+      remainingDays,
+      usedDays: computed.usedDays,
+      progressPercent: computed.progressPercent,
+      policyName,
+      policyDescription:
+        'Sản phẩm được hưởng đầy đủ chế độ bảo hành chính hãng tại tất cả trung tâm bảo hành PCStore trên toàn quốc.',
+      productId: prod?.id || w.productId,
+      productName: prod?.name || pName,
+      productCode: prod?.code || pCode,
+      productImage: image,
+      brandName: w.brandName || enriched.brandName || 'Chính hãng',
+      categoryName: w.categoryName || enriched.categoryName || 'Linh kiện & Thiết bị PC',
+      productPrice: prod?.price ?? undefined,
+      specifications: specs,
+      orderCode: w.orderCode || history?.orderCode || undefined,
+      purchaseDate: history?.purchaseDate || computed.startDate,
+      customerName: w.customerName || history?.customerName || undefined,
+      customerPhoneMasked: maskPhone(w.customerPhone || history?.customerPhone),
+      note: w.note || undefined,
+      requestsCount: w.requestsCount ?? history?.totalRequests ?? 0,
+      timeline,
+    };
   },
 };
 
 export default warrantyLookupService;
-

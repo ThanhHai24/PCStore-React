@@ -2,7 +2,7 @@ export type OrderStatus =
   | 'PENDING'
   | 'CONFIRMED'
   | 'REJECTED'
-  | 'PROCESSING'
+  | 'DELIVERING'
   | 'COMPLETED'
   | 'CANCELLED'
   | 'RETURNED';

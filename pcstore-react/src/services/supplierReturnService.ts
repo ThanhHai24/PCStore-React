@@ -2,6 +2,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { fetchWithAuth } from './apiClient';
 import { adminSupplierService } from './adminSupplierService';
 import { productService } from './productService';
+import { deliveryService } from './deliveryService';
 import type { ProductSerialResponse } from '../types/adminGoodsReceipt';
 import type {
   SupplierReturnOrder,
@@ -215,6 +216,29 @@ export const supplierReturnService = {
     if (!res.ok) {
       throw new Error(await parseErrorMessage(res, 'Không thể cập nhật bàn giao ĐVVC'));
     }
+
+    // Đồng bộ tạo/cập nhật vận đơn cho phiếu hoàn trả NCC qua /api/deliveries
+    try {
+      const returnId = Number(orderId);
+      const existing = await deliveryService.getDeliveryByResource('PURCHASE_RETURN', returnId);
+      if (existing) {
+        await deliveryService.updateDeliveryMetadata(existing.id, {
+          carrierName: _input.carrierName,
+          trackingCode: _input.trackingNumber,
+        });
+      } else {
+        await deliveryService.createDelivery({
+          resourceType: 'PURCHASE_RETURN',
+          resourceId: returnId,
+          carrierName: _input.carrierName,
+          trackingCode: _input.trackingNumber,
+          shippingFee: 0,
+        });
+      }
+    } catch (e) {
+      console.warn('Backend sync delivery for PURCHASE_RETURN warning:', e);
+    }
+
     return mapBackendToUI(await res.json());
   },
 
@@ -225,6 +249,15 @@ export const supplierReturnService = {
     orderId: string,
     _input: { receivedByAtSupplier: string; deliveryNotes?: string }
   ): Promise<SupplierReturnOrder> {
+    try {
+      const existing = await deliveryService.getDeliveryByResource('PURCHASE_RETURN', Number(orderId));
+      if (existing && existing.status !== 'DELIVERED') {
+        await deliveryService.updateDeliveryStatus(existing.id, 'DELIVERED');
+      }
+    } catch (e) {
+      console.warn('Backend sync delivery DELIVERED for PURCHASE_RETURN warning:', e);
+    }
+
     const res = await fetchWithAuth(API_ENDPOINTS.ADMIN.PURCHASE_RETURN_STATUS(orderId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

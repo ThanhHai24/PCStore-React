@@ -120,7 +120,7 @@ export default function DeliveryList() {
         else setIsLoading(true);
 
         try {
-            const records = orderFulfillmentService.getFulfillments();
+            const records = await orderFulfillmentService.syncFromBackendDeliveries();
             setFulfillments(records);
         } catch (error: any) {
             toast.error(error.message || 'Không thể tải danh sách đơn giao hàng');
